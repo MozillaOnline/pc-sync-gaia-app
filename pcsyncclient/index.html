@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+  <title>PC Sync Client</title>
+  <link rel="stylesheet" type="text/css" href="style/pcsyncclient.css">
+  <link rel="stylesheet" type="text/css" href="style/connection-cards.css">
+  <!-- Include shared building blocks -->
+  <link rel="stylesheet" type="text/css" href="style/progress_activity/style.css"/>
+  <link rel="stylesheet" type="text/css" href="shared/style/headers.css"/>
+  <link rel="stylesheet" type="text/css" href="shared/style/switches.css"/>
+  <link rel="stylesheet" type="text/css" href="shared/style/buttons.css"/>
+  <link rel="stylesheet" type="text/css" href="shared/style/status.css"/>
+  <!-- Localization -->
+  <link rel="resource" type="application/l10n" href="locales/locales.ini">
+  <link rel="resource" type="application/l10n" href="shared/locales/date.ini">
+  <!-- Shared code -->
+  <script type="text/javascript" src="shared/js/l10n.js"></script>
+  <script type="text/javascript" src="shared/js/l10n_date.js"></script>
+  <script type="text/javascript" src="shared/js/gesture_detector.js"></script>
+  <!-- Specific code -->
+  <script type="text/javascript" src="js/action-contact.js"></script>
+  <script type="text/javascript" src="js/connection-internet.js"></script>
+  <script type="text/javascript" src="js/client-common.js"></script>
+  <script type="text/javascript" src="js/connection-cards.js"></script>
+  <script type="text/javascript" src="js/client-app.js"></script>
+</head>
+
+<body role="application">
+  <!-- All the active cards live (horizontally) in this container.  We leave
+       it up to the layout engine to be smart about not painting cards that are
+       not visible, but we will revisit that after profiling.  (display: hidden
+       should be fairly safe, for example.) -->
+  <div id="cardContainer">
+    <div id="cards" style="left: 0px;"></div>
+    <section role="status" class="banner customized collapsed">
+      <button class="toaster-cancel-btn header-left-btn">
+        <span class="icon icon-close"></span>
+      </button>
+    </section>
+  </div>
+
+  <!-- We have a "card" centric implementation that clones the cards from below.
+       Widgets/repeated items are defined in the other template hierarchies for
+       the cards to use as appropriate.
+
+       Currently, the usually-present header strip must be defined on each card;
+       cards do not magically get wrapped in nodes or have any nodes injected
+       into them. -->
+  <div id="templates" class="collapsed">
+    <div id="templ-card">
+      <!-- === Setup === -->
+      <!-- From hyperlink, ask the user if they want to set up now or bail. -->
+      <div class="card-setup-needed card">
+      </div>
+      <!-- Pick the connection which you want to sync with PC. -->
+      <div class="card-pick-service card">
+        <section class="sup-account-header" role="region">
+          <header>
+            <!-- only show this if there is at least one account -->
+            <a href="#" class="sup-back-btn collapsed">
+              <span class="icon icon-back"></span>
+            </a>
+            <h1 class="sup-account-header-label"
+                data-l10n-id="app-name-header">PC Sync Client</h1>
+          </header>
+        </section>
+        <h2 class="sup-pick-service-label sup-form-label"
+            data-l10n-id="pick-service">
+          Please select the connection.
+        </h2>
+        <div class="sup-services-container">
+        </div>
+      </div>
+
+      <div class="card-setup-account-info form-card card">
+        <section class="sup-account-header" role="region">
+          <header>
+            <a href="#" class="sup-back-btn">
+              <span class="icon icon-back"></span>
+            </a>
+            <h1 class="sup-account-header-label"
+                data-l10n-id="account-header">New firefox account setup</h1>
+          </header>
+        </section>
+        <h2 class="sup-info-label sup-form-label"
+            data-l10n-id="info-header">
+          YouR LogiN InformatioN
+        </h2>
+        <div class="sup-form">
+          <input class="sup-server-url sup-form-text" type="text"
+                 x-inputmode="latin-name" placeholder="Server Url" required />
+          <button class="sup-info-next-btn sup-form-btn recommend"
+                  data-l10n-id="info-next" disabled="">NexT</button>
+        </div>
+      </div>
+      <!-- I am setting up your account, please wait or read errors! -->
+      <div class="card-setup-progress card">
+        <section class="sup-account-header" role="region">
+          <header>
+            <a href="#" class="sup-back-btn">
+              <span class="icon icon-back"></span>
+            </a>
+            <h1 class="sup-account-header-label"
+                data-l10n-id="account-header">New firefox account setup</h1>
+          </header>
+        </section>
+        <div class="sup-progress-region">
+          <span class="sup-progress-label" data-l10n-id="progress-wait">
+            PleasE WaiT WhilE Connecting
+          </span>
+          <span class="sup-progress-spinner"></span>
+        </div>
+        <div class="sup-error-region collapsed">
+          <span class="sup-error-message"></span>
+          <button class="select-reconnection-btn sup-form-btn recommend"
+                  data-l10n-id="select-reconnection">
+            REconnection
+          </button>
+        </div>
+      </div>
+      <!-- Account all setup, add another or read your mail? -->
+      <div class="card-setup-done card">
+        <section class="sup-account-header" role="region">
+          <header>
+            <h1 class="sup-account-header-label"
+              data-l10n-id="completed-header">Connection</h1>
+          </header>
+        </section>
+        <h2 class="sup-account-done-label sup-form-label"
+            data-l10n-id="completed-label">Connection Success!</h2>
+        <button class="select-another-connection-btn sup-form-btn"
+                data-l10n-id="select-another-connection">
+          Select AnotheR connection
+        </button>
+        <button class="app-exit-btn sup-form-btn recommend"
+                data-l10n-id="app-exit">
+          ContinuE tO show info
+        </button>
+      </div>
+    </div>
+
+    <!-- Widget nodes for the setup cards; styles use the sup prefix -->
+    <div id="templ-sup">
+      <!-- <button class="sup-service-choice"></button> -->
+      <li class="sup-service-choice">
+        <button class="icon icon-view">
+          <a class="sup-service-choice-label"></a>
+        </button>
+      </li>
+    </div>
+
+  </div>
+</body>
+</html>
+

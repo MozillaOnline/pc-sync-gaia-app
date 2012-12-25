@@ -1,0 +1,68 @@
+{
+  "name": "PCSyncClient",
+  "description": "Connect to PC",
+  "type": "certified",
+  "launch_path": "/index.html",
+  "developer": {
+    "name": "The BeiJing Team",
+    "url": "https://github.com/mozilla-b2g/gaia"
+  },
+  "messages": [
+     { "alarm": "/index.html" }
+  ],
+"permissions": {
+    "alarms":{},
+    "contacts":{ "access": "readwrite" },
+    "desktop-notification":{},
+    "device-storage:music":{ "access": "readwrite" },
+    "device-storage:pictures":{ "access": "readwrite" },
+    "device-storage:videos":{ "access": "readwrite" },
+    "systemXHR":{},
+    "settings":{ "access": "readwrite" },
+    "tcp-socket":{},
+    "mobileconnection":{},
+    "mozBluetooth":{},
+    "bluetooth":{},
+    "device-storage:apps":{ "access": "readonly" },
+    "webapps-manage":{},
+    "permissions":{},
+    "wifi-manage":{},
+    "wifi":{},
+    "attention":{},
+    "time":{},
+    "desktop-notification":{},
+    "power":{},
+    "telephony":{}
+  },
+  "locales": {
+    "en-US": {
+      "name": "PCSyncClient",
+      "description": "Connect to PC"
+    },
+    "zh-TW": {
+      "name": "PC连接器",
+      "description": "PC连接器"
+    }
+  },
+  "default_locale": "en-US",
+  "icons": {
+    "120": "/style/icons/PCSyncClient.png",
+    "60": "/style/icons/60/PCSyncClient.png"
+  },
+  "activities": {
+    "new": {
+      "filters": {
+        "type": "mail"
+      },
+      "disposition": "window"
+    },
+    "share": {
+      "filters": {
+        "type": "image/*"
+       },          
+      "disposition": "window",
+      "returnValue": true
+    }
+  },
+  "orientation": "portrait-primary"
+}
