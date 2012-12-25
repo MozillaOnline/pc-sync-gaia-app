@@ -117,7 +117,7 @@ var Action_contact = {
 		 * */
 	},
 	
-	error: function (data){
+	error: function (data, result){
 		var contactdata = {
 			action: 'response',
 			id: data.id,
