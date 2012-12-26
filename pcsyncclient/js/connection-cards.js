@@ -63,7 +63,9 @@ SetupPickServiceCard.prototype = {
 		Cards.pushCard(
 		'setup-progress', 'default', 'animate',
 		{
-			serverUrl: serviceDef.domain
+			serverUrl: serviceDef.domain,
+			isUsb: true
+			
 		});
 	}
 	else{
@@ -116,7 +118,8 @@ SetupAccountInfoCard.prototype = {
     Cards.pushCard(
       'setup-progress', 'default', 'animate',
       {
-        serverUrl: this.nameNode.value
+        serverUrl: this.nameNode.value,
+        isUsb: false
       });
   },
   onInfoInput: function(event) {
@@ -145,16 +148,29 @@ function SetupProgressCard(domNode, mode, args) {
 
   var self = this;
   this.creationInProcess = true;
-  
-  Connection_internet.connectToServer(
-	args.serverUrl, 
-	function(err) {
-      self.creationInProcess = false;
-      if (err)
-        self.onCreationError(err);
-      else
-        self.onCreationSuccess();
-    });
+  if(args.isUsb){
+	  Connection_usb.createSocketserver(function(err) {
+		  self.creationInProcess = false;
+		  if (err){
+			  self.onCreationError(err);
+		  }
+		  else{
+			  self.onCreationSuccess();
+		  }
+	  });
+  }
+  else{
+	  Connection_internet.connectToServer(args.serverUrl, 
+		function(err) {
+		  self.creationInProcess = false;
+		  if (err){
+			  self.onCreationError(err);
+		  }
+		  else{
+			  self.onCreationSuccess();
+		  }
+	  });
+  }
 }
 SetupProgressCard.prototype = {
   cancelCreation: function() {
