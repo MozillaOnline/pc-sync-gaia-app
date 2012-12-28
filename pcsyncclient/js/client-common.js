@@ -4,6 +4,28 @@
 var mozL10n = navigator.mozL10n;
 
 var supNodes;
+
+/**
+ * Execute the async functions
+ * The functions must call the given callback functions when executed.
+ */
+function syncExecuteAsyncFuncs(asyncFuncs, onFinished){
+  if (asyncFuncs.length == 0) {
+    onFinished();
+  }
+
+  function execAsyncFunc(func) {
+    func(function async_callback() {
+      if (asyncFuncs.length > 0) {
+        execAsyncFunc(asyncFuncs.shift());
+      } else {
+        onFinished();
+      }
+    });
+  }
+  execAsyncFuncs(asyncFuncs.shift());
+}
+
 function processTemplNodes(prefix) {
   var holder = document.getElementById('templ-' + prefix),
       nodes = {},
