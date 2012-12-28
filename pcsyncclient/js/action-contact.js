@@ -174,15 +174,27 @@ var Action_contact = {
 	},
 	
 	updateContact: function (requestid,requestcommand,requestdata){
-		var updatecontact = new mozContact();
-		updatecontact.init(requestdata);
-		dump('xds11' + JSON.stringify(updatecontact));
-		var request = window.navigator.mozContacts.save(updatecontact);
-		request.onsuccess = function findCallback() {
-			Action_contact.success(requestid,requestcommand, JSON.stringify(updatecontact));
+		var options = {
+			filterBy: ['id'],
+			filterOp: 'equals',
+			filterValue: requestdata.id
+		};
+		var request = window.navigator.mozContacts.find(options);
+		request.onsuccess = function findCallback(e) {
+			var updatecontact = e.target.result[0];
+			for (var uname in requestdata) {
+				//if(uname != "photo")
+				updatecontact[uname] = requestdata[uname];
+			}
+			var srequest = window.navigator.mozContacts.save(updatecontact);
+			srequest.onsuccess = function findCallback() {
+				Action_contact.success(requestid,requestcommand, JSON.stringify(updatecontact));
+			};
+			srequest.onerror = function findCallback() {
+				Action_contact.error(requestid,requestcommand, srequest.result);
+			};
 		};
 		request.onerror = function findCallback() {
-			alert("xds2" + request.result);
 			Action_contact.error(requestid,requestcommand, request.result);
 		};
 	},
@@ -289,7 +301,7 @@ var Action_contact = {
 		requestdata.forEach(function(value, index) {
 			asyncContacts.push(function (value) {
 				var newcontact = new mozContact();
-				newcontact.init(requestdata);
+				newcontact.init(value);
 				alert(JSON.stringify(newcontact));
 				var request = window.navigator.mozContacts.save(newcontact);
 				request.onsuccess = function findCallback() {
@@ -304,7 +316,7 @@ var Action_contact = {
 					var multicontacts = {
 						status: 202,
 						errorMsg: request.result,
-						data: requestdata
+						data: value
 					};
 					contacts.push(multicontacts);
 				};
@@ -322,29 +334,47 @@ var Action_contact = {
 			Connection_internet.ws.send(JSON.stringify(contactdata));
 		});
 	},
-	
+		
 	updateContacts: function (requestid,requestcommand, requestdata){
 		var asyncContacts = [];
 		var contacts = [];
 		requestdata.forEach(function(value, index) {
 			asyncContacts.push(function (value) {
-				var updatecontact = new mozContact();
-				updatecontact.init(requestdata);
-				dump('xds11' + JSON.stringify(updatecontact));
-				var request = window.navigator.mozContacts.save(updatecontact);
-				request.onsuccess = function findCallback() {
-					var multicontacts = {
-						status: 200,
-						errorMsg: null,
-						data: JSON.stringify(updatecontact)
+				var options = {
+					filterBy: ['id'],
+					filterOp: 'equals',
+					filterValue: value.id
+				};
+				var request = window.navigator.mozContacts.find(options);
+				request.onsuccess = function findCallback(e) {
+					var updatecontact = e.target.result[0];
+					for (var uname in value) {
+						//if(uname != "photo")
+						updatecontact[uname] = value[uname];
+					}
+					var srequest = window.navigator.mozContacts.save(updatecontact);
+					srequest.onsuccess = function findCallback() {
+						var multicontacts = {
+							status: 200,
+							errorMsg: null,
+							data: JSON.stringify(updatecontact)
+						};
+						contacts.push(multicontacts);
 					};
-					contacts.push(multicontacts);
+					srequest.onerror = function findCallback() {
+						var multicontacts = {
+							status: 202,
+							errorMsg: request.result,
+							data: value
+						};
+						contacts.push(multicontacts);
+					};
 				};
 				request.onerror = function findCallback() {
 					var multicontacts = {
 						status: 202,
 						errorMsg: request.result,
-						data: requestdata
+						data: value
 					};
 					contacts.push(multicontacts);
 				};
