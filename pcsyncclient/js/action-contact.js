@@ -203,7 +203,7 @@ var Action_contact = {
 		var asyncContacts = [];
 		var contacts = [];
 		requestdata.forEach(function(value, index) {
-			asyncContacts.push(function (value) {
+			asyncContacts.push(function () {
 				var options = {
 					filterBy: ['id'],
 					filterOp: 'equals',
@@ -217,6 +217,7 @@ var Action_contact = {
 						data: e.target.result[0]
 					};
 					contacts.push(multicontacts);
+					oncomplete();
 				};
 				request.onerror = function findCallback() {
 					var multicontacts = {
@@ -225,6 +226,7 @@ var Action_contact = {
 						data: null
 					};
 					contacts.push(multicontacts);
+					oncomplete();
 				};
 			});
 		});
@@ -245,7 +247,7 @@ var Action_contact = {
 		var asyncContacts = [];
 		var contacts = [];
 		requestdata.forEach(function(value, index) {
-			asyncContacts.push(function (value) {
+			asyncContacts.push(function () {
 				var options = {
 					filterBy: ['id'],
 					filterOp: 'equals',
@@ -262,6 +264,7 @@ var Action_contact = {
 							data: requestdata
 						};
 						contacts.push(multicontacts);
+						oncomplete();
 					}
 					request2.onerror = function findCallback() {
 						var multicontacts = {
@@ -270,6 +273,7 @@ var Action_contact = {
 							data: requestdata
 						};
 						contacts.push(multicontacts);
+						oncomplete();
 					};
 				};
 				request.onerror = function findCallback() {
@@ -279,6 +283,7 @@ var Action_contact = {
 						data: requestdata
 					};
 					contacts.push(multicontacts);
+					oncomplete();
 				};
 			});
 		});
@@ -299,7 +304,7 @@ var Action_contact = {
 		var asyncContacts = [];
 		var contacts = [];
 		requestdata.forEach(function(value, index) {
-			asyncContacts.push(function (value) {
+			asyncContacts.push(function (oncomplete();) {
 				var newcontact = new mozContact();
 				newcontact.init(value);
 				alert(JSON.stringify(newcontact));
@@ -311,6 +316,7 @@ var Action_contact = {
 						data: JSON.stringify(newcontact)
 					};
 					contacts.push(multicontacts);
+					oncomplete();
 				};
 				request.onerror = function findCallback() {
 					var multicontacts = {
@@ -319,6 +325,7 @@ var Action_contact = {
 						data: value
 					};
 					contacts.push(multicontacts);
+					oncomplete();
 				};
 			});
 		});
@@ -338,8 +345,11 @@ var Action_contact = {
 	updateContacts: function (requestid,requestcommand, requestdata){
 		var asyncContacts = [];
 		var contacts = [];
+		dump('xds5'+JSON.stringify(requestdata));
 		requestdata.forEach(function(value, index) {
-			asyncContacts.push(function (value) {
+			dump('xds6'+JSON.stringify(value));
+			asyncContacts.push(function (oncomplete) {
+				dump('xds7'+JSON.stringify(value.id));
 				var options = {
 					filterBy: ['id'],
 					filterOp: 'equals',
@@ -347,6 +357,7 @@ var Action_contact = {
 				};
 				var request = window.navigator.mozContacts.find(options);
 				request.onsuccess = function findCallback(e) {
+					dump('xds8'+JSON.stringify(e.target.result[0]));
 					var updatecontact = e.target.result[0];
 					for (var uname in value) {
 						//if(uname != "photo")
@@ -360,6 +371,8 @@ var Action_contact = {
 							data: JSON.stringify(updatecontact)
 						};
 						contacts.push(multicontacts);
+						dump('xds9'+JSON.stringify(multicontacts));
+						oncomplete();
 					};
 					srequest.onerror = function findCallback() {
 						var multicontacts = {
@@ -368,6 +381,7 @@ var Action_contact = {
 							data: value
 						};
 						contacts.push(multicontacts);
+						oncomplete();
 					};
 				};
 				request.onerror = function findCallback() {
@@ -377,6 +391,7 @@ var Action_contact = {
 						data: value
 					};
 					contacts.push(multicontacts);
+					oncomplete();
 				};
 			});
 		});

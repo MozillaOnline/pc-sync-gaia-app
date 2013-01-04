@@ -23,7 +23,7 @@ function syncExecuteAsyncFuncs(asyncFuncs, onFinished){
       }
     });
   }
-  execAsyncFuncs(asyncFuncs.shift());
+  execAsyncFunc(asyncFuncs.shift());
 }
 
 function processTemplNodes(prefix) {
