@@ -260,7 +260,7 @@ var Action_contact = {
 						var multicontacts = {
 							status: 200,
 							errorMsg: null,
-							data: requestdata
+							data: result
 						};
 						contacts.push(multicontacts);
 						oncomplete();
@@ -269,7 +269,7 @@ var Action_contact = {
 						var multicontacts = {
 							status: 202,
 							errorMsg: result,
-							data: requestdata
+							data: result
 						};
 						contacts.push(multicontacts);
 						oncomplete();
@@ -279,7 +279,7 @@ var Action_contact = {
 					var multicontacts = {
 						status: 202,
 						errorMsg: request.result,
-						data: requestdata
+						data: value
 					};
 					contacts.push(multicontacts);
 					oncomplete();
@@ -308,13 +308,30 @@ var Action_contact = {
 				newcontact.init(value);
 				var request = window.navigator.mozContacts.save(newcontact);
 				request.onsuccess = function findCallback() {
-					var multicontacts = {
-						status: 200,
-						errorMsg: null,
-						data: newcontact
+					var options = {
+						filterBy: ['id'],
+						filterOp: 'equals',
+						filterValue: newcontact.id
 					};
-					contacts.push(multicontacts);
-					oncomplete();
+					var request = window.navigator.mozContacts.find(options);
+					request.onsuccess = function findCallback(e) {
+						var multicontacts = {
+							status: 200,
+							errorMsg: null,
+							data: e.target.result[0]
+						};
+						contacts.push(multicontacts);
+						oncomplete();
+					};
+					request.onerror = function findCallback() {
+						var multicontacts = {
+							status: 202,
+							errorMsg: request.result,
+							data: value
+						};
+						contacts.push(multicontacts);
+						oncomplete();
+					};
 				};
 				request.onerror = function findCallback() {
 					var multicontacts = {
