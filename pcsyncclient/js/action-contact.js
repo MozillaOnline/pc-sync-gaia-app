@@ -163,10 +163,9 @@ var Action_contact = {
 	addContact: function (requestid,requestcommand,requestdata){
 		var newcontact = new mozContact();
 		newcontact.init(requestdata);
-		alert(JSON.stringify(newcontact));
 		var request = window.navigator.mozContacts.save(newcontact);
 		request.onsuccess = function findCallback() {
-			Action_contact.success(requestid,requestcommand, JSON.stringify(newcontact));
+			Action_contact.success(requestid,requestcommand, newcontact);
 		};
 		request.onerror = function findCallback() {
 			Action_contact.error(requestid,requestcommand, request.result);
@@ -188,7 +187,7 @@ var Action_contact = {
 			}
 			var srequest = window.navigator.mozContacts.save(updatecontact);
 			srequest.onsuccess = function findCallback() {
-				Action_contact.success(requestid,requestcommand, JSON.stringify(updatecontact));
+				Action_contact.success(requestid,requestcommand, updatecontact);
 			};
 			srequest.onerror = function findCallback() {
 				Action_contact.error(requestid,requestcommand, srequest.result);
@@ -307,13 +306,12 @@ var Action_contact = {
 			asyncContacts.push(function (oncomplete) {
 				var newcontact = new mozContact();
 				newcontact.init(value);
-				alert(JSON.stringify(newcontact));
 				var request = window.navigator.mozContacts.save(newcontact);
 				request.onsuccess = function findCallback() {
 					var multicontacts = {
 						status: 200,
 						errorMsg: null,
-						data: JSON.stringify(newcontact)
+						data: newcontact
 					};
 					contacts.push(multicontacts);
 					oncomplete();
@@ -345,11 +343,8 @@ var Action_contact = {
 	updateContacts: function (requestid,requestcommand, requestdata){
 		var asyncContacts = [];
 		var contacts = [];
-		dump('xds5'+JSON.stringify(requestdata));
 		requestdata.forEach(function(value, index) {
-			dump('xds6'+JSON.stringify(value));
 			asyncContacts.push(function (oncomplete) {
-				dump('xds7'+JSON.stringify(value.id));
 				var options = {
 					filterBy: ['id'],
 					filterOp: 'equals',
@@ -357,7 +352,6 @@ var Action_contact = {
 				};
 				var request = window.navigator.mozContacts.find(options);
 				request.onsuccess = function findCallback(e) {
-					dump('xds8'+JSON.stringify(e.target.result[0]));
 					var updatecontact = e.target.result[0];
 					for (var uname in value) {
 						//if(uname != "photo")
@@ -368,10 +362,9 @@ var Action_contact = {
 						var multicontacts = {
 							status: 200,
 							errorMsg: null,
-							data: JSON.stringify(updatecontact)
+							data: updatecontact
 						};
 						contacts.push(multicontacts);
-						dump('xds9'+JSON.stringify(multicontacts));
 						oncomplete();
 					};
 					srequest.onerror = function findCallback() {
