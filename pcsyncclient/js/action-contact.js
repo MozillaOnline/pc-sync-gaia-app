@@ -203,7 +203,7 @@ var Action_contact = {
 		var asyncContacts = [];
 		var contacts = [];
 		requestdata.forEach(function(value, index) {
-			asyncContacts.push(function () {
+			asyncContacts.push(function (oncomplete) {
 				var options = {
 					filterBy: ['id'],
 					filterOp: 'equals',
@@ -247,7 +247,7 @@ var Action_contact = {
 		var asyncContacts = [];
 		var contacts = [];
 		requestdata.forEach(function(value, index) {
-			asyncContacts.push(function () {
+			asyncContacts.push(function (oncomplete) {
 				var options = {
 					filterBy: ['id'],
 					filterOp: 'equals',
@@ -304,7 +304,7 @@ var Action_contact = {
 		var asyncContacts = [];
 		var contacts = [];
 		requestdata.forEach(function(value, index) {
-			asyncContacts.push(function (oncomplete();) {
+			asyncContacts.push(function (oncomplete) {
 				var newcontact = new mozContact();
 				newcontact.init(value);
 				alert(JSON.stringify(newcontact));
