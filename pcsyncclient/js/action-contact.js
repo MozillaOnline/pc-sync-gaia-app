@@ -260,7 +260,7 @@ var Action_contact = {
 						var multicontacts = {
 							status: 200,
 							errorMsg: null,
-							data: result
+							data: result.id
 						};
 						contacts.push(multicontacts);
 						oncomplete();
@@ -269,7 +269,7 @@ var Action_contact = {
 						var multicontacts = {
 							status: 202,
 							errorMsg: result,
-							data: result
+							data: result.id
 						};
 						contacts.push(multicontacts);
 						oncomplete();
@@ -279,7 +279,7 @@ var Action_contact = {
 					var multicontacts = {
 						status: 202,
 						errorMsg: request.result,
-						data: value
+						data: value.id
 					};
 					contacts.push(multicontacts);
 					oncomplete();
