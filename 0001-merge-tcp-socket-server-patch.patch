@@ -1,13 +1,47 @@
+From a7c192bdd9a706373c1331a6fb7003194b781b49 Mon Sep 17 00:00:00 2001
+From: dxue <dxue@mozilla.com>
+Date: Sat, 5 Jan 2013 10:27:53 +0800
+Subject: [PATCH] merge tcp socket server patch
+
+---
+ dom/network/interfaces/Makefile.in                 |    2 +
+ dom/network/interfaces/nsIDOMTCPSocket.idl         |   61 ++-
+ dom/network/interfaces/nsITCPServerSocketChild.idl |   20 +
+ .../interfaces/nsITCPServerSocketParent.idl        |   20 +
+ dom/network/interfaces/nsITCPSocketParent.idl      |   10 +
+ dom/network/src/Makefile.in                        |    4 +
+ dom/network/src/PTCPServerSocket.ipdl              |   34 ++
+ dom/network/src/TCPServerSocketChild.cpp           |   99 ++++
+ dom/network/src/TCPServerSocketChild.h             |   51 ++
+ dom/network/src/TCPServerSocketParent.cpp          |   98 ++++
+ dom/network/src/TCPServerSocketParent.h            |   45 ++
+ dom/network/src/TCPSocket.js                       |  208 +++++++-
+ dom/network/src/TCPSocketParentIntermediary.js     |   51 +-
+ dom/network/src/ipdl.mk                            |    1 +
+ dom/network/tests/unit/test_tcpserversocket.js     |  557 ++++++++++++++++++++
+ dom/network/tests/unit/xpcshell.ini                |    1 +
+ dom/network/tests/unit_ipc/test_tcpsocket_ipc.js   |    6 +-
+ layout/build/nsLayoutModule.cpp                    |    6 +
+ netwerk/ipc/NeckoChild.cpp                         |   19 +
+ netwerk/ipc/NeckoChild.h                           |    4 +
+ netwerk/ipc/NeckoParent.cpp                        |   31 ++
+ netwerk/ipc/NeckoParent.h                          |    9 +
+ netwerk/ipc/PNecko.ipdl                            |    4 +-
+ 23 files changed, 1330 insertions(+), 11 deletions(-)
+ create mode 100644 dom/network/interfaces/nsITCPServerSocketChild.idl
+ create mode 100644 dom/network/interfaces/nsITCPServerSocketParent.idl
+ create mode 100644 dom/network/src/PTCPServerSocket.ipdl
+ create mode 100644 dom/network/src/TCPServerSocketChild.cpp
+ create mode 100644 dom/network/src/TCPServerSocketChild.h
+ create mode 100644 dom/network/src/TCPServerSocketParent.cpp
+ create mode 100644 dom/network/src/TCPServerSocketParent.h
+ create mode 100644 dom/network/tests/unit/test_tcpserversocket.js
+
 diff --git a/dom/network/interfaces/Makefile.in b/dom/network/interfaces/Makefile.in
 index 78ea504..6b490a0 100644
 --- a/dom/network/interfaces/Makefile.in
 +++ b/dom/network/interfaces/Makefile.in
-@@ -15,16 +15,18 @@ include $(topsrcdir)/dom/dom-config.mk
- 
- XPIDLSRCS = \
-   nsIDOMNavigatorNetwork.idl \
-   nsIDOMConnection.idl \
-   nsIDOMUSSDReceivedEvent.idl \
+@@ -20,6 +20,8 @@ XPIDLSRCS = \
    nsIDOMTCPSocket.idl \
    nsITCPSocketParent.idl \
    nsITCPSocketChild.idl \
@@ -16,18 +50,11 @@ index 78ea504..6b490a0 100644
    nsIDOMDataErrorEvent.idl \
    $(NULL)
  
- ifdef MOZ_B2G_RIL
- XPIDLSRCS += \
-   nsIDOMMobileConnection.idl \
-   nsIMobileConnectionProvider.idl \
-   nsINavigatorMobileConnection.idl \
 diff --git a/dom/network/interfaces/nsIDOMTCPSocket.idl b/dom/network/interfaces/nsIDOMTCPSocket.idl
 index 1e9e03a..c25ff3a 100644
 --- a/dom/network/interfaces/nsIDOMTCPSocket.idl
 +++ b/dom/network/interfaces/nsIDOMTCPSocket.idl
-@@ -1,35 +1,66 @@
- /* This Source Code Form is subject to the terms of the Mozilla Public
-  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+@@ -3,7 +3,7 @@
   * You can obtain one at http://mozilla.org/MPL/2.0/. */
  
  /**
@@ -36,7 +63,7 @@ index 1e9e03a..c25ff3a 100644
   * to highly privileged apps. It provides a buffered, non-blocking
   * interface for sending. For receiving, it uses an asynchronous,
   * event handler based interface.
-  */
+@@ -11,6 +11,7 @@
  
  #include "domstubs.idl"
  #include "nsIDOMEvent.idl"
@@ -44,14 +71,7 @@ index 1e9e03a..c25ff3a 100644
  
  // Bug 731746 - Allow chrome JS object to implement nsIDOMEventTarget
  // nsITCPSocket should be an nsIEventTarget but js objects
- // cannot be an nsIEventTarget yet
- // #include "nsIEventTarget.idl"
- 
- // Bug 723206 - Constructors implemented in JS from IDL should be
- //              allowed to have arguments
- //
- //  Once bug 723206 will be fixed, this method could be replaced by
- //  arguments when instantiating a TCPSocket object. For example it will
+@@ -25,6 +26,36 @@
  //  be possible to do (similarly to the WebSocket API):
  //    var s = new MozTCPSocket(host, port); 
  
@@ -88,17 +108,7 @@ index 1e9e03a..c25ff3a 100644
  [scriptable, uuid(b82e17da-6476-11e1-8813-57a2ffe9e42c)]
  interface nsIDOMTCPSocket : nsISupports
  {
-   /**
-    * Create and return a socket object which will attempt to connect to
-    * the given host and port.
-    *
-    * @param host The hostname of the server to connect to.
-@@ -74,16 +105,35 @@ interface nsIDOMTCPSocket : nsISupports
-    */
-   void suspend();
- 
-   /**
-    * Resume reading incoming data and invoking ondata as usual.
+@@ -79,6 +110,25 @@ interface nsIDOMTCPSocket : nsISupports
     */
    void resume();
  
@@ -124,17 +134,7 @@ index 1e9e03a..c25ff3a 100644
    /**
     * Close the socket.
     */
-   void close();
- 
-   /**
-    * Write data to the socket.
-    *
-@@ -193,16 +243,25 @@ interface nsITCPSocketInternal : nsISupports {
- 
-   // Trigger the callback for |type| with no argument
-   void callListenerVoid(in DOMString type);
- 
-   // Update the DOM object's readyState and bufferedAmount values with the provided data
+@@ -198,6 +248,15 @@ interface nsITCPSocketInternal : nsISupports {
    void updateReadyStateAndBuffered(in DOMString readyState, in uint32_t bufferedAmount);
  };
  
@@ -150,11 +150,6 @@ index 1e9e03a..c25ff3a 100644
  /**
   * nsITCPSocketEvent is the event object which is passed as the
   * first argument to all the event handler callbacks. It contains
-  * the socket that was associated with the event, the type of event,
-  * and the data associated with the event (if any).
-  */
- 
- [scriptable, uuid(0f2abcca-b483-4539-a3e8-345707f75c44)]
 diff --git a/dom/network/interfaces/nsITCPServerSocketChild.idl b/dom/network/interfaces/nsITCPServerSocketChild.idl
 new file mode 100644
 index 0000000..ed76619
@@ -211,11 +206,7 @@ diff --git a/dom/network/interfaces/nsITCPSocketParent.idl b/dom/network/interfa
 index 346e11a..c4b5d41 100644
 --- a/dom/network/interfaces/nsITCPSocketParent.idl
 +++ b/dom/network/interfaces/nsITCPSocketParent.idl
-@@ -1,15 +1,17 @@
- /* This Source Code Form is subject to the terms of the Mozilla Public
-  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
-  * You can obtain one at http://mozilla.org/MPL/2.0/. */
- 
+@@ -5,6 +5,8 @@
  #include "domstubs.idl"
  
  interface nsIDOMTCPSocket;
@@ -224,17 +215,7 @@ index 346e11a..c4b5d41 100644
  
  // Interface required to allow the TCP socket object in the parent process
  // to talk to the parent IPC actor
- [scriptable, uuid(4e7246c6-a8b3-426d-9c17-76dab1e1e14a)]
- interface nsITCPSocketParent : nsISupports
- {
-   [implicit_jscontext] void initJS(in jsval intermediary);
- 
-@@ -26,14 +28,22 @@ interface nsITCPSocketParent : nsISupports
- // and kicking off the chrome process socket object's connection.
- [scriptable, uuid(afa42841-a6cb-4a91-912f-93099f6a3d18)]
- interface nsITCPSocketIntermediary : nsISupports {
-   // Open the connection to the server with the given parameters
-   nsIDOMTCPSocket open(in nsITCPSocketParent parent,
+@@ -31,6 +33,14 @@ interface nsITCPSocketIntermediary : nsISupports {
                         in DOMString host, in unsigned short port,
                         in boolean useSSL, in DOMString binaryType);
  
@@ -249,19 +230,11 @@ index 346e11a..c4b5d41 100644
    // Send a basic string along the connection
    void sendString(in DOMString data);
  
-   // Send a typed array
-   void sendArrayBuffer(in jsval data);
- };
 diff --git a/dom/network/src/Makefile.in b/dom/network/src/Makefile.in
 index 0bb3693..dda3477 100644
 --- a/dom/network/src/Makefile.in
 +++ b/dom/network/src/Makefile.in
-@@ -37,25 +37,29 @@ include $(topsrcdir)/dom/dom-config.mk
- EXPORTS_NAMESPACES = mozilla/dom/network
- 
- EXPORTS_mozilla/dom/network = \
-   Utils.h \
-   Types.h \
+@@ -42,6 +42,8 @@ EXPORTS_mozilla/dom/network = \
    Constants.h \
    TCPSocketChild.h \
    TCPSocketParent.h \
@@ -270,9 +243,7 @@ index 0bb3693..dda3477 100644
    $(NULL)
  
  CPPSRCS = \
-   Connection.cpp \
-   Utils.cpp \
-   USSDReceivedEvent.cpp \
+@@ -51,6 +53,8 @@ CPPSRCS = \
    DataErrorEvent.cpp \
    TCPSocketParent.cpp \
    TCPSocketChild.cpp \
@@ -281,11 +252,6 @@ index 0bb3693..dda3477 100644
    $(NULL)
  
  ifdef MOZ_B2G_RIL
- CPPSRCS += \
-   MobileConnection.cpp \
-   $(NULL)
- endif
- 
 diff --git a/dom/network/src/PTCPServerSocket.ipdl b/dom/network/src/PTCPServerSocket.ipdl
 new file mode 100644
 index 0000000..e3f0f3d
@@ -647,12 +613,7 @@ diff --git a/dom/network/src/TCPSocket.js b/dom/network/src/TCPSocket.js
 index b19cec9..4dfedd4 100644
 --- a/dom/network/src/TCPSocket.js
 +++ b/dom/network/src/TCPSocket.js
-@@ -19,33 +19,41 @@ const InputStreamPump = CC(
-         "@mozilla.org/network/async-stream-copier;1", "nsIAsyncStreamCopier", "init"),
-       ScriptableInputStream = CC(
-         "@mozilla.org/scriptableinputstream;1", "nsIScriptableInputStream", "init"),
-       BinaryInputStream = CC(
-         "@mozilla.org/binaryinputstream;1", "nsIBinaryInputStream", "setInputStream"),
+@@ -24,7 +24,9 @@ const InputStreamPump = CC(
        StringInputStream = CC(
          '@mozilla.org/io/string-input-stream;1', 'nsIStringInputStream'),
        MultiplexInputStream = CC(
@@ -663,13 +624,7 @@ index b19cec9..4dfedd4 100644
  
  const kCONNECTING = 'connecting';
  const kOPEN = 'open';
- const kCLOSING = 'closing';
- const kCLOSED = 'closed';
- 
- const BUFFER_SIZE = 65536;
- 
- /*
-  * Debug logging function
+@@ -38,9 +40,15 @@ const BUFFER_SIZE = 65536;
   */
  
  let debug = true;
@@ -688,17 +643,7 @@ index b19cec9..4dfedd4 100644
  }
  
  /*
-  * nsITCPSocketEvent object
-  */
- 
- function TCPSocketEvent(type, sock, data) {
-   this._type = type;
-@@ -66,16 +74,171 @@ TCPSocketEvent.prototype = {
-     return this._target;
-   },
-   get data() {
-     return this._data;
-   }
+@@ -71,6 +79,161 @@ TCPSocketEvent.prototype = {
  }
  
  /*
@@ -860,17 +805,7 @@ index b19cec9..4dfedd4 100644
   * nsIDOMTCPSocket object
   */
  
- function TCPSocket() {
-   this._readyState = kCLOSED;
- 
-   this._onopen = null;
-   this._ondrain = null;
-@@ -107,16 +270,17 @@ TCPSocket.prototype = {
-     ssl: 'r',
-     bufferedAmount: 'r',
-     suspend: 'r',
-     resume: 'r',
-     close: 'r',
+@@ -112,6 +275,7 @@ TCPSocket.prototype = {
      send: 'r',
      readyState: 'r',
      binaryType: 'r',
@@ -878,17 +813,7 @@ index b19cec9..4dfedd4 100644
      onopen: 'rw',
      ondrain: 'rw',
      ondata: 'rw',
-     onerror: 'rw',
-     onclose: 'rw'
-   },
-   // The binary type, "string" or "arraybuffer"
-   _binaryType: null,
-@@ -412,16 +576,52 @@ TCPSocket.prototype = {
-       // (nsSocketTransport uses gSocketTransportService)
-       Cc["@mozilla.org/network/socket-transport-service;1"]
-         .getService(Ci.nsIEventTarget),
-       /* source buffered */ true, /* sink buffered */ false,
-       BUFFER_SIZE, /* close source*/ false, /* close sink */ false);
+@@ -417,6 +581,42 @@ TCPSocket.prototype = {
  
      return that;
    },
@@ -931,21 +856,11 @@ index b19cec9..4dfedd4 100644
  
    close: function ts_close() {
      if (this._readyState === kCLOSED || this._readyState === kCLOSING)
-       return;
- 
-     LOG("close called\n");
-     this._readyState = kCLOSING;
- 
 diff --git a/dom/network/src/TCPSocketParentIntermediary.js b/dom/network/src/TCPSocketParentIntermediary.js
 index 1b1712a..017c933 100644
 --- a/dom/network/src/TCPSocketParentIntermediary.js
 +++ b/dom/network/src/TCPSocketParentIntermediary.js
-@@ -2,30 +2,47 @@
-  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
-  * You can obtain one at http://mozilla.org/MPL/2.0/. */
- 
- "use strict";
- 
+@@ -7,6 +7,7 @@
  const Cc = Components.classes;
  const Ci = Components.interfaces;
  const Cu = Components.utils;
@@ -953,10 +868,7 @@ index 1b1712a..017c933 100644
  
  Cu.import("resource://gre/modules/XPCOMUtils.jsm");
  
- function TCPSocketParentIntermediary() {
- }
- 
- TCPSocketParentIntermediary.prototype = {
+@@ -17,10 +18,26 @@ TCPSocketParentIntermediary.prototype = {
    open: function(aParentSide, aHost, aPort, aUseSSL, aBinaryType) {
      aParentSide.initJS(this);
  
@@ -987,17 +899,7 @@ index 1b1712a..017c933 100644
      if (!socket)
        return null;
  
-     // Create handlers for every possible callback that attempt to trigger
-     // corresponding callbacks on the child object.
-     ["open", "drain", "data", "error", "close"].forEach(
-       function(p) {
-         socket["on" + p] = function(data) {
-@@ -33,16 +50,42 @@ TCPSocketParentIntermediary.prototype = {
-                                    socket.bufferedAmount);
-         };
-       }
-     );
- 
+@@ -38,6 +55,32 @@ TCPSocketParentIntermediary.prototype = {
      return socket;
    },
  
@@ -1030,19 +932,11 @@ index 1b1712a..017c933 100644
    sendString: function(aData) {
      return this._socket.send(aData);
    },
- 
-   sendArrayBuffer: function(aData) {
-     return this._socket.send(aData);
-   },
- 
 diff --git a/dom/network/src/ipdl.mk b/dom/network/src/ipdl.mk
 index 6efad31..0a463d7 100644
 --- a/dom/network/src/ipdl.mk
 +++ b/dom/network/src/ipdl.mk
-@@ -1,7 +1,8 @@
- # This Source Code Form is subject to the terms of the Mozilla Public
- # License, v. 2.0. If a copy of the MPL was not distributed with this
- # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+@@ -4,4 +4,5 @@
  
  IPDLSRCS = \
    PTCPSocket.ipdl \
@@ -1615,9 +1509,7 @@ diff --git a/dom/network/tests/unit/xpcshell.ini b/dom/network/tests/unit/xpcshe
 index a2b586d..a823f58 100644
 --- a/dom/network/tests/unit/xpcshell.ini
 +++ b/dom/network/tests/unit/xpcshell.ini
-@@ -1,5 +1,6 @@
- [DEFAULT]
- head =
+@@ -3,3 +3,4 @@ head =
  tail =
  
  [test_tcpsocket.js]
@@ -1626,12 +1518,7 @@ diff --git a/dom/network/tests/unit_ipc/test_tcpsocket_ipc.js b/dom/network/test
 index 9f876e0..b976e3d 100644
 --- a/dom/network/tests/unit_ipc/test_tcpsocket_ipc.js
 +++ b/dom/network/tests/unit_ipc/test_tcpsocket_ipc.js
-@@ -1,9 +1,13 @@
- Components.utils.import("resource://gre/modules/Services.jsm");
- 
- function run_test() {
-   Services.prefs.setBoolPref('dom.mozTCPSocket.enabled', true);
-   run_test_in_child("../unit/test_tcpsocket.js", function() {
+@@ -6,4 +6,8 @@ function run_test() {
      Services.prefs.clearUserPref('dom.mozTCPSocket.enabled');
      do_test_finished();
    });
@@ -1643,15 +1530,10 @@ index 9f876e0..b976e3d 100644
 +  });
 +}
 diff --git a/layout/build/nsLayoutModule.cpp b/layout/build/nsLayoutModule.cpp
-index 6b1cbd4..10e639d 100644
+index 22b4d45..55b895e 100644
 --- a/layout/build/nsLayoutModule.cpp
 +++ b/layout/build/nsLayoutModule.cpp
-@@ -91,16 +91,17 @@
- #include "nsDOMStorage.h"
- #include "nsJSON.h"
- #include "mozilla/dom/indexedDB/IndexedDatabaseManager.h"
- #include "mozIApplicationClearPrivateDataParams.h"
- #include "mozilla/dom/DOMRequest.h"
+@@ -96,6 +96,7 @@
  #include "mozilla/OSFileConstants.h"
  #include "mozilla/dom/Activity.h"
  #include "mozilla/dom/network/TCPSocketChild.h"
@@ -1659,17 +1541,7 @@ index 6b1cbd4..10e639d 100644
  
  #ifdef MOZ_B2G_RIL
  #include "SystemWorkerManager.h"
- using mozilla::dom::gonk::SystemWorkerManager;
- #define SYSTEMWORKERMANAGER_CID \
-   {0xd53b6524, 0x6ac3, 0x42b0, {0xae, 0xca, 0x62, 0xb3, 0xc4, 0xe5, 0x2b, 0x04}}
- #define SYSTEMWORKERMANAGER_CONTRACTID \
-   "@mozilla.org/telephony/system-worker-manager;1"
-@@ -245,16 +246,17 @@ static void Shutdown();
- using namespace mozilla;
- using namespace mozilla::dom;
- using namespace mozilla::dom::file;
- using namespace mozilla::dom::sms;
- using mozilla::dom::alarm::AlarmHalService;
+@@ -261,6 +262,7 @@ using mozilla::dom::alarm::AlarmHalService;
  using mozilla::dom::indexedDB::IndexedDatabaseManager;
  using mozilla::dom::power::PowerManagerService;
  using mozilla::dom::TCPSocketChild;
@@ -1677,35 +1549,15 @@ index 6b1cbd4..10e639d 100644
  using mozilla::dom::time::TimeService;
  
  // Transformiix
- /* 5d5d92cd-6bf8-11d9-bf4a-000a95dc234c */
- #define TRANSFORMIIX_NODESET_CID \
- { 0x5d5d92cd, 0x6bf8, 0x11d9, { 0xbf, 0x4a, 0x0, 0x0a, 0x95, 0xdc, 0x23, 0x4c } }
- 
- #define TRANSFORMIIX_NODESET_CONTRACTID \
-@@ -657,16 +659,17 @@ NS_GENERIC_FACTORY_CONSTRUCTOR(nsPrincipal)
- NS_GENERIC_FACTORY_CONSTRUCTOR(nsSecurityNameSet)
- NS_GENERIC_FACTORY_SINGLETON_CONSTRUCTOR(nsSystemPrincipal,
-     nsScriptSecurityManager::SystemPrincipalSingletonConstructor)
- NS_GENERIC_FACTORY_CONSTRUCTOR_INIT(nsNullPrincipal, Init)
- NS_GENERIC_FACTORY_CONSTRUCTOR(nsStructuredCloneContainer)
+@@ -687,6 +689,7 @@ NS_GENERIC_FACTORY_CONSTRUCTOR(nsStructuredCloneContainer)
  
  NS_GENERIC_FACTORY_CONSTRUCTOR(OSFileConstantsService)
  NS_GENERIC_FACTORY_CONSTRUCTOR(TCPSocketChild)
 +NS_GENERIC_FACTORY_CONSTRUCTOR(TCPServerSocketChild)
  
  static nsresult
- Construct_nsIScriptSecurityManager(nsISupports *aOuter, REFNSIID aIID, 
-                                    void **aResult)
- {
-     if (!aResult)
-         return NS_ERROR_NULL_POINTER;
-     *aResult = nullptr;
-@@ -820,16 +823,17 @@ NS_DEFINE_NAMED_CID(NS_HAPTICFEEDBACK_CID);
- #endif
- #endif
- NS_DEFINE_NAMED_CID(SMS_SERVICE_CID);
- NS_DEFINE_NAMED_CID(SMS_DATABASE_SERVICE_CID);
- NS_DEFINE_NAMED_CID(NS_POWERMANAGERSERVICE_CID);
+ Construct_nsIScriptSecurityManager(nsISupports *aOuter, REFNSIID aIID,
+@@ -858,6 +861,7 @@ NS_DEFINE_NAMED_CID(NS_POWERMANAGERSERVICE_CID);
  NS_DEFINE_NAMED_CID(OSFILECONSTANTSSERVICE_CID);
  NS_DEFINE_NAMED_CID(NS_ALARMHALSERVICE_CID);
  NS_DEFINE_NAMED_CID(TCPSOCKETCHILD_CID);
@@ -1713,17 +1565,7 @@ index 6b1cbd4..10e639d 100644
  NS_DEFINE_NAMED_CID(NS_TIMESERVICE_CID);
  #ifdef MOZ_WIDGET_GONK
  NS_DEFINE_NAMED_CID(GONK_GPS_GEOLOCATION_PROVIDER_CID);
- #endif
- 
- static nsresult
- CreateWindowCommandTableConstructor(nsISupports *aOuter,
-                                     REFNSIID aIID, void **aResult)
-@@ -1098,16 +1102,17 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
-   { &kNS_STRUCTUREDCLONECONTAINER_CID, false, NULL, nsStructuredCloneContainerConstructor },
-   { &kNS_DOMMUTATIONOBSERVER_CID, false, NULL, nsDOMMutationObserverConstructor },
-   { &kSMS_SERVICE_CID, false, NULL, nsISmsServiceConstructor },
-   { &kSMS_DATABASE_SERVICE_CID, false, NULL, nsISmsDatabaseServiceConstructor },
-   { &kNS_POWERMANAGERSERVICE_CID, false, NULL, nsIPowerManagerServiceConstructor },
+@@ -1143,6 +1147,7 @@ static const mozilla::Module::CIDEntry kLayoutCIDs[] = {
    { &kOSFILECONSTANTSSERVICE_CID, true, NULL, OSFileConstantsServiceConstructor },
    { &kNS_ALARMHALSERVICE_CID, false, NULL, nsIAlarmHalServiceConstructor },
    { &kTCPSOCKETCHILD_CID, false, NULL, TCPSocketChildConstructor },
@@ -1731,17 +1573,7 @@ index 6b1cbd4..10e639d 100644
    { &kNS_TIMESERVICE_CID, false, NULL, nsITimeServiceConstructor },
  #ifdef MOZ_WIDGET_GONK
    { &kGONK_GPS_GEOLOCATION_PROVIDER_CID, false, NULL, nsIGeolocationProviderConstructor },
- #endif
-   { NULL }
- };
- 
- static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
-@@ -1240,16 +1245,17 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
-   { NS_STRUCTUREDCLONECONTAINER_CONTRACTID, &kNS_STRUCTUREDCLONECONTAINER_CID },
-   { NS_DOMMUTATIONOBSERVER_CONTRACTID, &kNS_DOMMUTATIONOBSERVER_CID },
-   { SMS_SERVICE_CONTRACTID, &kSMS_SERVICE_CID },
-   { SMS_DATABASE_SERVICE_CONTRACTID, &kSMS_DATABASE_SERVICE_CID },
-   { POWERMANAGERSERVICE_CONTRACTID, &kNS_POWERMANAGERSERVICE_CID },
+@@ -1292,6 +1297,7 @@ static const mozilla::Module::ContractIDEntry kLayoutContracts[] = {
    { OSFILECONSTANTSSERVICE_CONTRACTID, &kOSFILECONSTANTSSERVICE_CID },
    { ALARMHALSERVICE_CONTRACTID, &kNS_ALARMHALSERVICE_CID },
    { "@mozilla.org/tcp-socket-child;1", &kTCPSOCKETCHILD_CID },
@@ -1749,42 +1581,23 @@ index 6b1cbd4..10e639d 100644
    { TIMESERVICE_CONTRACTID, &kNS_TIMESERVICE_CID },
  #ifdef MOZ_WIDGET_GONK
    { GONK_GPS_GEOLOCATION_PROVIDER_CONTRACTID, &kGONK_GPS_GEOLOCATION_PROVIDER_CID },
- #endif
-   { NULL }
- };
- 
- static const mozilla::Module::CategoryEntry kLayoutCategories[] = {
 diff --git a/netwerk/ipc/NeckoChild.cpp b/netwerk/ipc/NeckoChild.cpp
-index d472429..38d278c 100644
+index 195495a..cd034df 100644
 --- a/netwerk/ipc/NeckoChild.cpp
 +++ b/netwerk/ipc/NeckoChild.cpp
-@@ -9,18 +9,20 @@
- #include "mozilla/net/NeckoChild.h"
- #include "mozilla/dom/ContentChild.h"
- #include "mozilla/net/HttpChannelChild.h"
- #include "mozilla/net/CookieServiceChild.h"
- #include "mozilla/net/WyciwygChannelChild.h"
- #include "mozilla/net/FTPChannelChild.h"
+@@ -15,9 +15,11 @@
  #include "mozilla/net/WebSocketChannelChild.h"
+ #include "mozilla/net/RemoteOpenFileChild.h"
  #include "mozilla/dom/network/TCPSocketChild.h"
 +#include "mozilla/dom/network/TCPServerSocketChild.h"
+ #include "mozilla/Preferences.h"
  
  using mozilla::dom::TCPSocketChild;
 +using mozilla::dom::TCPServerSocketChild;
  
  namespace mozilla {
  namespace net {
- 
- PNeckoChild *gNeckoChild = nullptr;
- 
- // C++ file contents
- NeckoChild::NeckoChild()
-@@ -162,10 +164,27 @@ NeckoChild::AllocPTCPSocket(const nsString& aHost,
- bool
- NeckoChild::DeallocPTCPSocket(PTCPSocketChild* child)
- {
-   TCPSocketChild* p = static_cast<TCPSocketChild*>(child);
-   p->ReleaseIPDLReference();
+@@ -192,5 +194,22 @@ NeckoChild::DeallocPRemoteOpenFile(PRemoteOpenFileChild* aChild)
    return true;
  }
  
@@ -1808,15 +1621,10 @@ index d472429..38d278c 100644
  }} // mozilla::net
  
 diff --git a/netwerk/ipc/NeckoChild.h b/netwerk/ipc/NeckoChild.h
-index 8006c4c..b02d7f2 100644
+index c8c10de..85a0872 100644
 --- a/netwerk/ipc/NeckoChild.h
 +++ b/netwerk/ipc/NeckoChild.h
-@@ -38,16 +38,20 @@ protected:
-   virtual PWebSocketChild* AllocPWebSocket(PBrowserChild*);
-   virtual bool DeallocPWebSocket(PWebSocketChild*);
-   virtual PTCPSocketChild* AllocPTCPSocket(const nsString& aHost,
-                                            const uint16_t& aPort,
-                                            const bool& useSSL,
+@@ -44,6 +44,10 @@ protected:
                                             const nsString& aBinaryType,
                                             PBrowserChild* aBrowser);
    virtual bool DeallocPTCPSocket(PTCPSocketChild*);
@@ -1824,50 +1632,31 @@ index 8006c4c..b02d7f2 100644
 +                                           const uint16_t& aBacklog,
 +                                           const nsString& aBinaryType);
 +  virtual bool DeallocPTCPServerSocket(PTCPServerSocketChild*);
- };
- 
- /**
-  * Reference to the PNecko Child protocol.
-  * Null if this is not a content process.
-  */
- extern PNeckoChild *gNeckoChild;
- 
+   virtual PRemoteOpenFileChild* AllocPRemoteOpenFile(const URIParams&,
+                                                      PBrowserChild*);
+   virtual bool DeallocPRemoteOpenFile(PRemoteOpenFileChild*);
 diff --git a/netwerk/ipc/NeckoParent.cpp b/netwerk/ipc/NeckoParent.cpp
-index ae43859..dcc51a0 100644
+index a550d45..7d29587 100644
 --- a/netwerk/ipc/NeckoParent.cpp
 +++ b/netwerk/ipc/NeckoParent.cpp
-@@ -9,22 +9,25 @@
- #include "mozilla/net/NeckoParent.h"
- #include "mozilla/net/HttpChannelParent.h"
- #include "mozilla/net/CookieServiceParent.h"
- #include "mozilla/net/WyciwygChannelParent.h"
- #include "mozilla/net/FTPChannelParent.h"
- #include "mozilla/net/WebSocketChannelParent.h"
+@@ -15,6 +15,7 @@
+ #include "mozilla/net/RemoteOpenFileParent.h"
  #include "mozilla/dom/TabParent.h"
  #include "mozilla/dom/network/TCPSocketParent.h"
 +#include "mozilla/dom/network/TCPServerSocketParent.h"
- 
- #include "nsHTMLDNSPrefetch.h"
- 
+ #include "mozilla/ipc/URIUtils.h"
+ #include "mozilla/Preferences.h"
+ #include "mozilla/LoadContext.h"
+@@ -26,6 +27,8 @@
  using mozilla::dom::TabParent;
  using mozilla::net::PTCPSocketParent;
  using mozilla::dom::TCPSocketParent;
 +using mozilla::net::PTCPServerSocketParent;
 +using mozilla::dom::TCPServerSocketParent;
+ using IPC::SerializedLoadContext;
  
  namespace mozilla {
- namespace net {
- 
- // C++ file contents
- NeckoParent::NeckoParent()
- {
- }
-@@ -139,16 +142,44 @@ NeckoParent::RecvPTCPSocketConstructor(PTCPSocketParent* aActor,
- bool
- NeckoParent::DeallocPTCPSocket(PTCPSocketParent* actor)
- {
-   TCPSocketParent* p = static_cast<TCPSocketParent*>(actor);
-   p->Release();
+@@ -299,6 +302,34 @@ NeckoParent::DeallocPTCPSocket(PTCPSocketParent* actor)
    return true;
  }
  
@@ -1899,24 +1688,14 @@ index ae43859..dcc51a0 100644
 +  return true;
 +}
 +
- bool
- NeckoParent::RecvHTMLDNSPrefetch(const nsString& hostname,
-                                  const uint16_t& flags)
- {
-   nsHTMLDNSPrefetch::Prefetch(hostname, flags);
-   return true;
- }
- 
+ PRemoteOpenFileParent*
+ NeckoParent::AllocPRemoteOpenFile(const URIParams& aURI,
+                                   PBrowserParent* aBrowser)
 diff --git a/netwerk/ipc/NeckoParent.h b/netwerk/ipc/NeckoParent.h
-index 1112e10..bd540f6 100644
+index ecbb28d..8e4af09 100644
 --- a/netwerk/ipc/NeckoParent.h
 +++ b/netwerk/ipc/NeckoParent.h
-@@ -41,16 +41,24 @@ protected:
-                                             PBrowserParent* aBrowser);
-   virtual bool RecvPTCPSocketConstructor(PTCPSocketParent*,
-                                          const nsString& aHost,
-                                          const uint16_t& aPort,
-                                          const bool& useSSL,
+@@ -81,6 +81,15 @@ protected:
                                           const nsString& aBinaryType,
                                           PBrowserParent* aBrowser);
    virtual bool DeallocPTCPSocket(PTCPSocketParent*);
@@ -1928,64 +1707,39 @@ index 1112e10..bd540f6 100644
 +                                         const uint16_t& aBacklog,
 +                                         const nsString& aBinaryType);
 +  virtual bool DeallocPTCPServerSocket(PTCPServerSocketParent*);
++
    virtual bool RecvHTMLDNSPrefetch(const nsString& hostname,
                                     const uint16_t& flags);
    virtual bool RecvCancelHTMLDNSPrefetch(const nsString& hostname,
-                                          const uint16_t& flags,
-                                          const nsresult& reason);
- 
- };
- 
 diff --git a/netwerk/ipc/PNecko.ipdl b/netwerk/ipc/PNecko.ipdl
-index 9330fb0..0480727 100644
+index 572fcee..5b5f578 100644
 --- a/netwerk/ipc/PNecko.ipdl
 +++ b/netwerk/ipc/PNecko.ipdl
-@@ -8,16 +8,17 @@
- include protocol PContent;
- include protocol PHttpChannel;
- include protocol PCookieService;
- include protocol PBrowser;
- include protocol PWyciwygChannel;
- include protocol PFTPChannel;
- include protocol PWebSocket;
+@@ -15,6 +15,7 @@ include protocol PWebSocket;
  include protocol PTCPSocket;
-+include protocol PTCPServerSocket;
+ include protocol PRemoteOpenFile;
+ include URIParams;
++nclude protocol PTCPServerSocket;
  
  include "SerializedLoadContext.h";
  
- using IPC::SerializedLoadContext;
- 
- namespace mozilla {
- namespace net {
- 
-@@ -27,28 +28,30 @@ sync protocol PNecko
- {
-   manager PContent;
-   manages PHttpChannel;
-   manages PCookieService;
-   manages PWyciwygChannel;
-   manages PFTPChannel;
+@@ -35,6 +36,7 @@ sync protocol PNecko
    manages PWebSocket;
    manages PTCPSocket;
+   manages PRemoteOpenFile;
 +  manages PTCPServerSocket;
  
  parent:
    __delete__();
- 
-   PCookieService();
-   PHttpChannel(nullable PBrowser browser,
-                SerializedLoadContext loadContext);
-   PWyciwygChannel();
-   PFTPChannel();
-   PWebSocket(PBrowser browser);
+@@ -48,7 +50,7 @@ parent:
    PTCPSocket(nsString host, uint16_t port, bool useSSL, nsString binaryType,
               nullable PBrowser browser);
+   PRemoteOpenFile(URIParams fileuri, nullable PBrowser browser);
+-
 +  PTCPServerSocket(uint16_t port, uint16_t backlog, nsString binaryType);
- 
    HTMLDNSPrefetch(nsString hostname, uint16_t flags);
    CancelHTMLDNSPrefetch(nsString hostname, uint16_t flags, nsresult reason);
  
- };
- 
- 
- } // namespace net
+-- 
+1.7.9.5
+
