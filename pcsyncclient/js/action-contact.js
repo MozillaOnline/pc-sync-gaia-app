@@ -1,6 +1,11 @@
 
 var Action_contact = {
 	formatmozContact: null,
+	sendfunc: null,
+	
+	init:function (data){
+		this.sendfunc = data;
+	},
 	
 	request: function (data){
 		dump('xds4' + JSON.stringify(data));
@@ -49,7 +54,7 @@ var Action_contact = {
 				break;
 			}
 			default:
-				alert("contactrequest Received msg from mgmt: " + data);
+				dump("contactrequest Received msg from mgmt: " + data);
 				break;
 		}
 	},
@@ -57,7 +62,7 @@ var Action_contact = {
 	response: function (data){
 		switch (data.command) {
 			default:
-				alert("contactrequest Received msg from mgmt: " + data);
+				dump("contactrequest Received msg from mgmt: " + data);
 				break;
 		}
 	},
@@ -71,9 +76,9 @@ var Action_contact = {
 			data: resultdata
 		};
 		dump(JSON.stringify(contactdata));
-		Connection_internet.ws.send(JSON.stringify(contactdata));
+		Action_contact.sendresponse(contactdata);
 		/*
-		 * * alert(request.result[0].photo[0].size);
+		 * * dump(request.result[0].photo[0].size);
 		 * */
 	},
 	
@@ -86,7 +91,7 @@ var Action_contact = {
 			data: resultdata
 		};
 		dump(JSON.stringify(contactdata));
-		Connection_internet.ws.send(JSON.stringify(contactdata));
+		Action_contact.sendresponse(contactdata);
 	},
 	
 	format2mozContact: function (data){
@@ -238,7 +243,7 @@ var Action_contact = {
 				data: contacts
 			};
 			dump(JSON.stringify(contactdata));
-			Connection_internet.ws.send(JSON.stringify(contactdata));
+			Action_contact.sendresponse(contactdata);
 		});
 	},
 	
@@ -295,7 +300,7 @@ var Action_contact = {
 				data: contacts
 			};
 			dump(JSON.stringify(contactdata));
-			Connection_internet.ws.send(JSON.stringify(contactdata));
+			Action_contact.sendresponse(contactdata);
 		});
 	},
 	
@@ -353,7 +358,7 @@ var Action_contact = {
 				data: contacts
 			};
 			dump(JSON.stringify(contactdata));
-			Connection_internet.ws.send(JSON.stringify(contactdata));
+			Action_contact.sendresponse(contactdata);
 		});
 	},
 		
@@ -414,8 +419,14 @@ var Action_contact = {
 				data: contacts
 			};
 			dump(JSON.stringify(contactdata));
-			Connection_internet.ws.send(JSON.stringify(contactdata));
+			Action_contact.sendresponse(contactdata);
 		});
+	},
+	
+	sendresponse: function (data){
+		if(this.sendfunc){
+			this.sendfunc.send(JSON.stringify(data));
+		}
 	}
 	
 };

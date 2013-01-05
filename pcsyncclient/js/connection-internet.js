@@ -23,7 +23,7 @@ var Connection_internet = {
 				command: 'register',
 				data: registerdata
 				};
-			alert(registerdata);
+			dump(registerdata);
 			Connection_internet.ws.send(JSON.stringify(register));
 			
 		};
@@ -48,7 +48,7 @@ var Connection_internet = {
 			message = JSON.parse(data);
 		} 
 		catch (e) {
-			alert("Parse error, received msg from mgmt: " + data);
+			dump("Parse error, received msg from mgmt: " + data);
 			return;
 		}
 		dump(JSON.stringify(message));
@@ -60,7 +60,7 @@ var Connection_internet = {
 				this.responsemessage(message);
 				break;
 			default:
-				alert("handleMessage Received msg from mgmt: " + data);
+				dump("handleMessage Received msg from mgmt: " + data);
 				break;
 		}
 	},
@@ -68,10 +68,11 @@ var Connection_internet = {
 	requestmessage: function (data){
 		switch (data.target) {
 			case "contact":
+				Action_contact.init(this.ws);
 				Action_contact.request(data);
 				break;
 			default:
-				alert("requestmessage Received msg from mgmt: " + data);
+				dump("requestmessage Received msg from mgmt: " + data);
 				break;
 		}
 	},
@@ -82,7 +83,7 @@ var Connection_internet = {
 				this.registerresponse(data);
 				break;
 			default:
-				alert("responsemessage Received msg from mgmt: " + data);
+				dump("responsemessage Received msg from mgmt: " + data);
 				break;
 		}
 	},

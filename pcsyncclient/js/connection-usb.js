@@ -2,7 +2,7 @@
 var Connection_usb = {
 	PORT: 10010,
 	BACKLOG: -1,
-	options: { binaryType: 'arraybuffer' },
+	options: { binaryType: 'string' },
 	server: null,
 	retcallback: null,
 	acceptsock: null,
@@ -10,7 +10,7 @@ var Connection_usb = {
 	createSocketserver: function (callback){
 		this.retcallback = callback;
 		this.closeSocketserver();
-		this.server = navigator.mozTCPSocket.listen(this.PORT, this.options, this.BACKLOG);
+		this.server = window.navigator.mozTCPSocket.listen(this.PORT, this.options, this.BACKLOG);
 		if(this.server){
 			this.server.onaccept = function(socket) {
 				if (Connection_usb.acceptsock) {
@@ -40,14 +40,15 @@ var Connection_usb = {
 	
 	handleMessage: function (data){
 		var message = null;
+		dump(data);
+		dump(JSON.stringify(data));
 		try {
 			message = JSON.parse(data);
 		} 
 		catch (e) {
-			alert("Parse error, received msg from mgmt: " + data);
+			dump("Parse error, received msg from mgmt: " + data);
 			return;
 		}
-		dump(JSON.stringify(message));
 		switch (message.action) {
 			case "request":
 				this.requestmessage(message);
@@ -56,7 +57,7 @@ var Connection_usb = {
 				this.responsemessage(message);
 				break;
 			default:
-				alert("handleMessage Received msg from mgmt: " + data);
+				dump("handleMessage Received msg from mgmt: " + data);
 				break;
 		}
 	},
@@ -64,10 +65,11 @@ var Connection_usb = {
 	requestmessage: function (data){
 		switch (data.target) {
 			case "contact":
+				Action_contact.init(this.acceptsock);
 				Action_contact.request(data);
 				break;
 			default:
-				alert("requestmessage Received msg from mgmt: " + data);
+				dump("requestmessage Received msg from mgmt: " + data);
 				break;
 		}
 	},
@@ -75,7 +77,7 @@ var Connection_usb = {
 	responsemessage: function (data){
 		switch (data.command) {
 			default:
-				alert("responsemessage Received msg from mgmt: " + data);
+				dump("responsemessage Received msg from mgmt: " + data);
 				break;
 		}
 	}
