@@ -17,8 +17,9 @@ var Connection_usb = {
 					Connection_usb.acceptsock.close();
 				}
 				Connection_usb.acceptsock = socket;
+				Client_message.init(Connection_usb.retcallback, Connection_usb.acceptsock);
 				Connection_usb.acceptsock.ondata = function(event) {
-					Connection_usb.handleMessage(event.data);
+					Client_message.handleMessage(event.data);
 				};
 				Connection_usb.acceptsock.onclose = function(event) {
 					Connection_usb.closeSocketserver();
@@ -35,50 +36,6 @@ var Connection_usb = {
 		if (this.server) {
 			this.server.close();
 			this.server = null;
-		}
-	},
-	
-	handleMessage: function (data){
-		var message = null;
-		dump(data);
-		dump(JSON.stringify(data));
-		try {
-			message = JSON.parse(data);
-		} 
-		catch (e) {
-			dump("Parse error, received msg from mgmt: " + data);
-			return;
-		}
-		switch (message.action) {
-			case "request":
-				this.requestmessage(message);
-				break;
-			case "response":
-				this.responsemessage(message);
-				break;
-			default:
-				dump("handleMessage Received msg from mgmt: " + data);
-				break;
-		}
-	},
-	
-	requestmessage: function (data){
-		switch (data.target) {
-			case "contact":
-				Action_contact.init(this.acceptsock);
-				Action_contact.request(data);
-				break;
-			default:
-				dump("requestmessage Received msg from mgmt: " + data);
-				break;
-		}
-	},
-	
-	responsemessage: function (data){
-		switch (data.command) {
-			default:
-				dump("responsemessage Received msg from mgmt: " + data);
-				break;
 		}
 	}
 };
