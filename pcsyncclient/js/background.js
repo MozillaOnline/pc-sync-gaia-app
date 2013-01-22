@@ -30,6 +30,7 @@ var Connection_usb = {
 	BACKLOG: -1,
 	options: { binaryType: 'string' },
 	server: null,
+	acceptsock: null,
 	
 	createSocketserver: function (){
 		dump("pcsync server in create");
@@ -37,11 +38,12 @@ var Connection_usb = {
 		if(this.server){
 			this.server.onaccept = function(socket) {
 				dump("pcsync connected");
-				Client_message.init(socket);
-				socket.ondata = function(event) {
+				Connection_usb.acceptsock = socket;
+				Client_message.init(Connection_usb.acceptsock);
+				Connection_usb.acceptsock.ondata = function(event) {
 					Client_message.handleMessage(event.data);
 				};
-				socket.onclose = function(event) {
+				Connection_usb.acceptsock.onclose = function(event) {
 					//Connection_usb.createSocketserver(Connection_usb.retcallback);
 					dump("pcsync disconnected");
 				};
