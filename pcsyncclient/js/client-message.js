@@ -1,10 +1,8 @@
 
 var Client_message = {
-	retcallback: null,
 	acceptsock: null,
 	
-	init: function (resultcallback, sockethandle){
-		retcallback = resultcallback;
+	init: function (sockethandle){
 		acceptsock = sockethandle;
 	},
 	
@@ -48,22 +46,11 @@ var Client_message = {
 	},
 	
 	responsemessage: function (data){
-		switch (data.command) {
-			case "register":
-				this.registerresponse(data);
-				break;
+		switch (data.target) {
 			default:
 				dump("responsemessage Received msg from mgmt: " + data);
 				break;
 		}
-	},
-
-	registerresponse: function (data){
-		if(data.status == 200)
-			this.retcallback(0);
-		else
-			this.retcallback('not-authorized');
 	}
-	
 };
 

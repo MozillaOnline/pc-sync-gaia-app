@@ -69,7 +69,7 @@ var Action_sms = {
 		if(this.sendfunc){
 			this.sendfunc.send(JSON.stringify(data));
 		}
-	}
+	},
 	
 	sendsms: function (requestid,requestcommand, requestdata){
 		var request = window.navigator.mozSms.send(requestdata.id, requestdata.message);

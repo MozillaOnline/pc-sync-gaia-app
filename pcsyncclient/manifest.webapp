@@ -2,15 +2,11 @@
   "name": "PCSyncClient",
   "description": "Connect to PC",
   "type": "certified",
-  "launch_path": "/index.html",
   "developer": {
     "name": "The BeiJing Team",
     "url": "https://github.com/mozilla-b2g/gaia"
   },
-  "messages": [
-     { "alarm": "/index.html" }
-  ],
-"permissions": {
+  "permissions": {
     "alarms":{},
     "contacts":{ "access": "readwrite" },
     "desktop-notification":{},
@@ -32,7 +28,8 @@
     "time":{},
     "desktop-notification":{},
     "power":{},
-    "telephony":{}
+    "telephony":{},
+    "backgroundservice":{}
   },
   "locales": {
     "en-US": {
@@ -45,24 +42,6 @@
     }
   },
   "default_locale": "en-US",
-  "icons": {
-    "120": "/style/icons/PCSyncClient.png",
-    "60": "/style/icons/60/PCSyncClient.png"
-  },
-  "activities": {
-    "new": {
-      "filters": {
-        "type": "mail"
-      },
-      "disposition": "window"
-    },
-    "share": {
-      "filters": {
-        "type": "image/*"
-       },          
-      "disposition": "window",
-      "returnValue": true
-    }
-  },
+  "background_page": "/background.html#0",
   "orientation": "portrait-primary"
 }
