@@ -41,6 +41,10 @@ var Client_message = {
 				Action_sms.init(this.acceptsock);
 				Action_sms.request(data);
 				break;
+			case "device":
+				Action_device.init(this.acceptsock);
+				Action_device.request(data);
+				break;
 			default:
 				dump('pcsync client-message.js line43 :' + data);
 				break;
