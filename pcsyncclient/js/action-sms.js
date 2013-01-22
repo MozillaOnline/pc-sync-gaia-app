@@ -7,7 +7,7 @@ var Action_sms = {
 	},
 	
 	request: function (data){
-		dump('xds-sms' + JSON.stringify(data));
+		dump('pcsync action-sms.js line10 :' + JSON.stringify(data));
 		switch (data.command) {
 			case "sendsms":{
 				this.sendsms(data.id, data.command,data.data);
@@ -30,7 +30,7 @@ var Action_sms = {
 				break;
 			}
 			default:
-				dump("smsrequest Received msg from mgmt: " + data);
+				dump('pcsync action-sms.js line33 :' + data);
 				break;
 		}
 	},
@@ -38,7 +38,7 @@ var Action_sms = {
 	response: function (data){
 		switch (data.command) {
 			default:
-				dump("contactrequest Received msg from mgmt: " + data);
+				dump('pcsync action-sms.js line41 :' + data);
 				break;
 		}
 	},

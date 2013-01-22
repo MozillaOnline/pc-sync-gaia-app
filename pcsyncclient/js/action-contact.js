@@ -4,11 +4,12 @@ var Action_contact = {
 	sendfunc: null,
 	
 	init:function (data){
+		dump('pcsync action-contact.js line7 :' + data);
 		this.sendfunc = data;
 	},
 	
 	request: function (data){
-		dump('xds4' + JSON.stringify(data));
+		dump('pcsync action-contact.js line11 :' + JSON.stringify(data));
 		switch (data.command) {
 			//all contacts
 			case "getAllContacts":{
@@ -54,7 +55,7 @@ var Action_contact = {
 				break;
 			}
 			default:
-				dump("contactrequest Received msg from mgmt: " + data);
+				dump('pcsync action-contact.js line57 :' + data);
 				break;
 		}
 	},
@@ -62,7 +63,7 @@ var Action_contact = {
 	response: function (data){
 		switch (data.command) {
 			default:
-				dump("contactrequest Received msg from mgmt: " + data);
+				dump('pcsync action-contact.js line65 :' + data);
 				break;
 		}
 	},
@@ -75,7 +76,7 @@ var Action_contact = {
 			status: 200,
 			data: resultdata
 		};
-		dump(JSON.stringify(contactdata));
+		dump('pcsync action-contact.js line78 :' + JSON.stringify(contactdata));
 		Action_contact.sendresponse(contactdata);
 		/*
 		 * * dump(request.result[0].photo[0].size);
@@ -90,7 +91,7 @@ var Action_contact = {
 			status: 201,
 			data: resultdata
 		};
-		dump(JSON.stringify(contactdata));
+		dump('pcsync action-contact.js line93 :' + JSON.stringify(contactdata));
 		Action_contact.sendresponse(contactdata);
 	},
 	
@@ -242,7 +243,7 @@ var Action_contact = {
 				status: 200,
 				data: contacts
 			};
-			dump(JSON.stringify(contactdata));
+			dump('pcsync action-contact.js line245 :' + JSON.stringify(contactdata));
 			Action_contact.sendresponse(contactdata);
 		});
 	},
@@ -299,7 +300,7 @@ var Action_contact = {
 				status: 200,
 				data: contacts
 			};
-			dump(JSON.stringify(contactdata));
+			dump('pcsync action-contact.js line302 :' + JSON.stringify(contactdata));
 			Action_contact.sendresponse(contactdata);
 		});
 	},
@@ -357,7 +358,7 @@ var Action_contact = {
 				status: 200,
 				data: contacts
 			};
-			dump(JSON.stringify(contactdata));
+			dump('pcsync action-contact.js line360 :' + JSON.stringify(contactdata));
 			Action_contact.sendresponse(contactdata);
 		});
 	},
@@ -418,12 +419,13 @@ var Action_contact = {
 				status: 200,
 				data: contacts
 			};
-			dump(JSON.stringify(contactdata));
+			dump('pcsync action-contact.js line421 :' + JSON.stringify(contactdata));
 			Action_contact.sendresponse(contactdata);
 		});
 	},
 	
 	sendresponse: function (data){
+		dump('pcsync action-contact.js line427 :' + this.sendfunc);
 		if(this.sendfunc){
 			this.sendfunc.send(JSON.stringify(data));
 		}

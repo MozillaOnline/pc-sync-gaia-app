@@ -1,4 +1,3 @@
-dump("pcsync background");
 /*
 var usbm = new MozUSBManager();
 
@@ -33,11 +32,11 @@ var Connection_usb = {
 	acceptsock: null,
 	
 	createSocketserver: function (){
-		dump("pcsync server in create");
+		dump('pcsync background.js line36');
 		this.server = window.navigator.mozTCPSocket.listen(this.PORT, this.options, this.BACKLOG);
 		if(this.server){
 			this.server.onaccept = function(socket) {
-				dump("pcsync connected");
+				dump('pcsync background.js line40 :' + socket);
 				Connection_usb.acceptsock = socket;
 				Client_message.init(Connection_usb.acceptsock);
 				Connection_usb.acceptsock.ondata = function(event) {
@@ -45,12 +44,12 @@ var Connection_usb = {
 				};
 				Connection_usb.acceptsock.onclose = function(event) {
 					//Connection_usb.createSocketserver(Connection_usb.retcallback);
-					dump("pcsync disconnected");
+					dump('pcsync background.js line48');
 				};
 			};
 		}
 		else{
-			dump("pcsync create listen error");
+			dump('pcsync background.js line53');
 		}
 		
 	}

@@ -3,17 +3,18 @@ var Client_message = {
 	acceptsock: null,
 	
 	init: function (sockethandle){
-		acceptsock = sockethandle;
+		dump('pcsync client-message.js line6 :' + sockethandle);
+		this.acceptsock = sockethandle;
 	},
 	
 	handleMessage: function (data){
 		var message = null;
-		dump(JSON.stringify(data));
+		dump('pcsync client-message.js line11 :' + JSON.stringify(data));
 		try {
 			message = JSON.parse(data);
 		} 
 		catch (e) {
-			dump("Parse error, received msg from mgmt: " + data);
+			dump('pcsync client-message.js line16 :' + data);
 			return;
 		}
 		switch (message.action) {
@@ -24,7 +25,7 @@ var Client_message = {
 				this.responsemessage(message);
 				break;
 			default:
-				dump("handleMessage Received msg from mgmt: " + data);
+				dump('pcsync client-message.js line27 :' + data);
 				break;
 		}
 	},
@@ -32,6 +33,7 @@ var Client_message = {
 	requestmessage: function (data){
 		switch (data.target) {
 			case "contact":
+				dump('pcsync client-message.js line35 :' + this.acceptsock);
 				Action_contact.init(this.acceptsock);
 				Action_contact.request(data);
 				break;
@@ -40,7 +42,7 @@ var Client_message = {
 				Action_sms.request(data);
 				break;
 			default:
-				dump("requestmessage Received msg from mgmt: " + data);
+				dump('pcsync client-message.js line43 :' + data);
 				break;
 		}
 	},
@@ -48,7 +50,7 @@ var Client_message = {
 	responsemessage: function (data){
 		switch (data.target) {
 			default:
-				dump("responsemessage Received msg from mgmt: " + data);
+				dump('pcsync client-message.js line51 :' + data);
 				break;
 		}
 	}
