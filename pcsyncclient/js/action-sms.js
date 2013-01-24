@@ -1,9 +1,30 @@
 
 var Action_sms = {
 	sendfunc: null,
+	receiveid: 0,
 	
 	init:function (data){
 		this.sendfunc = data;
+		window.navigator.mozSms.onreceived = function onreceived(event) {
+			var incomingSms = event.message;
+			var SmsMessage = {
+				id: incomingSms.id,
+				delivery: incomingSms.delivery,
+				sender: incomingSms.sender,
+				receiver: incomingSms.receiver,
+				body: incomingSms.body,
+				timestamp: incomingSms.timestamp,
+				read: incomingSms.read
+			};
+			var smsdata = {
+				action: 'request',
+				id: reciveid++,
+				command: 'recievesms',
+				status: 200,
+				data: SmsMessage
+			};
+			Action_sms.sendresponse(smsdata);
+		};
 	},
 	
 	request: function (data){
@@ -70,14 +91,31 @@ var Action_sms = {
 			this.sendfunc.send(JSON.stringify(data));
 		}
 	},
-	
+
 	sendsms: function (requestid,requestcommand, requestdata){
+		dump('pcsync action-sms.js line75 :' + requestdata.id + ':' + requestdata.message);
+		/*window.navigator.mozSms.onsent = function(event) {
+			dump('pcsync action-sms.js line88 :' + event.message.id + ':' + event.message.body);
+		};*/
 		var request = window.navigator.mozSms.send(requestdata.id, requestdata.message);
-		request.onsuccess = function sendCallback() {
-			Action_sms.success(requestid,requestcommand,request.result);
+		request.onsuccess = function sendCallback(event) {
+			if(event.target.result){
+				var SmsMessage = {
+					id: event.target.result.id,
+					delivery: event.target.result.delivery,
+					sender: event.target.result.sender,
+					receiver: event.target.result.receiver,
+					body: event.target.result.body,
+					timestamp: event.target.result.timestamp,
+					read: event.target.result.read
+				};
+				Action_sms.success(requestid,requestcommand,event.target.result);
+			} else {
+				Action_sms.error(requestid,requestcommand, event.target.error);
+			}
 		};
-		request.onerror = function sendCallback() {
-			Action_sms.error(requestid,requestcommand, request.result);
+		request.onerror = function sendCallback(event) {
+			Action_sms.error(requestid,requestcommand, event.target.error.name);
 		};
 	},
 	
@@ -89,7 +127,6 @@ var Action_sms = {
 			} else {
 				Action_sms.error(requestid,requestcommand, event.target.result);
 			}
-			
 		};
 		request.onerror = function deleteCallback(event) {
 			Action_sms.error(requestid,requestcommand, event.target.error.name);
@@ -98,34 +135,56 @@ var Action_sms = {
 	
 	getMessage: function (requestid,requestcommand, requestdata){
 		var request = window.navigator.mozSms.getMessage(requestdata);
-		request.onsuccess = function getMessageCallback() {
-			Action_sms.success(requestid,requestcommand,request.result);
+		request.onsuccess = function getMessageCallback(event) {
+			var foundSms = event.target.result;
+			var SmsMessage = {
+					id: foundSms.id,
+					delivery: foundSms.delivery,
+					sender: foundSms.sender,
+					receiver: foundSms.receiver,
+					body: foundSms.body,
+					timestamp: foundSms.timestamp,
+					read: foundSms.read
+			};
+			Action_sms.success(requestid,requestcommand,SmsMessage);
 		};
-		request.onerror = function getMessageCallback() {
-			Action_sms.error(requestid,requestcommand, request.result);
+		request.onerror = function getMessageCallback(event) {
+			Action_sms.error(requestid,requestcommand, event.target.error.name);
 		};
 	},
 	
 	getMessages: function (requestid,requestcommand, requestdata){
 		var filter = new MozSmsFilter();
+		var messages = [];
 		var request = window.navigator.mozSms.getMessages(filter, false);
 		request.onsuccess = function(event) {
-			var cursor = event.target.result;
+			var cursor = request.result;
 			if (cursor.message) {
-				// Another message found
-				Action_sms.success(requestid,requestcommand,cursor.message);
+				var SmsMessage = {
+					id: cursor.message.id,
+					delivery: cursor.message.delivery,
+					sender: cursor.message.sender,
+					receiver: cursor.message.receiver,
+					body: cursor.message.body,
+					timestamp: cursor.message.timestamp,
+					read: cursor.message.read
+				};
+				dump('pcsync action-sms.js line91:' + JSON.stringify(SmsMessage));
+				messages.push(SmsMessage);
+				cursor.continue();
 			} else {
-				// No messages found as expected
+				Action_sms.success(requestid,requestcommand,messages);
 			}
 		};
 
 		request.onerror = function(event) {
+			dump('pcsync action-sms.js line111:' + request.errorCode);
 			Action_sms.error(requestid,requestcommand, event.target.error.name);
 		};
 	},
 	
 	markMessageRead: function (requestid,requestcommand, requestdata){
-		var request = window.navigator.mozSms.markMessageRead(requestdata,false);
+		var request = window.navigator.mozSms.markMessageRead(requestdata.id,requestdata.readbool);
 		request.onsuccess = function getMessageCallback(event) {
 			Action_sms.success(requestid,requestcommand,event.target.result);
 		};
@@ -133,6 +192,5 @@ var Action_sms = {
 			Action_sms.error(requestid,requestcommand, event.target.error.name);
 		};
 	}
-	
 };
 

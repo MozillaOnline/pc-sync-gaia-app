@@ -7,19 +7,17 @@
     "url": "https://github.com/mozilla-b2g/gaia"
   },
   "permissions": {
-    "alarms":{},
-    "contacts":{ "access": "readwrite" },
-    "desktop-notification":{},
-    "device-storage:music":{ "access": "readwrite" },
+	"device-storage:music":{ "access": "readwrite" },
     "device-storage:pictures":{ "access": "readwrite" },
     "device-storage:videos":{ "access": "readwrite" },
-    "systemXHR":{},
+    "device-storage:apps":{ "access": "readwrite" },
+    "contacts":{ "access": "readwrite" },
+    "sms":{},
     "settings":{ "access": "readwrite" },
     "tcp-socket":{},
     "mobileconnection":{},
     "mozBluetooth":{},
     "bluetooth":{},
-    "device-storage:apps":{ "access": "readwrite" },
     "webapps-manage":{},
     "permissions":{},
     "wifi-manage":{},
@@ -29,6 +27,8 @@
     "desktop-notification":{},
     "power":{},
     "telephony":{},
+    "alarms":{},
+    "systemXHR":{},
     "backgroundservice":{}
   },
   "locales": {
