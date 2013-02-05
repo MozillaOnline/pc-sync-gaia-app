@@ -425,7 +425,6 @@ var Action_contact = {
 	},
 	
 	sendresponse: function (data){
-		dump('pcsync action-contact.js line427 :' + this.sendfunc);
 		if(this.sendfunc){
 			this.sendfunc.send(JSON.stringify(data));
 		}

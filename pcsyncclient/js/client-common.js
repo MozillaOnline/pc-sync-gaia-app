@@ -5,6 +5,10 @@ var mozL10n = navigator.mozL10n;
 
 var supNodes;
 
+function debug(msg) {
+  console.log('-*- pc sync client -*-' + msg);
+}
+
 /**
  * Execute the async functions
  * The functions must call the given callback functions when executed.
@@ -469,3 +473,4 @@ var Cards = {
     }
   }
 };
+
