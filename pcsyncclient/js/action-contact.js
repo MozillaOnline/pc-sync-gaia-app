@@ -54,9 +54,9 @@ var Action_contact = {
         this.updateContacts(data.id, data.command,data.data);
         break;
       }
-    case "getContactProfilePic":{
-      this.getContactProfilePic(data.id, data.command, data.data);
-      break;
+      case "getProfilePic":{
+      this.getProfilePic(data.id, data.command, data.data);
+        break;
     }
       default:
         dump('pcsync action-contact.js line57 :' + data);
@@ -108,21 +108,26 @@ var Action_contact = {
     this.formatmozContact.init(data);
   },
   //get contact profile picture
-  getContactProfilePic: function(requestid, requestcommand, requestdata){
+  getProfilePic: function(requestid, requestcommand, requestdata) {
     var options = {
       filterBy: ['id'],
       filterOp: 'equals',
       filterValue: requestdata
     };
    var request = window.navigator.mozContacts.find(options);
-   request.onsuccess = function(){
-     var fr = new FileReader();
-     fr.readAsDataURL(request.result[0].photo[0]);
-     fr.onload = function(e){
-       Action_contact.success(requestid, requestcommand, e.target.result);
+   request.onsuccess = function() {
+     if((request.result.length>0)&&(request.result[0].photo.length>0)) {
+       var fr = new FileReader();
+       fr.readAsDataURL(request.result[0].photo[0]);
+       fr.onload = function(e){
+         Action_contact.success(requestid, requestcommand, e.target.result);
+       }
+     }else {
+         Action_contact.success(requestid, requestcommand, '');
      }
    };
-   request.onerror = function(){
+   request.onerror = function() {
+     Action_contact.error(requestid, requestcommand, '');
    };
   },
   //all contacts
