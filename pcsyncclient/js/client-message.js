@@ -55,7 +55,6 @@ Client_message.prototype = {
   },
 
   send: function(data) {
-    debug('Send back data: ' + data);
     this.acceptsock.send(TextEncoder('utf-8').encode(data));
   },
 
@@ -75,11 +74,11 @@ Client_message.prototype = {
         Action_device.request(data);
         break;
     case "pictures":
-        Action_pictures.init(this.acceptsock);
+        Action_pictures.init(this);
         Action_pictures.request(data);
         break;
     case "videos":
-        Action_videos.init(this.acceptsock);
+        Action_videos.init(this);
         Action_videos.request(data);
         break;
       default:

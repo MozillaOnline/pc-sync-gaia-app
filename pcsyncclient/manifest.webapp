@@ -7,7 +7,7 @@
     "url": "https://github.com/mozilla-b2g/gaia"
   },
   "permissions": {
-	"device-storage:music":{ "access": "readwrite" },
+    "device-storage:music":{ "access": "readwrite" },
     "device-storage:pictures":{ "access": "readwrite" },
     "device-storage:videos":{ "access": "readwrite" },
     "device-storage:apps":{ "access": "readwrite" },

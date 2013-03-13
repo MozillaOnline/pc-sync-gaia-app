@@ -1,28 +1,3 @@
-/*
-var usbm = new MozUSBManager();
-
-var descriptor = {
-  deviceClass: n,
-  deviceSubClass: n,
-  deviceProtocol: n,
-  deviceVendor: n,
-  deviceProduct: n
-};
-
-usbm.addEventListener("attachdevice", function () {
-// ...
-debug("pcsync USB connected");
-
-});
-
-usbm.addEventListener("detachdevice", function () {
-// ...
-debug("pcsync USB disconnected");
-
-});
-
-usbm.claimDevice(descriptor);
-*/
 
 var Connection_usb = {
   PORT: 10010,
@@ -42,7 +17,12 @@ var Connection_usb = {
         var messageHandler = new Client_message(socket);
 
         socket.ondata = function(event) {
-          debug("Receive data: " + event.data);
+         // while(event.data.length>0){
+         //   debug("receive data length:" + event.data.length);
+         // }
+          //debug("=== ondata complete");
+          //socket.send('=====send complete=====');
+          //debug("Receive data: " + event.data);
           this.handleMessage(event.data);
           debug("Handle data!!!");
         }.bind(messageHandler);
