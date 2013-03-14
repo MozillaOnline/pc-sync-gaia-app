@@ -1,1 +1,1 @@
-{"target":"contact","command":"getAllContacts","data":null,"id":1,"action":"request"}
+{"id":"1234","command":"ContactGetAll","result":null,"data":null,"exdatalen":"0"}
