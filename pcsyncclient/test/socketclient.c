@@ -18,12 +18,7 @@
 
 int main(int argc, char **argv)
 {
-    if (argc != 2)
-    {
-        printf("Usage: ./%s ServerIPAddress\n",argv[0]);
-        exit(1);
-    }
-
+    system("adb forward tcp:10010 tcp:10010");
     //设置一个socket地址结构client_addr,代表客户机internet地址, 端口
     struct sockaddr_in client_addr;
     bzero(&client_addr,sizeof(client_addr)); //把一段内存区的内容全部设置为0
@@ -48,7 +43,7 @@ int main(int argc, char **argv)
     struct sockaddr_in server_addr;
     bzero(&server_addr,sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    if(inet_aton(argv[1],&server_addr.sin_addr) == 0) //服务器的IP地址来自程序的参数
+    if(inet_aton("127.0.0.1",&server_addr.sin_addr) == 0) //服务器的IP地址来自程序的参数
     {
         printf("Server IP Address Error!\n");
         exit(1);
@@ -94,6 +89,7 @@ int main(int argc, char **argv)
 		close(fp);
 		printf("Send Data is:\t%s \n", buffer);
 		//向服务器发送buffer中的数据
+		
 		send(client_socket,buffer,read_length,0);
 
 	//    int fp = open(file_name, O_WRONLY|O_CREAT);
@@ -108,22 +104,10 @@ int main(int argc, char **argv)
 		//从服务器接收数据到buffer中
 		bzero(buffer,BUFFER_SIZE);
 		length = 0;
-		if( length = recv(client_socket,buffer,BUFFER_SIZE,0))
+		while(0 < ( length = recv(client_socket,buffer,BUFFER_SIZE,0)))
 		{
 			printf("Recv Data is:\t%s \n", buffer);
-			if(length < 0)
-			{
-				printf("Recieve Data From Server %s Failed!\n", argv[1]);
-				break;
-			}
-	//        int write_length = write(fp, buffer,length);
 			int write_length = fwrite(buffer,sizeof(char),length,fp);
-			printf("Write Data Length is:\t%d \n", write_length);
-			if (write_length<length)
-			{
-				printf("File:\t%s Write Failed\n", file_name);
-				break;
-			}
 			bzero(buffer,BUFFER_SIZE);    
 		}
 		printf("Recieve File:\t %s From Server[%s] Finished\n",file_name, argv[1]);
