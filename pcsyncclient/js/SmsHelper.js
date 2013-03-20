@@ -9,9 +9,9 @@
 function smsHelper(jsonCmd, sendCallback, sendList, recvList) {
   try {
     switch (jsonCmd.command) {
-    case "deleteMessage":
+    case "deleteMessageById":
       {
-        deleteMessage(jsonCmd, sendCallback);
+        deleteMessageById(jsonCmd, sendCallback);
         break;
       }
     case "getAllMessages":
@@ -19,9 +19,9 @@ function smsHelper(jsonCmd, sendCallback, sendList, recvList) {
         getAllMessages(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "getMessage":
+    case "getMessageById":
       {
-        getMessage(jsonCmd, sendCallback);
+        getMessageById(jsonCmd, sendCallback);
         break;
       }
     case "listenMessage":
@@ -29,14 +29,19 @@ function smsHelper(jsonCmd, sendCallback, sendList, recvList) {
         listenMessage(jsonCmd, sendCallback);
         break;
       }
-    case "markReadMessage":
+    case "markReadMessageById":
       {
-        markReadMessage(jsonCmd, sendCallback);
+        markReadMessageById(jsonCmd, sendCallback);
         break;
       }
     case "sendMessage":
       {
         sendMessage(jsonCmd, sendCallback);
+        break;
+      }
+    case "sendMessages":
+      {
+        sendMessages(jsonCmd, sendCallback);
         break;
       }
     default:
@@ -58,10 +63,9 @@ function smsHelper(jsonCmd, sendCallback, sendList, recvList) {
   }
 }
 
-function deleteMessage(jsonCmd, sendCallback) {
+function deleteMessageById(jsonCmd, sendCallback) {
   try {
-    var message = JSON.parse(jsonCmd.data);
-    var request = window.navigator.mozSms.delete(message);
+    var request = window.navigator.mozSms.delete(jsonCmd.data);
     request.onsuccess = function(event) {
       if (event.target.result) {
         jsonCmd.result = RS_OK;
@@ -82,40 +86,7 @@ function deleteMessage(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('SmsHelper.js deleteMessage failed: ' + e);
-    jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
-  }
-}
-
-function getMessage(jsonCmd, sendCallback) {
-  try {
-    var request = window.navigator.mozSms.getMessage(jsonCmd.data);
-    request.onsuccess = function(event) {
-      var smsMessage = {
-        'id': event.target.result.id,
-        'delivery': event.target.result.delivery,
-        'sender': event.target.result.sender,
-        'receiver': event.target.result.receiver,
-        'body': event.target.result.body,
-        'timestamp': event.target.result.timestamp,
-        'read': event.target.result.read
-      };
-      jsonCmd.result = RS_OK;
-      jsonCmd.data = JSON.stringify(smsMessage);
-      jsonCmd.exdatalength = 0;
-      sendCallback(jsonCmd);
-    };
-    request.onerror = function(event) {
-      jsonCmd.result = RS_ERROR.SMS_GETMESSAGE;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
-    };
-  } catch (e) {
-    debug('SmsHelper.js getMessage failed: ' + e);
+    debug('SmsHelper.js deleteMessageById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -165,6 +136,39 @@ function getAllMessages(jsonCmd, sendCallback, sendList) {
   }
 }
 
+function getMessageById(jsonCmd, sendCallback) {
+  try {
+    var request = window.navigator.mozSms.getMessage(jsonCmd.data);
+    request.onsuccess = function(event) {
+      var smsMessage = {
+        'id': event.target.result.id,
+        'delivery': event.target.result.delivery,
+        'sender': event.target.result.sender,
+        'receiver': event.target.result.receiver,
+        'body': event.target.result.body,
+        'timestamp': event.target.result.timestamp,
+        'read': event.target.result.read
+      };
+      jsonCmd.result = RS_OK;
+      jsonCmd.data = JSON.stringify(smsMessage);
+      jsonCmd.exdatalength = 0;
+      sendCallback(jsonCmd);
+    };
+    request.onerror = function(event) {
+      jsonCmd.result = RS_ERROR.SMS_GETMESSAGE;
+      jsonCmd.exdatalength = 0;
+      jsonCmd.data = '';
+      sendCallback(jsonCmd);
+    };
+  } catch (e) {
+    debug('SmsHelper.js getMessageById failed: ' + e);
+    jsonCmd.result = RS_ERROR.UNKNOWEN;
+    jsonCmd.exdatalength = 0;
+    jsonCmd.data = '';
+    sendCallback(jsonCmd);
+  }
+}
+
 function listenMessage(jsonCmd, sendCallback) {
   try {
     window.navigator.mozSms.onreceived = function(event) {
@@ -191,10 +195,9 @@ function listenMessage(jsonCmd, sendCallback) {
   }
 }
 
-function markReadMessage(jsonCmd, sendCallback) {
+function markReadMessageById(jsonCmd, sendCallback) {
   try {
-    var message = JSON.parse(jsonCmd.data);
-    var request = window.navigator.mozSms.markMessageRead(message.id, message.readbool);
+    var request = window.navigator.mozSms.markMessageRead(jsonCmd.data, true);
     request.onsuccess = function(event) {
       jsonCmd.result = RS_OK;
       jsonCmd.exdatalength = 0;
@@ -208,7 +211,7 @@ function markReadMessage(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('SmsHelper.js markReadMessage failed: ' + e);
+    debug('SmsHelper.js markReadMessageById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -219,7 +222,7 @@ function markReadMessage(jsonCmd, sendCallback) {
 function sendMessage(jsonCmd, sendCallback) {
   try {
     var message = JSON.parse(jsonCmd.data);
-    var request = window.navigator.mozSms.send(message.id, message.message);
+    var request = window.navigator.mozSms.send(message.number, message.message);
     request.onsuccess = function(event) {
       if (event.target.result) {
         var smsMessage = {
@@ -248,6 +251,49 @@ function sendMessage(jsonCmd, sendCallback) {
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     };
+  } catch (e) {
+    debug('SmsHelper.js sendMessage failed: ' + e);
+    jsonCmd.result = RS_ERROR.UNKNOWEN;
+    jsonCmd.exdatalength = 0;
+    jsonCmd.data = '';
+    sendCallback(jsonCmd);
+  }
+}
+
+function sendMessages(jsonCmd, sendCallback) {
+  try {
+    var message = JSON.parse(jsonCmd.data);
+    var request = window.navigator.mozSms.send(message.number, message.message);
+    for(var i=0;i<request.length;i++){
+      request[i].onsuccess = function(event) {
+        if (event.target.result) {
+          var smsMessage = {
+            'id': event.target.result.id,
+            'delivery': event.target.result.delivery,
+            'sender': event.target.result.sender,
+            'receiver': event.target.result.receiver,
+            'body': event.target.result.body,
+            'timestamp': event.target.result.timestamp,
+            'read': event.target.result.read
+          };
+          jsonCmd.result = RS_OK;
+          jsonCmd.data = JSON.stringify(smsMessage);
+          jsonCmd.exdatalength = 0;
+          sendCallback(jsonCmd);
+        } else {
+          jsonCmd.result = RS_ERROR.SMS_SENDMESSAGE;
+          jsonCmd.exdatalength = 0;
+          jsonCmd.data = '';
+          sendCallback(jsonCmd);
+        }
+      };
+      request[i].onerror = function(event) {
+        jsonCmd.result = RS_ERROR.SMS_SENDMESSAGE;
+        jsonCmd.exdatalength = 0;
+        jsonCmd.data = '';
+        sendCallback(jsonCmd);
+      };
+    }
   } catch (e) {
     debug('SmsHelper.js sendMessage failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;

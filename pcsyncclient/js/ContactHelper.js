@@ -24,24 +24,24 @@ function contactHelper(jsonCmd, sendCallback, sendList, recvList) {
         getAllContacts(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "getContact":
+    case "getContactById":
       {
-        getContact(jsonCmd, sendCallback);
+        getContactById(jsonCmd, sendCallback);
         break;
       }
-    case "getContactPic":
+    case "getContactPicById":
       {
-        getContactPic(jsonCmd, sendCallback, sendList);
+        getContactPicById(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "removeContact":
+    case "removeContactById":
       {
-        removeContact(jsonCmd, sendCallback);
+        removeContactById(jsonCmd, sendCallback);
         break;
       }
-    case "updateContact":
+    case "updateContactById":
       {
-        updateContact(jsonCmd, sendCallback, sendList, recvList);
+        updateContactById(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
     default:
@@ -198,7 +198,7 @@ function getAllContacts(jsonCmd, sendCallback, sendList) {
   }
 }
 
-function getContact(jsonCmd, sendCallback) {
+function getContactById(jsonCmd, sendCallback) {
   try {
     var options = {
       filterBy: ['id'],
@@ -233,7 +233,7 @@ function getContact(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('ContactHelper.js getContact failed: ' + e);
+    debug('ContactHelper.js getContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -241,7 +241,7 @@ function getContact(jsonCmd, sendCallback) {
   }
 }
 
-function getContactPic(jsonCmd, sendCallback, sendList) {
+function getContactPicById(jsonCmd, sendCallback, sendList) {
   try {
     var options = {
       filterBy: ['id'],
@@ -286,7 +286,7 @@ function getContactPic(jsonCmd, sendCallback, sendList) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('ContactHelper.js getContactPic failed: ' + e);
+    debug('ContactHelper.js getContactPicById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -294,7 +294,7 @@ function getContactPic(jsonCmd, sendCallback, sendList) {
   }
 }
 
-function removeContact(jsonCmd, sendCallback) {
+function removeContactById(jsonCmd, sendCallback) {
   try {
     var options = {
       filterBy: ['id'],
@@ -325,7 +325,7 @@ function removeContact(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('ContactHelper.js removeContact failed: ' + e);
+    debug('ContactHelper.js removeContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -333,7 +333,7 @@ function removeContact(jsonCmd, sendCallback) {
   }
 }
 
-function updateContact(jsonCmd, sendCallback, sendList, recvList) {
+function updateContactById(jsonCmd, sendCallback, sendList, recvList) {
   doUpdate(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data, jsonCmd.exdatalength);
 }
 
@@ -397,7 +397,7 @@ function doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remain
       };
     }
   } catch (e) {
-    debug('ContactHelper.js updateContact failed: ' + e);
+    debug('ContactHelper.js updateContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
