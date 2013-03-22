@@ -24,6 +24,21 @@ function handleMessage(jsonCmd, sendCallback, sendList, recvList) {
         smsHelper(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
+    case "picture":
+      {
+        picHelper(jsonCmd, sendCallback, sendList, recvList);
+        break;
+      }
+    case "video":
+      {
+        videoHelper(jsonCmd, sendCallback, sendList, recvList);
+        break;
+      }
+    case "music":
+      {
+        musicHelper(jsonCmd, sendCallback, sendList, recvList);
+        break;
+      }
     default:
       {
         debug('HandleMessage.js undefined type :' + jsonCmd.type);

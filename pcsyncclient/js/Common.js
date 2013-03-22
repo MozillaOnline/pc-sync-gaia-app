@@ -66,3 +66,14 @@ Array.prototype.remove = function(dx) {
 Array.prototype.removeAll = function() {
   this.length = 0
 }
+
+function dataURItoBlob(dataURI) {
+  var byteString = atob(dataURI.split(',')[1]);
+  var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
+  var array = [];
+  for(var i=0; i < byteString.length; i++) {
+    array.push(byteString.charCodeAt(i));
+  }
+  return new Blob([new Uint8Array(array)],{type:mimeString});
+}
+
