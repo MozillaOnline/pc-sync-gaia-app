@@ -1,0 +1,1 @@
+{"id":"1234","type":"sms","command":"sendMessage","result":null,"data":"{\"number\":[\"13910823285\",\"13811800051\"],\"message\":\"hello hero\"}","exdatalength":"0"}
