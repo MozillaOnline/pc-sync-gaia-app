@@ -24,9 +24,14 @@ function handleMessage(jsonCmd, sendCallback, sendList, recvList) {
         smsHelper(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
+    case "app":
+      {
+        appManagerHelper(jsonCmd, sendCallback, sendList, recvList);
+        break;
+      }
     case "picture":
       {
-        picHelper(jsonCmd, sendCallback, sendList, recvList);
+        pictureHelper(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
     case "video":

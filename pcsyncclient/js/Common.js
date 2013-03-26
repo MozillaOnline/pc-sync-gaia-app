@@ -28,7 +28,15 @@ var RS_ERROR = {
   CONTACT_NOCONTACTPIC: 16,
   CONTACT_GETCONTACTPIC: 17,
   CONTACT_REMOVECONTACT: 18,
-  CONTACT_SAVECONTACT: 19
+  CONTACT_SAVECONTACT: 19,
+  APPSMANAGER_GETINSTALLEDAPPS: 20,
+  APPSMANAGER_GETALLAPPS: 21,
+  APPSMANAGER_UNSTALLAPP:22,
+  APPSMANAGER_NOTFOUNDAPP:23,
+  DEVICESTORAGE_UNAVAILABLE:24,
+  MUSIC_RENAME:25,
+  PICTURE_RENAME: 26,
+  VIDEO_RENAME:27
 };
 
 function debug(msg) {
@@ -67,7 +75,7 @@ Array.prototype.removeAll = function() {
   this.length = 0
 }
 
-function dataURItoBlob(dataURI) {
+function dataUri2Blob(dataURI) {
   var byteString = atob(dataURI.split(',')[1]);
   var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0]
   var array = [];
@@ -76,4 +84,3 @@ function dataURItoBlob(dataURI) {
   }
   return new Blob([new Uint8Array(array)],{type:mimeString});
 }
-

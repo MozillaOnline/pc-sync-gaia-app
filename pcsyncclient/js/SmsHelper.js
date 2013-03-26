@@ -116,9 +116,23 @@ function getAllMessages(jsonCmd, sendCallback, sendList) {
         continue ();
       } else {
         jsonCmd.result = RS_OK;
-        jsonCmd.data = JSON.stringify(messages);
-        jsonCmd.exdatalength = 0;
-        sendCallback(jsonCmd);
+        var smsData = JSON.stringify(messages);
+        if (smsData.length <= MAX_PACKAGE_SIZE) {
+          jsonCmd.data = smsData;
+          jsonCmd.exdatalength = 0;
+          sendCallback(jsonCmd);
+        } else {
+          jsonCmd.data = smsData.substr(0, MAX_PACKAGE_SIZE);
+          jsonCmd.exdatalength = smsData.length - MAX_PACKAGE_SIZE;
+          for (var i = MAX_PACKAGE_SIZE; i < smsData.length; i += MAX_PACKAGE_SIZE) {
+            if (i + MAX_PACKAGE_SIZE < smsData.length) {
+              sendList.push(smsData.substr(i, MAX_PACKAGE_SIZE));
+            } else {
+              sendList.push(smsData.substr(i));
+            }
+          }
+          sendCallback(jsonCmd);
+        }
       }
     };
     request.onerror = function(event) {

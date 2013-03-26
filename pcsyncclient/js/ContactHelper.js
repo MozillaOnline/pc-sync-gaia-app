@@ -70,7 +70,6 @@ function addContact(jsonCmd, sendCallback, sendList, recvList) {
 function doAdd(jsonCmd, sendCallback, sendList, recvList, contactData, remainder) {
   try {
     if (remainder > 0) {
-      var recvData;
       if (recvList.length > 0) {
         contactData = contactData + recvList[0];
         remainder = remainder - recvList[0].length;
@@ -340,7 +339,6 @@ function updateContactById(jsonCmd, sendCallback, sendList, recvList) {
 function doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remainder) {
   try {
     if (remainder > 0) {
-      var recvData;
       if (recvList.length > 0) {
         contactData = contactData + recvList[0];
         remainder = remainder - recvList[0].length;

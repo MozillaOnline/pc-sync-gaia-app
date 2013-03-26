@@ -1,51 +1,51 @@
 /*------------------------------------------------------------------------------------------------------------
- *File Name: VideoHelper.js
+ *File Name: PictureHelper.js
  *Created By: wdeng@mozilla.com
- *Description: Manage video files
+ *Description: Manage pic files
  *Modified By: dxue@mozilla.com
  *Description: Format code
  *----------------------------------------------------------------------------------------------------------*/
 
-var videoDB = null;
+var photoDB = null;
 var bRename = false;
 var oldName = null;
 
-function videoHelper(jsonCmd, sendCallback, sendList, recvList) {
+function pictureHelper(jsonCmd, sendCallback, sendList, recvList) {
   try {
     switch (jsonCmd.command) {
-    case "addVideo":
+    case "addPic":
       {
-        addVideo(jsonCmd, sendCallback, sendList, recvList);
+        addPic(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
-    case "deleteVideo":
+    case "deletePic":
       {
-        deleteVideo(jsonCmd, sendCallback);
+        deletePic(jsonCmd, sendCallback);
         break;
       }
-    case "getAllVideosInfo":
+    case "getAllPicsInfo":
       {
-        getAllVideosInfo(jsonCmd, sendCallback, sendList);
+        getAllPicsInfo(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "getVideo":
+    case "getPics":
       {
-        getVideo(jsonCmd, sendCallback, sendList);
+        getPics(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "initVideo":
+    case "initPic":
       {
-        initVideo(jsonCmd, sendCallback);
+        initPic(jsonCmd, sendCallback);
         break;
       }
-    case "renameVideo":
+    case "renamePic":
       {
-        renameVideo(jsonCmd, sendCallback);
+        renamePic(jsonCmd, sendCallback);
         break;
       }
     default:
       {
-        debug('VideoHelper.js undefined command :' + jsonCmd.command);
+        debug('PictureHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
         jsonCmd.exdatalength = 0;
         jsonCmd.data = '';
@@ -54,7 +54,7 @@ function videoHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     }
   } catch (e) {
-    debug('VideoHelper.js videoHelper failed: ' + e);
+    debug('PictureHelper.js pictureHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -62,30 +62,30 @@ function videoHelper(jsonCmd, sendCallback, sendList, recvList) {
   }
 }
 
-function addVideo(jsonCmd, sendCallback, sendList, recvList) {
+function addPic(jsonCmd, sendCallback, sendList, recvList) {
   doAdd(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data[1], jsonCmd.exdatalength);
 }
 
-function doAdd(jsonCmd, sendCallback, sendList, recvList, videoData, remainder) {
+function doAdd(jsonCmd, sendCallback, sendList, recvList, picData, remainder) {
   try {
     if (remainder > 0) {
       if (recvList.length > 0) {
-        videoData += recvList[0];
+        picData += recvList[0];
         remainder -= recvList[0].length;
         recvList.remove(0);
-        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, videoData, remainder));
+        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, picData, remainder));
       } else {
-        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, videoData, remainder), 20);
+        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, picData, remainder), 20);
       }
     } else {
-      videoDB.addFile(jsonCmd.data[0], dataUri2Blob(videoData));
+      photoDB.addFile(jsonCmd.data[0], dataUri2Blob(picData));
       jsonCmd.result = RS_OK;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     }
   } catch (e) {
-    debug('VideoHelper.js addVideo failed: ' + e);
+    debug('PictureHelper.js addPic failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -93,15 +93,15 @@ function doAdd(jsonCmd, sendCallback, sendList, recvList, videoData, remainder) 
   }
 }
 
-function deleteVideo(jsonCmd, sendCallback) {
+function deletePic(jsonCmd, sendCallback) {
   try {
-    videoDB.deleteFile(jsonCmd.data);
+    photoDB.deleteFile(jsonCmd.data);
     jsonCmd.result = RS_OK;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
     sendCallback(jsonCmd);
   } catch (e) {
-    debug('VideoHelper.js deleteVideo failed: ' + e);
+    debug('PictureHelper.js deletePic failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -109,44 +109,41 @@ function deleteVideo(jsonCmd, sendCallback) {
   }
 }
 
-function getAllVideosInfo(jsonCmd, sendCallback, sendList) {
+function getAllPicsInfo(jsonCmd, sendCallback, sendList) {
   try {
-    videoDB.getAll(function(records) {
-      var videos = records;
+    photoDB.getAll(function(records) {
+      var photos = records;
       var result = [];
-      for (var i = 0; i < videos.length; i++) {
-        if (!videos[i].metadata.isVideo) {
-          continue;
-        }
+      for (var i = 0; i < photos.length; i++) {
         var fileInfo = {
-          'name': videos[i].name,
-          'type': videos[i].type,
-          'size': videos[i].size,
-          'date': videos[i].date
+          'name': photos[i].name,
+          'type': photos[i].type,
+          'size': photos[i].size,
+          'date': photos[i].date
         };
         result.push(fileInfo);
       }
       jsonCmd.result = RS_OK;
-      var videosData = JSON.stringify(result);
-      if (videosData.length <= MAX_PACKAGE_SIZE) {
-        jsonCmd.data = videosData;
+      var picsData = JSON.stringify(result);
+      if (picsData.length <= MAX_PACKAGE_SIZE) {
+        jsonCmd.data = picsData;
         jsonCmd.exdatalength = 0;
         sendCallback(jsonCmd);
       } else {
-        jsonCmd.data = videosData.substr(0, MAX_PACKAGE_SIZE);
-        jsonCmd.exdatalength = videosData.length - MAX_PACKAGE_SIZE;
-        for (var i = MAX_PACKAGE_SIZE; i < videosData.length; i += MAX_PACKAGE_SIZE) {
-          if (i + MAX_PACKAGE_SIZE < videosData.length) {
-            sendList.push(videosData.substr(i, MAX_PACKAGE_SIZE));
+        jsonCmd.data = picsData.substr(0, MAX_PACKAGE_SIZE);
+        jsonCmd.exdatalength = picsData.length - MAX_PACKAGE_SIZE;
+        for (var i = MAX_PACKAGE_SIZE; i < picsData.length; i += MAX_PACKAGE_SIZE) {
+          if (i + MAX_PACKAGE_SIZE < picsData.length) {
+            sendList.push(picsData.substr(i, MAX_PACKAGE_SIZE));
           } else {
-            sendList.push(videosData.substr(i));
+            sendList.push(picsData.substr(i));
           }
         }
         sendCallback(jsonCmd);
       }
     });
   } catch (e) {
-    debug('VideoHelper.js getAllVideosInfo failed: ' + e);
+    debug('PictureHelper.js getAllPicsInfo failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -154,26 +151,26 @@ function getAllVideosInfo(jsonCmd, sendCallback, sendList) {
   }
 }
 
-function getVideo(jsonCmd, sendCallback, sendList) {
+function getPics(jsonCmd, sendCallback, sendList) {
   try {
-    videoDB.getFile(jsonCmd.data, function(file) {
+    photoDB.getFile(jsonCmd.data, function getPic(file) {
       var fileReader = new FileReader();
       fileReader.readAsDataURL(file);
       fileReader.onload = function fileLoad(e) {
         jsonCmd.result = RS_OK;
-        var videosData = JSON.stringify(e.target.result);
-        if (videosData.length <= MAX_PACKAGE_SIZE) {
-          jsonCmd.data = videosData;
+        var picsData = JSON.stringify(e.target.result);
+        if (picsData.length <= MAX_PACKAGE_SIZE) {
+          jsonCmd.data = picsData;
           jsonCmd.exdatalength = 0;
           sendCallback(jsonCmd);
         } else {
-          jsonCmd.data = videosData.substr(0, MAX_PACKAGE_SIZE);
-          jsonCmd.exdatalength = videosData.length - MAX_PACKAGE_SIZE;
-          for (var i = MAX_PACKAGE_SIZE; i < videosData.length; i += MAX_PACKAGE_SIZE) {
-            if (i + MAX_PACKAGE_SIZE < videosData.length) {
-              sendList.push(videosData.substr(i, MAX_PACKAGE_SIZE));
+          jsonCmd.data = picsData.substr(0, MAX_PACKAGE_SIZE);
+          jsonCmd.exdatalength = picsData.length - MAX_PACKAGE_SIZE;
+          for (var i = MAX_PACKAGE_SIZE; i < picsData.length; i += MAX_PACKAGE_SIZE) {
+            if (i + MAX_PACKAGE_SIZE < picsData.length) {
+              sendList.push(picsData.substr(i, MAX_PACKAGE_SIZE));
             } else {
-              sendList.push(videosData.substr(i));
+              sendList.push(picsData.substr(i));
             }
           }
           sendCallback(jsonCmd);
@@ -181,7 +178,7 @@ function getVideo(jsonCmd, sendCallback, sendList) {
       };
     });
   } catch (e) {
-    debug('VideoHelper.js getPics failed: ' + e);
+    debug('PictureHelper.js getPics failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -189,33 +186,39 @@ function getVideo(jsonCmd, sendCallback, sendList) {
   }
 }
 
-function initVideo() {
+function initPic() {
   try {
-    videoDB = new MediaDB('videos', metaDataParser);
-    videoDB.onunavailable = function(event) {
+    photoDB = new MediaDB('pictures', metadataParsers.imageMetadataParser, {
+      mimeTypes: ['image/jpeg', 'image/png'],
+      version: 2,
+      autoscan: false,
+      batchHoldTime: 350,
+      batchSize: 12
+    });
+    photoDB.onunavailable = function(event) {
       //get all the reasons from event
-      debug('VideoHelper.js videoDB is unavailable');
+      debug('PictureHelper.js photoDB is unavailable');
       jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     };
-    videoDB.onready = function() {
-      videoDB.scan();
-      debug('VideoHelper.js videoDB is ready');
+    photoDB.onready = function() {
+      photoDB.scan();
+      debug('PictureHelper.js photoDB is ready');
     };
-    videoDB.onscanstart = function() {
-      debug('VideoHelper.js videoDB scan start');
+    photoDB.onscanstart = function() {
+      debug('PictureHelper.js photoDB scan start');
     };
-    videoDB.onscanend = function() {
-      debug('VideoHelper.js videoDB scan end');
+    photoDB.onscanend = function() {
+      debug('PictureHelper.js photoDB scan end');
       jsonCmd.result = RS_OK;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('VideoHelper.js videoDB failed: ' + e);
+    debug('PictureHelper.js photoDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -223,7 +226,7 @@ function initVideo() {
   }
 }
 
-function renameVideo(jsonCmd, sendCallback) {
+function renamePic(jsonCmd, sendCallback) {
   try {
     oldName = jsconCmd.data[0];
     var newFile = jsconCmd.data[1];
@@ -233,22 +236,22 @@ function renameVideo(jsonCmd, sendCallback) {
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     } else {
-      videoDB.getFile(oldName, function(file) {
+      photoDB.getFile(oldName, function(file) {
         bRename = true;
-         videoDB.oncreated = function(event) {
+         photoDB.oncreated = function(event) {
           debug('PictureHelper.js music file created');
           if (self.bRename) {
             self.bRename = false;
-            self.videoDB.deleteFile(self.oldName);
+            self.photoDB.deleteFile(self.oldName);
             jsonCmd.result = RS_OK;
             jsonCmd.exdatalength = 0;
             jsonCmd.data = '';
             sendCallback(jsonCmd);
           }
         };
-        videoDB.addFile(newFile, file);
+        photoDB.addFile(newFile, file);
       }, function(event) {
-        jsonCmd.result = RS_ERROR.VIDEO_RENAME;
+        jsonCmd.result = RS_ERROR.PICTURE_RENAME;
         jsonCmd.exdatalength = 0;
         jsonCmd.data = '';
         sendCallback(jsonCmd);
