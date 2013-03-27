@@ -130,6 +130,7 @@ int runOneTestCase(char * testCase, char * testData)
 		printf("Error： testCase format failed before: [%s]\n",cJSON_GetErrorPtr());
 		return 1;
 	}
+	//cJSON_GetObjectItem(jsonItem,"data")->valuestring;
 	/*
 	// 将json转换为字符串
 	char *out;
@@ -229,11 +230,13 @@ int runOneTestCase(char * testCase, char * testData)
 	}
 	int recvExdataLength = cJSON_GetObjectItem(jsonRecv,"exdatalength")->valueint; 
 	cJSON_Delete(jsonRecv);
-	if(recvExdataLength > 0){
+	printf("Info： Recv exdata length is %d\n",recvExdataLength);
+	while(recvExdataLength > 0){
 		bzero(buffer,BUFFER_SIZE);
 		length = recv(client_socket,buffer,BUFFER_SIZE,0);
 		printf("Recv Exdata is:\t%s \n", buffer);
 		recvExdataLength -= length;
+		printf("Info： Recv exdata last is %d\n",recvExdataLength);
 	}
 		
 	printf("Recieve Data From Server Finished\n");

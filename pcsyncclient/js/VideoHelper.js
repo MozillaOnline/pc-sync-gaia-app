@@ -63,19 +63,23 @@ function videoHelper(jsonCmd, sendCallback, sendList, recvList) {
 }
 
 function addVideo(jsonCmd, sendCallback, sendList, recvList) {
-  doAdd(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data[1], jsonCmd.exdatalength);
+  doAddVideo(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data[1], jsonCmd.exdatalength);
 }
 
-function doAdd(jsonCmd, sendCallback, sendList, recvList, videoData, remainder) {
+function doAddVideo(jsonCmd, sendCallback, sendList, recvList, videoData, remainder) {
   try {
     if (remainder > 0) {
       if (recvList.length > 0) {
         videoData += recvList[0];
         remainder -= recvList[0].length;
         recvList.remove(0);
-        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, videoData, remainder));
+        setTimeout(function() {
+          doAddVideo(jsonCmd, sendCallback, sendList, recvList, videoData, remainder);
+        }, 0);
       } else {
-        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, videoData, remainder), 20);
+        setTimeout(function() {
+          doAddVideo(jsonCmd, sendCallback, sendList, recvList, videoData, remainder);
+        }, 20);
       }
     } else {
       videoDB.addFile(jsonCmd.data[0], dataUri2Blob(videoData));
@@ -235,7 +239,7 @@ function renameVideo(jsonCmd, sendCallback) {
     } else {
       videoDB.getFile(oldName, function(file) {
         bRename = true;
-         videoDB.oncreated = function(event) {
+        videoDB.oncreated = function(event) {
           debug('VideoHelper.js video file created');
           if (self.bRename) {
             self.bRename = false;

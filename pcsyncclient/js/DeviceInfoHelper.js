@@ -42,16 +42,29 @@ function getStorage(jsonCmd, sendCallback) {
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     } else {
-      var request = deviceStorage.stat();
+      var request = deviceStorage.freeSpace();
       request.onsuccess = function(e) {
-        jsonCmd.result = RS_OK;
-        jsonCmd.exdatalength = 0;
-        var storageData = {
-          'totalBytes': e.target.result.totalBytes,
-          'freeBytes': e.target.result.freeBytes
+        var freeSpace = e.target.result;
+        debug('DeviceInfoHelper.js freeSpace: ' + freeSpace);
+        var requestused = deviceStorage.usedSpace();
+        requestused.onsuccess = function(e) {
+          var usedSpace = e.target.result;
+          jsonCmd.result = RS_OK;
+          jsonCmd.exdatalength = 0;
+          var storageData = {
+            'usedSpace': usedSpace,
+            'freeSpace': freeSpace
+          };
+          jsonCmd.data = JSON.stringify(storageData);
+          debug('DeviceInfoHelper.js getStorage: ' + jsonCmd.data);
+          sendCallback(jsonCmd);
         };
-        jsonCmd.data = JSON.stringify(storageData);
-        sendCallback(jsonCmd);
+        requestused.onerror = function(e) {
+          jsonCmd.result = RS_ERROR.DEVICEINFO_GETSTORAGE;
+          jsonCmd.exdatalength = 0;
+          jsonCmd.data = '';
+          sendCallback(jsonCmd);
+        };
       }
       request.onerror = function(e) {
         jsonCmd.result = RS_ERROR.DEVICEINFO_GETSTORAGE;

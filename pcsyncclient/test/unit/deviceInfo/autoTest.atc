@@ -1,3 +1,7 @@
 [
-{"testCase":"./unit/deviceInfo/getStorage.tc", "testData":""}
+{"testCase":"./unit/deviceInfo/getStorageMusic.tc", "testData":""},
+{"testCase":"./unit/deviceInfo/getStoragePicture.tc", "testData":""},
+{"testCase":"./unit/deviceInfo/getStorageVideo.tc", "testData":""},
+{"testCase":"./unit/deviceInfo/getStorageApps.tc", "testData":""},
+{"testCase":"./unit/deviceInfo/getStorageSdcard.tc", "testData":""}
 ]

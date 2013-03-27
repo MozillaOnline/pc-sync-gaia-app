@@ -64,22 +64,27 @@ function contactHelper(jsonCmd, sendCallback, sendList, recvList) {
 }
 
 function addContact(jsonCmd, sendCallback, sendList, recvList) {
-  doAdd(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data, jsonCmd.exdatalength);
+  doAddContact(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data, jsonCmd.exdatalength);
 }
 
-function doAdd(jsonCmd, sendCallback, sendList, recvList, contactData, remainder) {
+function doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, remainder) {
   try {
     if (remainder > 0) {
       if (recvList.length > 0) {
         contactData = contactData + recvList[0];
         remainder = remainder - recvList[0].length;
         recvList.remove(0);
-        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, contactData, remainder));
+        setTimeout(function() {
+          doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, remainder);
+        }, 0);
       } else {
-        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, contactData, remainder), 20);
+        setTimeout(function() {
+          doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, remainder);
+        }, 20);
       }
     } else {
       var newContact = new mozContact();
+      debug('ContactHelper.js addContact contactData is: ' + contactData);
       newContact.init(JSON.parse(contactData));
       var saveRequest = window.navigator.mozContacts.save(newContact);
       saveRequest.onsuccess = function() {
@@ -249,7 +254,7 @@ function getContactPicById(jsonCmd, sendCallback, sendList) {
     };
     var request = window.navigator.mozContacts.find(options);
     request.onsuccess = function() {
-      if ((request.result.length > 0) && (request.result[0].photo.length > 0)) {
+      if ((request.result.length > 0) && (request.result[0].photo != null) && (request.result[0].photo.length > 0)) {
         var fileReader = new FileReader();
         fileReader.readAsDataURL(request.result[0].photo[0]);
         fileReader.onload = function(e) {

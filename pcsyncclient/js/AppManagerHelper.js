@@ -56,17 +56,17 @@ function getAllApps(jsonCmd, sendCallback, sendList) {
     };
     request.onsuccess = function(e) {
       debug("Success, number of apps: " + request.result.length);
-      for(var i=0;i<request.result.length;i++){
+      for (var i = 0; i < request.result.length; i++) {
         var appInfo = {
           'manifest': request.result[i].manifest,
-          'manifestURL':request.result[i].manifestURL,
-          'origin':request.result[i].origin,
-          'installOrigin':request.result[i].installOrigin,
-          'installTime':request.result[i].installTime,
+          'manifestURL': request.result[i].manifestURL,
+          'origin': request.result[i].origin,
+          'installOrigin': request.result[i].installOrigin,
+          'installTime': request.result[i].installTime,
           'receipts': request.result[i].receipts
         }
         appsInfo.push(appInfo);
-      }    
+      }
       jsonCmd.result = RS_OK;
       var appsData = JSON.stringify(appsInfo);
       if (appsData.length <= MAX_PACKAGE_SIZE) {
@@ -97,6 +97,7 @@ function getAllApps(jsonCmd, sendCallback, sendList) {
 
 function getInstalledApps(jsonCmd, sendCallback, sendList) {
   try {
+    var appsInfo = [];
     var request = window.navigator.mozApps.getInstalled();
     request.onerror = function(e) {
       debug("Error calling getInstalled: " + request.error.name);
@@ -107,17 +108,17 @@ function getInstalledApps(jsonCmd, sendCallback, sendList) {
     };
     request.onsuccess = function(e) {
       debug("Success, number of apps: " + request.result.length);
-      for(var i=0;i<request.result.length;i++){
+      for (var i = 0; i < request.result.length; i++) {
         var appInfo = {
           'manifest': request.result[i].manifest,
-          'manifestURL':request.result[i].manifestURL,
-          'origin':request.result[i].origin,
-          'installOrigin':request.result[i].installOrigin,
-          'installTime':request.result[i].installTime,
+          'manifestURL': request.result[i].manifestURL,
+          'origin': request.result[i].origin,
+          'installOrigin': request.result[i].installOrigin,
+          'installTime': request.result[i].installTime,
           'receipts': request.result[i].receipts
         }
         appsInfo.push(appInfo);
-      }    
+      }
       jsonCmd.result = RS_OK;
       var appsData = JSON.stringify(appsInfo);
       if (appsData.length <= MAX_PACKAGE_SIZE) {
@@ -159,9 +160,9 @@ function uninstallAppByName(jsonCmd, sendCallback, sendList) {
     request.onsuccess = function(e) {
       debug("Success, number of apps: " + request.result.length);
       var i = 0;
-      for(i =0;i<request.result.length;i++){
+      for (i = 0; i < request.result.length; i++) {
         //debug("Success, name of app: " + request.result[i].manifest.name);
-        if(request.result[i].manifest.name == jsonCmd.data){
+        if (request.result[i].manifest.name == jsonCmd.data) {
           var uninstallRequest;
           if (request.result[i].isBookmark) {
             uninstallRequest = request.result[i].uninstall();
@@ -176,16 +177,16 @@ function uninstallAppByName(jsonCmd, sendCallback, sendList) {
             sendCallback(jsonCmd);
           };
           uninstallRequest.onsuccess = function(e) {
-            debug("onsuccess calling uninstall" );
+            debug("onsuccess calling uninstall");
             jsonCmd.result = RS_OK;
             jsonCmd.exdatalength = 0;
             jsonCmd.data = '';
             sendCallback(jsonCmd);
           };
           break;
-        } 
+        }
       }
-      if(i >= request.result.length){
+      if (i >= request.result.length) {
         jsonCmd.result = RS_ERROR.APPSMANAGER_NOTFOUNDAPP;
         jsonCmd.exdatalength = 0;
         jsonCmd.data = '';

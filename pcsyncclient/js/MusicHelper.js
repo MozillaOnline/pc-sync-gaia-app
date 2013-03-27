@@ -63,19 +63,23 @@ function musicHelper(jsonCmd, sendCallback, sendList, recvList) {
 }
 
 function addMusic(jsonCmd, sendCallback, sendList, recvList) {
-  doAdd(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data[1], jsonCmd.exdatalength);
+  doAddMusic(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data[1], jsonCmd.exdatalength);
 }
 
-function doAdd(jsonCmd, sendCallback, sendList, recvList, musicData, remainder) {
+function doAddMusic(jsonCmd, sendCallback, sendList, recvList, musicData, remainder) {
   try {
     if (remainder > 0) {
       if (recvList.length > 0) {
         musicData += recvList[0];
         remainder -= recvList[0].length;
         recvList.remove(0);
-        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, musicData, remainder));
+        setTimeout(function() {
+          doAddMusic(jsonCmd, sendCallback, sendList, recvList, musicData, remainder);
+        }, 0);
       } else {
-        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, musicData, remainder), 20);
+        setTimeout(function() {
+          doAddMusic(jsonCmd, sendCallback, sendList, recvList, musicData, remainder);
+        }, 20);
       }
     } else {
       musicDB.addFile(jsonCmd.data[0], dataUri2Blob(musicData));

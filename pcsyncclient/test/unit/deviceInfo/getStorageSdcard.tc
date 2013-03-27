@@ -1,0 +1,8 @@
+{
+	"id":"1234",
+	"type":"deviceInfo",
+	"command":"getStorage",
+	"result":null,
+	"data":"sdcard",
+	"exdatalength":"0"
+}

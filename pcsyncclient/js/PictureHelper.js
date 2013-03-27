@@ -63,19 +63,23 @@ function pictureHelper(jsonCmd, sendCallback, sendList, recvList) {
 }
 
 function addPicture(jsonCmd, sendCallback, sendList, recvList) {
-  doAdd(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data[1], jsonCmd.exdatalength);
+  doAddPicture(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data[1], jsonCmd.exdatalength);
 }
 
-function doAdd(jsonCmd, sendCallback, sendList, recvList, picData, remainder) {
+function doAddPicture(jsonCmd, sendCallback, sendList, recvList, picData, remainder) {
   try {
     if (remainder > 0) {
       if (recvList.length > 0) {
         picData += recvList[0];
         remainder -= recvList[0].length;
         recvList.remove(0);
-        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, picData, remainder));
+        setTimeout(function() {
+          doAddPicture(jsonCmd, sendCallback, sendList, recvList, picData, remainder);
+        }, 0);
       } else {
-        setTimeout(doAdd(jsonCmd, sendCallback, sendList, recvList, picData, remainder), 20);
+        setTimeout(function() {
+          doAddPicture(jsonCmd, sendCallback, sendList, recvList, picData, remainder);
+        }, 20);
       }
     } else {
       photoDB.addFile(jsonCmd.data[0], dataUri2Blob(picData));
@@ -238,7 +242,7 @@ function renamePicture(jsonCmd, sendCallback) {
     } else {
       photoDB.getFile(oldName, function(file) {
         bRename = true;
-         photoDB.oncreated = function(event) {
+        photoDB.oncreated = function(event) {
           debug('PictureHelper.js music file created');
           if (self.bRename) {
             self.bRename = false;

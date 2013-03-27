@@ -24,6 +24,7 @@ tcpServerHelper.prototype = {
     try {
       var message = TextDecoder('utf-8').decode(createNewArray(event.data));
       if (this.isNewCmd) {
+        debug('tcpServerHelper.js onData is: ' + message);
         message = JSON.parse(message);
         this.exDataLength = message.exdatalength;
         if (this.exDataLength == 0) {
@@ -31,7 +32,7 @@ tcpServerHelper.prototype = {
         } else {
           this.isNewCmd = false;
         }
-        handleMessage(message, this.sendCmdData.bind(this), this.sendList, this.recvList);
+        handleMessage(message, sendCmdData.bind(this), this.sendList, this.recvList);
       } else {
         this.recvList.push(message);
         this.exDataLength = this.exDataLength - message.length;
@@ -54,38 +55,42 @@ tcpServerHelper.prototype = {
 
   onClose: function(event) {
     debug('TcpServerHelper.js onClose');
-  },
-
-  sendQueueData: function(value) {
-    try {
-      var sendLength = value;
-      if (sendLength > 0) {
-        if (this.sendList.length > 0) {
-          var message = TextEncoder('utf-8').encode(this.sendList[0]);
-          this.socket.send(message);
-          sendLength = sendLength - this.sendList[0].length;
-          this.sendList.remove(0);
-          if (sendLength > 0) {
-            setTimeout(this.sendQueueData(sendLength).bind(this));
-          }
-        } else {
-          setTimeout(this.sendQueueData(sendLength).bind(this), 20);
-        }
-      }
-    } catch (e) {
-      debug('TcpServerHelper.js sendQueueData failed: ' + e);
-    }
-  },
-
-  sendCmdData: function(jsonCmd) {
-    try {
-      var message = TextEncoder('utf-8').encode(JSON.stringify(jsonCmd));
-      this.socket.send(message);
-      if (jsonCmd.exdatalength > 0) {
-        this.sendQueueData(jsonCmd.exdatalength).bind(this);
-      }
-    } catch (e) {
-      debug('TcpServerHelper.js sendCmdData failed: ' + e);
-    }
   }
 };
+
+function sendCmdData(jsonCmd) {
+  try {
+    var message = TextEncoder('utf-8').encode(JSON.stringify(jsonCmd));
+    this.socket.send(message);
+    if (jsonCmd.exdatalength > 0) {
+      sendQueueData(this.socket, jsonCmd.exdatalength, this.sendList);
+    }
+  } catch (e) {
+    debug('TcpServerHelper.js sendCmdData failed: ' + e);
+  }
+}
+
+function sendQueueData(socket, value, sendList) {
+  try {
+    var sendLength = value;
+    if (sendLength > 0) {
+      if (sendList.length > 0) {
+        var message = TextEncoder('utf-8').encode(sendList[0]);
+        socket.send(message);
+        sendLength = sendLength - sendList[0].length;
+        sendList.remove(0);
+        if (sendLength > 0) {
+          setTimeout(function() {
+            sendQueueData(socket, sendLength, sendList);
+          }, 0);
+        }
+      } else {
+        setTimeout(function() {
+          sendQueueData(socket, sendLength, sendList);
+        }, 20);
+      }
+    }
+  } catch (e) {
+    debug('TcpServerHelper.js sendQueueData failed: ' + e);
+  }
+}
