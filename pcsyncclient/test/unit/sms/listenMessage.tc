@@ -1,0 +1,8 @@
+{
+	"id":"1234",
+	"type":"sms",
+	"command":"listenMessage",
+	"result":null,
+	"data":null,
+	"exdatalength":"0"
+}

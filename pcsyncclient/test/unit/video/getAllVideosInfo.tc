@@ -1,0 +1,8 @@
+{
+	"id":"1234",
+	"type":"video",
+	"command":"getAllVideosInfo",
+	"result":null,
+	"data":null,
+	"exdatalength":"0"
+}

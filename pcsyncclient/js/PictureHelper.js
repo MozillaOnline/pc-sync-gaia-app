@@ -13,34 +13,34 @@ var oldName = null;
 function pictureHelper(jsonCmd, sendCallback, sendList, recvList) {
   try {
     switch (jsonCmd.command) {
-    case "addPic":
+    case "addPicture":
       {
-        addPic(jsonCmd, sendCallback, sendList, recvList);
+        addPicture(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
-    case "deletePic":
+    case "deletePictureByPath":
       {
-        deletePic(jsonCmd, sendCallback);
+        deletePictureByPath(jsonCmd, sendCallback);
         break;
       }
-    case "getAllPicsInfo":
+    case "getAllPicturesInfo":
       {
-        getAllPicsInfo(jsonCmd, sendCallback, sendList);
+        getAllPicturesInfo(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "getPics":
+    case "getPictureByPath":
       {
-        getPics(jsonCmd, sendCallback, sendList);
+        getPictureByPath(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "initPic":
+    case "initPicture":
       {
-        initPic(jsonCmd, sendCallback);
+        initPicture(jsonCmd, sendCallback);
         break;
       }
-    case "renamePic":
+    case "renamePicture":
       {
-        renamePic(jsonCmd, sendCallback);
+        renamePicture(jsonCmd, sendCallback);
         break;
       }
     default:
@@ -62,7 +62,7 @@ function pictureHelper(jsonCmd, sendCallback, sendList, recvList) {
   }
 }
 
-function addPic(jsonCmd, sendCallback, sendList, recvList) {
+function addPicture(jsonCmd, sendCallback, sendList, recvList) {
   doAdd(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data[1], jsonCmd.exdatalength);
 }
 
@@ -85,7 +85,7 @@ function doAdd(jsonCmd, sendCallback, sendList, recvList, picData, remainder) {
       sendCallback(jsonCmd);
     }
   } catch (e) {
-    debug('PictureHelper.js addPic failed: ' + e);
+    debug('PictureHelper.js addPicture failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -93,7 +93,7 @@ function doAdd(jsonCmd, sendCallback, sendList, recvList, picData, remainder) {
   }
 }
 
-function deletePic(jsonCmd, sendCallback) {
+function deletePictureByPath(jsonCmd, sendCallback) {
   try {
     photoDB.deleteFile(jsonCmd.data);
     jsonCmd.result = RS_OK;
@@ -101,7 +101,7 @@ function deletePic(jsonCmd, sendCallback) {
     jsonCmd.data = '';
     sendCallback(jsonCmd);
   } catch (e) {
-    debug('PictureHelper.js deletePic failed: ' + e);
+    debug('PictureHelper.js deletePictureByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -109,7 +109,7 @@ function deletePic(jsonCmd, sendCallback) {
   }
 }
 
-function getAllPicsInfo(jsonCmd, sendCallback, sendList) {
+function getAllPicturesInfo(jsonCmd, sendCallback, sendList) {
   try {
     photoDB.getAll(function(records) {
       var photos = records;
@@ -143,7 +143,7 @@ function getAllPicsInfo(jsonCmd, sendCallback, sendList) {
       }
     });
   } catch (e) {
-    debug('PictureHelper.js getAllPicsInfo failed: ' + e);
+    debug('PictureHelper.js getAllPicturesInfo failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -151,7 +151,7 @@ function getAllPicsInfo(jsonCmd, sendCallback, sendList) {
   }
 }
 
-function getPics(jsonCmd, sendCallback, sendList) {
+function getPictureByPath(jsonCmd, sendCallback, sendList) {
   try {
     photoDB.getFile(jsonCmd.data, function getPic(file) {
       var fileReader = new FileReader();
@@ -178,7 +178,7 @@ function getPics(jsonCmd, sendCallback, sendList) {
       };
     });
   } catch (e) {
-    debug('PictureHelper.js getPics failed: ' + e);
+    debug('PictureHelper.js getPictureByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -186,7 +186,7 @@ function getPics(jsonCmd, sendCallback, sendList) {
   }
 }
 
-function initPic() {
+function initPicture() {
   try {
     photoDB = new MediaDB('pictures', metadataParsers.imageMetadataParser, {
       mimeTypes: ['image/jpeg', 'image/png'],
@@ -226,7 +226,7 @@ function initPic() {
   }
 }
 
-function renamePic(jsonCmd, sendCallback) {
+function renamePicture(jsonCmd, sendCallback) {
   try {
     oldName = jsconCmd.data[0];
     var newFile = jsconCmd.data[1];
@@ -258,7 +258,7 @@ function renamePic(jsonCmd, sendCallback) {
       });
     }
   } catch (e) {
-    debug('PictureHelper.js renamePic failed: ' + e);
+    debug('PictureHelper.js renamePicture failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';

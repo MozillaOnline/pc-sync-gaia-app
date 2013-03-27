@@ -1,0 +1,9 @@
+[
+{"testCase":"./unit/sms/sendMessage.tc", "testData":""},
+{"testCase":"./unit/sms/sendMessages.tc", "testData":""},
+{"testCase":"./unit/sms/getAllMessages.tc", "testData":""},
+{"testCase":"./unit/sms/getMessageById.tc", "testData":""},
+{"testCase":"./unit/sms/markReadMessageById.tc", "testData":""},
+{"testCase":"./unit/sms/deleteMessageById.tc", "testData":""},
+{"testCase":"./unit/sms/listenMessage.tc", "testData":""}
+]

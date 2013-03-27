@@ -1,0 +1,8 @@
+[
+{"testCase":"./unit/music/initMusic.tc", "testData":""},
+{"testCase":"./unit/music/addMusic.tc", "testData":"./unit/music/musicData.tcd"},
+{"testCase":"./unit/music/getAllMusicsInfo.tc", "testData":""},
+{"testCase":"./unit/music/getMusicByPath.tc", "testData":""},
+{"testCase":"./unit/music/renameMusic.tc", "testData":""},
+{"testCase":"./unit/music/deleteMusicByPath.tc", "testData":""}
+]

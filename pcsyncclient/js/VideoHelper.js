@@ -18,9 +18,9 @@ function videoHelper(jsonCmd, sendCallback, sendList, recvList) {
         addVideo(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
-    case "deleteVideo":
+    case "deleteVideoByPath":
       {
-        deleteVideo(jsonCmd, sendCallback);
+        deleteVideoByPath(jsonCmd, sendCallback);
         break;
       }
     case "getAllVideosInfo":
@@ -28,9 +28,9 @@ function videoHelper(jsonCmd, sendCallback, sendList, recvList) {
         getAllVideosInfo(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "getVideo":
+    case "getVideoByPath":
       {
-        getVideo(jsonCmd, sendCallback, sendList);
+        getVideoByPath(jsonCmd, sendCallback, sendList);
         break;
       }
     case "initVideo":
@@ -93,7 +93,7 @@ function doAdd(jsonCmd, sendCallback, sendList, recvList, videoData, remainder) 
   }
 }
 
-function deleteVideo(jsonCmd, sendCallback) {
+function deleteVideoByPath(jsonCmd, sendCallback) {
   try {
     videoDB.deleteFile(jsonCmd.data);
     jsonCmd.result = RS_OK;
@@ -101,7 +101,7 @@ function deleteVideo(jsonCmd, sendCallback) {
     jsonCmd.data = '';
     sendCallback(jsonCmd);
   } catch (e) {
-    debug('VideoHelper.js deleteVideo failed: ' + e);
+    debug('VideoHelper.js deleteVideoByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -154,7 +154,7 @@ function getAllVideosInfo(jsonCmd, sendCallback, sendList) {
   }
 }
 
-function getVideo(jsonCmd, sendCallback, sendList) {
+function getVideoByPath(jsonCmd, sendCallback, sendList) {
   try {
     videoDB.getFile(jsonCmd.data, function(file) {
       var fileReader = new FileReader();
@@ -181,7 +181,7 @@ function getVideo(jsonCmd, sendCallback, sendList) {
       };
     });
   } catch (e) {
-    debug('VideoHelper.js getPics failed: ' + e);
+    debug('VideoHelper.js getVideoByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -236,7 +236,7 @@ function renameVideo(jsonCmd, sendCallback) {
       videoDB.getFile(oldName, function(file) {
         bRename = true;
          videoDB.oncreated = function(event) {
-          debug('PictureHelper.js music file created');
+          debug('VideoHelper.js video file created');
           if (self.bRename) {
             self.bRename = false;
             self.videoDB.deleteFile(self.oldName);
@@ -255,7 +255,7 @@ function renameVideo(jsonCmd, sendCallback) {
       });
     }
   } catch (e) {
-    debug('PictureHelper.js renamePic failed: ' + e);
+    debug('VideoHelper.js renameVideo failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';

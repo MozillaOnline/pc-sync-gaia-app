@@ -1,0 +1,9 @@
+[
+{"testCase":"./unit/contact/addContact.tc", "testData":""},
+{"testCase":"./unit/contact/getAllContacts.tc", "testData":""},
+{"testCase":"./unit/contact/getContactById.tc", "testData":""},
+{"testCase":"./unit/contact/getContactPicById.tc", "testData":""},
+{"testCase":"./unit/contact/updateContactById.tc", "testData":""},
+{"testCase":"./unit/contact/removeContactById.tc", "testData":""},
+{"testCase":"./unit/contact/clearAllContacts.tc", "testData":""}
+]

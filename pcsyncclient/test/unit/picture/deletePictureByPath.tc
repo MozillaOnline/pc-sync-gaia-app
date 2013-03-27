@@ -1,0 +1,8 @@
+{
+	"id":"1234",
+	"type":"picture",
+	"command":"deletePictureByPath",
+	"result":null,
+	"data":"/sdcard/picture/newtest.jpg",
+	"exdatalength":"0"
+}

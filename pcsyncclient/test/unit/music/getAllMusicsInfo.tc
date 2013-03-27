@@ -1,0 +1,8 @@
+{
+	"id":"1234",
+	"type":"music",
+	"command":"getAllMusicsInfo",
+	"result":null,
+	"data":null,
+	"exdatalength":"0"
+}

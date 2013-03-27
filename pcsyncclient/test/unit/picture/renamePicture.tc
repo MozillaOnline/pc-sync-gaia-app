@@ -1,0 +1,8 @@
+{
+	"id":"1234",
+	"type":"picture",
+	"command":"renamePicture",
+	"result":null,
+	"data":"[\"/sdcard/picture/test.jpg\",\"/sdcard/picture/newtest.jpg\"]",
+	"exdatalength":"0"
+}

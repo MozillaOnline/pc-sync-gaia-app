@@ -18,9 +18,9 @@ function musicHelper(jsonCmd, sendCallback, sendList, recvList) {
         addMusic(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
-    case "deleteMusic":
+    case "deleteMusicByPath":
       {
-        deleteMusic(jsonCmd, sendCallback);
+        deleteMusicByPath(jsonCmd, sendCallback);
         break;
       }
     case "getAllMusicsInfo":
@@ -28,9 +28,9 @@ function musicHelper(jsonCmd, sendCallback, sendList, recvList) {
         getAllMusicsInfo(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "getMusic":
+    case "getMusicByPath":
       {
-        getMusic(jsonCmd, sendCallback, sendList);
+        getMusicByPath(jsonCmd, sendCallback, sendList);
         break;
       }
     case "initMusic":
@@ -93,7 +93,7 @@ function doAdd(jsonCmd, sendCallback, sendList, recvList, musicData, remainder) 
   }
 }
 
-function deleteMusic(jsonCmd, sendCallback) {
+function deleteMusicByPath(jsonCmd, sendCallback) {
   try {
     musicDB.deleteFile(jsonCmd.data);
     jsonCmd.result = RS_OK;
@@ -101,7 +101,7 @@ function deleteMusic(jsonCmd, sendCallback) {
     jsonCmd.data = '';
     sendCallback(jsonCmd);
   } catch (e) {
-    debug('MusicHelper.js deleteMusic failed: ' + e);
+    debug('MusicHelper.js deleteMusicByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -151,7 +151,7 @@ function getAllMusicsInfo(jsonCmd, sendCallback, sendList) {
   }
 }
 
-function getMusic(jsonCmd, sendCallback, sendList) {
+function getMusicByPath(jsonCmd, sendCallback, sendList) {
   try {
     musicDB.getFile(jsonCmd.data, function(file) {
       var fileReader = new FileReader();
@@ -178,7 +178,7 @@ function getMusic(jsonCmd, sendCallback, sendList) {
       };
     });
   } catch (e) {
-    debug('MusicHelper.js getMusic failed: ' + e);
+    debug('MusicHelper.js getMusicByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';

@@ -1,0 +1,8 @@
+{
+	"id":"1234",
+	"type":"music",
+	"command":"addMusic",
+	"result":null,
+	"data":"",
+	"exdatalength":"67066"
+}

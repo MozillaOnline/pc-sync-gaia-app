@@ -1,0 +1,8 @@
+{
+	"id":"1234",
+	"type":"sms",
+	"command":"markReadMessageById",
+	"result":null,
+	"data":"0",
+	"exdatalength":"0"
+}

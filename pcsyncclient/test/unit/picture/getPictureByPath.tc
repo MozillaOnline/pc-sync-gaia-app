@@ -1,0 +1,8 @@
+{
+	"id":"1234",
+	"type":"picture",
+	"command":"getPictureByPath",
+	"result":null,
+	"data":"/sdcard/picture/test.jpg",
+	"exdatalength":"0"
+}

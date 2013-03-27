@@ -1,0 +1,8 @@
+{
+	"id":"1234",
+	"type":"contact",
+	"command":"clearAllContacts",
+	"result":null,
+	"data":null,
+	"exdatalength":"0"
+}
