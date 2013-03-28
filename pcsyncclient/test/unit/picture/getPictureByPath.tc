@@ -4,5 +4,5 @@
 	"command":"getPictureByPath",
 	"result":null,
 	"data":"/sdcard/picture/test.jpg",
-	"exdatalength":"0"
+	"exdatalength":0
 }

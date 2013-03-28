@@ -8,6 +8,7 @@
 
 var MAX_PACKAGE_SIZE = 2048;
 
+var RS_GETEXDATA = 2048;
 var RS_OK = 0;
 var RS_ERROR = {
   UNKNOWEN: 1,
@@ -39,16 +40,12 @@ var RS_ERROR = {
   VIDEO_RENAME:27
 };
 
-function debug(msg) {
-  console.log('-*- pc sync client -*-' + msg);
-}
-
 function printArray(array) {
   var value = [];
   for (var i = 0; i < array.length; i++) {
     value[i] = array[i];
   }
-  debug(value.join(','))
+  console.log(value.join(','))
 }
 
 function createNewArray(array) {

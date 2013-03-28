@@ -4,5 +4,5 @@
 	"command":"uninstallAppByName",
 	"result":null,
 	"data":"UI tests",
-	"exdatalength":"0"
+	"exdatalength":0
 }

@@ -26,7 +26,7 @@ function appManagerHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     default:
       {
-        debug('AppManagerHelper.js undefined command :' + jsonCmd.command);
+        console.log('AppManagerHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
         jsonCmd.exdatalength = 0;
         jsonCmd.data = '';
@@ -35,7 +35,7 @@ function appManagerHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     }
   } catch (e) {
-    debug('AppsManagerHelper.js appsManagerHelper failed: ' + e);
+    console.log('AppsManagerHelper.js appsManagerHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -48,14 +48,14 @@ function getAllApps(jsonCmd, sendCallback, sendList) {
     var appsInfo = [];
     var request = window.navigator.mozApps.mgmt.getAll();
     request.onerror = function(e) {
-      debug("Error calling getAll: " + request.error.name);
+      console.log("Error calling getAll: " + request.error.name);
       jsonCmd.result = RS_ERROR.APPSMANAGER_GETALLAPPS;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = request.error.name;
       sendCallback(jsonCmd);
     };
     request.onsuccess = function(e) {
-      debug("Success, number of apps: " + request.result.length);
+      console.log("Success, number of apps: " + request.result.length);
       for (var i = 0; i < request.result.length; i++) {
         var appInfo = {
           'manifest': request.result[i].manifest,
@@ -91,7 +91,7 @@ function getAllApps(jsonCmd, sendCallback, sendList) {
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
     sendCallback(jsonCmd);
-    debug('AppsManagerHelper.js getAllApps failed: ' + e);
+    console.log('AppsManagerHelper.js getAllApps failed: ' + e);
   }
 }
 
@@ -100,14 +100,14 @@ function getInstalledApps(jsonCmd, sendCallback, sendList) {
     var appsInfo = [];
     var request = window.navigator.mozApps.getInstalled();
     request.onerror = function(e) {
-      debug("Error calling getInstalled: " + request.error.name);
+      console.log("Error calling getInstalled: " + request.error.name);
       jsonCmd.result = RS_ERROR.APPSMANAGER_GETINSTALLEDAPPS;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = request.error.name;
       sendCallback(jsonCmd);
     };
     request.onsuccess = function(e) {
-      debug("Success, number of apps: " + request.result.length);
+      console.log("Success, number of apps: " + request.result.length);
       for (var i = 0; i < request.result.length; i++) {
         var appInfo = {
           'manifest': request.result[i].manifest,
@@ -143,7 +143,7 @@ function getInstalledApps(jsonCmd, sendCallback, sendList) {
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
     sendCallback(jsonCmd);
-    debug('AppsManagerHelper.js getInstalledApps failed: ' + e);
+    console.log('AppsManagerHelper.js getInstalledApps failed: ' + e);
   }
 }
 
@@ -151,17 +151,17 @@ function uninstallAppByName(jsonCmd, sendCallback, sendList) {
   try {
     var request = window.navigator.mozApps.mgmt.getAll();
     request.onerror = function(e) {
-      debug("Error calling getAll: " + request.error.name);
+      console.log("Error calling getAll: " + request.error.name);
       jsonCmd.result = RS_ERROR.APPSMANAGER_GETINSTALLEDAPPS;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = request.error.name;
       sendCallback(jsonCmd);
     };
     request.onsuccess = function(e) {
-      debug("Success, number of apps: " + request.result.length);
+      console.log("Success, number of apps: " + request.result.length);
       var i = 0;
       for (i = 0; i < request.result.length; i++) {
-        //debug("Success, name of app: " + request.result[i].manifest.name);
+        //console.log("Success, name of app: " + request.result[i].manifest.name);
         if (request.result[i].manifest.name == jsonCmd.data) {
           var uninstallRequest;
           if (request.result[i].isBookmark) {
@@ -170,14 +170,14 @@ function uninstallAppByName(jsonCmd, sendCallback, sendList) {
             uninstallRequest = window.navigator.mozApps.mgmt.uninstall(request.result[i]);
           }
           uninstallRequest.onerror = function(e) {
-            debug("Error calling uninstall: " + request.error.name);
+            console.log("Error calling uninstall: " + request.error.name);
             jsonCmd.result = RS_ERROR.APPSMANAGER_UNSTALLAPP;
             jsonCmd.exdatalength = 0;
             jsonCmd.data = request.error.name;
             sendCallback(jsonCmd);
           };
           uninstallRequest.onsuccess = function(e) {
-            debug("onsuccess calling uninstall");
+            console.log("onsuccess calling uninstall");
             jsonCmd.result = RS_OK;
             jsonCmd.exdatalength = 0;
             jsonCmd.data = '';
@@ -198,6 +198,6 @@ function uninstallAppByName(jsonCmd, sendCallback, sendList) {
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
     sendCallback(jsonCmd);
-    debug('AppsManagerHelper.js uninstallAppByName failed: ' + e);
+    console.log('AppsManagerHelper.js uninstallAppByName failed: ' + e);
   }
 }

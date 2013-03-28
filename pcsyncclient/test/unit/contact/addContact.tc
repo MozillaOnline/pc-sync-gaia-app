@@ -4,5 +4,5 @@
 	"command":"addContact",
 	"result":null,
 	"data":	"{\"name\":[\"qqqq wwww\"],\"honorificPrefix\":null,\"givenName\":[\"qqqq\"],\"additionalName\":[\"\"],\"familyName\":[\"wwww\"],\"honorificSuffix\":null,\"nickname\":null,\"email\":null,\"photo\":null,\"category\":null,\"adr\":null,\"tel\":[{\"type\":\"Mobile\",\"value\":\"123456789\",\"carrier\":null}],\"org\":[\"Bhjkk\"],\"jobTitle\":null,\"bday\":null,\"note\":null,\"impp\":null,\"url\":null,\"anniversary\":null,\"id\":\"\"}",
-	"exdatalength":"0"
+	"exdatalength":0
 }

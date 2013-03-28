@@ -46,7 +46,7 @@ function smsHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     default:
       {
-        debug('SmsHelper.js undefined command :' + jsonCmd.command);
+        console.log('SmsHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
         jsonCmd.exdatalength = 0;
         jsonCmd.data = '';
@@ -55,7 +55,7 @@ function smsHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     }
   } catch (e) {
-    debug('SmsHelper.js smsHelper failed: ' + e);
+    console.log('SmsHelper.js smsHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -86,7 +86,7 @@ function deleteMessageById(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('SmsHelper.js deleteMessageById failed: ' + e);
+    console.log('SmsHelper.js deleteMessageById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -142,7 +142,7 @@ function getAllMessages(jsonCmd, sendCallback, sendList) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('SmsHelper.js getAllMessages failed: ' + e);
+    console.log('SmsHelper.js getAllMessages failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -175,7 +175,7 @@ function getMessageById(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('SmsHelper.js getMessageById failed: ' + e);
+    console.log('SmsHelper.js getMessageById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -201,7 +201,7 @@ function listenMessage(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('SmsHelper.js listenMessage failed: ' + e);
+    console.log('SmsHelper.js listenMessage failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -225,7 +225,7 @@ function markReadMessageById(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('SmsHelper.js markReadMessageById failed: ' + e);
+    console.log('SmsHelper.js markReadMessageById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -266,7 +266,7 @@ function sendMessage(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('SmsHelper.js sendMessage failed: ' + e);
+    console.log('SmsHelper.js sendMessage failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -309,7 +309,7 @@ function sendMessages(jsonCmd, sendCallback) {
       };
     }
   } catch (e) {
-    debug('SmsHelper.js sendMessage failed: ' + e);
+    console.log('SmsHelper.js sendMessage failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';

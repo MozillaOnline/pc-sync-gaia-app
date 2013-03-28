@@ -4,5 +4,5 @@
 	"command":"updateContactById",
 	"result":"",
 	"data":"{\"name\":[\"Hhhhjj Hhjjj\"],\"honorificPrefix\":null,\"givenName\":[\"Hhhhjj\"],\"additionalName\":[\"\"],\"familyName\":[\"Hhjjj\"],\"honorificSuffix\":null,\"nickname\":null,\"email\":null,\"photo\":null,\"category\":null,\"adr\":null,\"tel\":[{\"type\":\"Mobile\",\"value\":\"123321\",\"carrier\":null}],\"org\":[\"Bhjkk\"],\"jobTitle\":null,\"bday\":null,\"note\":null,\"impp\":null,\"url\":null,\"anniversary\":null,\"id\":\"d0eb162612cd4961b082a5f174ac3ad2\"}",
-	"exdatalength":"0"
+	"exdatalength":0
 }

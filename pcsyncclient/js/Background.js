@@ -21,10 +21,10 @@ var backgroundService = {
           new tcpServerHelper(event);
         };
       } else {
-        debug('Background.js listen failed');
+        console.log('Background.js listen failed');
       }
     } catch (e) {
-      debug('Background.js createSocketServer failed: ' + e);
+      console.log('Background.js createSocketServer failed: ' + e);
     }
   }
 };

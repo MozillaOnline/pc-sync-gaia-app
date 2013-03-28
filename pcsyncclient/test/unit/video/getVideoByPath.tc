@@ -4,5 +4,5 @@
 	"command":"getVideoByPath",
 	"result":null,
 	"data":"/sdcard/video/test.ogg",
-	"exdatalength":"0"
+	"exdatalength":0
 }

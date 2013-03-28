@@ -4,5 +4,5 @@
 	"command":"renameMusic",
 	"result":null,
 	"data":"[\"/sdcard/music/test.ogg\",\"/sdcard/music/newtest.ogg\"]",
-	"exdatalength":"0"
+	"exdatalength":0
 }

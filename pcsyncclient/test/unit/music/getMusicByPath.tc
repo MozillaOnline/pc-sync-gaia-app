@@ -4,5 +4,5 @@
 	"command":"getMusicByPath",
 	"result":null,
 	"data":"/sdcard/music/test.ogg",
-	"exdatalength":"0"
+	"exdatalength":0
 }

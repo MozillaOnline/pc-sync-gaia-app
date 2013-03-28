@@ -45,7 +45,7 @@ function videoHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     default:
       {
-        debug('VideoHelper.js undefined command :' + jsonCmd.command);
+        console.log('VideoHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
         jsonCmd.exdatalength = 0;
         jsonCmd.data = '';
@@ -54,7 +54,7 @@ function videoHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     }
   } catch (e) {
-    debug('VideoHelper.js videoHelper failed: ' + e);
+    console.log('VideoHelper.js videoHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -63,7 +63,7 @@ function videoHelper(jsonCmd, sendCallback, sendList, recvList) {
 }
 
 function addVideo(jsonCmd, sendCallback, sendList, recvList) {
-  doAddVideo(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data[1], jsonCmd.exdatalength);
+  doAddVideo(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data, jsonCmd.exdatalength);
 }
 
 function doAddVideo(jsonCmd, sendCallback, sendList, recvList, videoData, remainder) {
@@ -82,14 +82,15 @@ function doAddVideo(jsonCmd, sendCallback, sendList, recvList, videoData, remain
         }, 20);
       }
     } else {
-      videoDB.addFile(jsonCmd.data[0], dataUri2Blob(videoData));
+      var jsonVideoData = JSON.parse(videoData);
+      videoDB.addFile(jsonVideoData[0], dataUri2Blob(jsonVideoData[1]));
       jsonCmd.result = RS_OK;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     }
   } catch (e) {
-    debug('VideoHelper.js addVideo failed: ' + e);
+    console.log('VideoHelper.js addVideo failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -105,7 +106,7 @@ function deleteVideoByPath(jsonCmd, sendCallback) {
     jsonCmd.data = '';
     sendCallback(jsonCmd);
   } catch (e) {
-    debug('VideoHelper.js deleteVideoByPath failed: ' + e);
+    console.log('VideoHelper.js deleteVideoByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -150,7 +151,7 @@ function getAllVideosInfo(jsonCmd, sendCallback, sendList) {
       }
     });
   } catch (e) {
-    debug('VideoHelper.js getAllVideosInfo failed: ' + e);
+    console.log('VideoHelper.js getAllVideosInfo failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -185,7 +186,7 @@ function getVideoByPath(jsonCmd, sendCallback, sendList) {
       };
     });
   } catch (e) {
-    debug('VideoHelper.js getVideoByPath failed: ' + e);
+    console.log('VideoHelper.js getVideoByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -193,12 +194,12 @@ function getVideoByPath(jsonCmd, sendCallback, sendList) {
   }
 }
 
-function initVideo() {
+function initVideo(jsonCmd, sendCallback) {
   try {
     videoDB = new MediaDB('videos', metaDataParser);
     videoDB.onunavailable = function(event) {
       //get all the reasons from event
-      debug('VideoHelper.js videoDB is unavailable');
+      console.log('VideoHelper.js videoDB is unavailable');
       jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
@@ -206,20 +207,31 @@ function initVideo() {
     };
     videoDB.onready = function() {
       videoDB.scan();
-      debug('VideoHelper.js videoDB is ready');
+      console.log('VideoHelper.js videoDB is ready');
     };
     videoDB.onscanstart = function() {
-      debug('VideoHelper.js videoDB scan start');
+      console.log('VideoHelper.js videoDB scan start');
     };
     videoDB.onscanend = function() {
-      debug('VideoHelper.js videoDB scan end');
+      console.log('VideoHelper.js videoDB scan end');
       jsonCmd.result = RS_OK;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     };
+    videoDB.oncreated = function(event) {
+      console.log('VideoHelper.js video file created');
+      if (self.bRename) {
+        self.bRename = false;
+        self.videoDB.deleteFile(self.oldName);
+        jsonCmd.result = RS_OK;
+        jsonCmd.exdatalength = 0;
+        jsonCmd.data = '';
+        sendCallback(jsonCmd);
+      }
+    };
   } catch (e) {
-    debug('VideoHelper.js videoDB failed: ' + e);
+    console.log('VideoHelper.js videoDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -229,8 +241,9 @@ function initVideo() {
 
 function renameVideo(jsonCmd, sendCallback) {
   try {
-    oldName = jsconCmd.data[0];
-    var newFile = jsconCmd.data[1];
+    var jsonVideoData = JSON.parse(jsconCmd.data);
+    oldName = jsonVideoData[0];
+    var newFile = jsonVideoData[1];
     if (oldName == newFile) {
       jsonCmd.result = RS_OK;
       jsonCmd.exdatalength = 0;
@@ -239,17 +252,6 @@ function renameVideo(jsonCmd, sendCallback) {
     } else {
       videoDB.getFile(oldName, function(file) {
         bRename = true;
-        videoDB.oncreated = function(event) {
-          debug('VideoHelper.js video file created');
-          if (self.bRename) {
-            self.bRename = false;
-            self.videoDB.deleteFile(self.oldName);
-            jsonCmd.result = RS_OK;
-            jsonCmd.exdatalength = 0;
-            jsonCmd.data = '';
-            sendCallback(jsonCmd);
-          }
-        };
         videoDB.addFile(newFile, file);
       }, function(event) {
         jsonCmd.result = RS_ERROR.VIDEO_RENAME;
@@ -259,7 +261,7 @@ function renameVideo(jsonCmd, sendCallback) {
       });
     }
   } catch (e) {
-    debug('VideoHelper.js renameVideo failed: ' + e);
+    console.log('VideoHelper.js renameVideo failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';

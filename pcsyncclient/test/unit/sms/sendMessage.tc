@@ -4,5 +4,5 @@
 	"command":"sendMessage",
 	"result":null,
 	"data":"{\"number\":\"13910823285\",\"message\":\"hello hero\"}",
-	"exdatalength":"0"
+	"exdatalength":0
 }

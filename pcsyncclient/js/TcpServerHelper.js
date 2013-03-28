@@ -24,15 +24,30 @@ tcpServerHelper.prototype = {
     try {
       var message = TextDecoder('utf-8').decode(createNewArray(event.data));
       if (this.isNewCmd) {
-        debug('tcpServerHelper.js onData is: ' + message);
+        console.log('tcpServerHelper.js onData is: ' + message);
         message = JSON.parse(message);
-        this.exDataLength = message.exdatalength;
-        if (this.exDataLength == 0) {
-          this.isNewCmd = true;
+        if (message.result == RS_GETEXDATA) {
+          sendQueueData(this.socket, message.exdatalength, this.sendList);
         } else {
-          this.isNewCmd = false;
+          this.exDataLength = message.exdatalength;
+          console.log('tcpServerHelper.js exDataLength is: ' + this.exDataLength);
+          if (this.exDataLength == 0) {
+            this.isNewCmd = true;
+          } else {            
+            var jsonGetExdata = {
+              'id': message.id,
+              'type': message.type,
+              'command': message.command,
+              'result': RS_GETEXDATA,
+              'data': null,
+              'exdatalength': message.exdatalength
+            };
+            this.socket.send(TextEncoder('utf-8').encode(JSON.stringify(jsonGetExdata)));
+            this.isNewCmd = false;
+          }
+          console.log('tcpServerHelper.js isNewCmd is: ' + this.isNewCmd);
+          handleMessage(message, sendCmdData.bind(this), this.sendList, this.recvList);
         }
-        handleMessage(message, sendCmdData.bind(this), this.sendList, this.recvList);
       } else {
         this.recvList.push(message);
         this.exDataLength = this.exDataLength - message.length;
@@ -41,20 +56,20 @@ tcpServerHelper.prototype = {
         }
       }
     } catch (e) {
-      debug('TcpServerHelper.js onData failed: ' + e);
+      console.log('TcpServerHelper.js onData failed: ' + e);
     }
   },
 
   onDrain: function(event) {
-    debug('TcpServerHelper.js onDrain');
+    console.log('TcpServerHelper.js onDrain');
   },
 
   onError: function(event) {
-    debug('TcpServerHelper.js onError');
+    console.log('TcpServerHelper.js onError');
   },
 
   onClose: function(event) {
-    debug('TcpServerHelper.js onClose');
+    console.log('TcpServerHelper.js onClose');
   }
 };
 
@@ -62,11 +77,9 @@ function sendCmdData(jsonCmd) {
   try {
     var message = TextEncoder('utf-8').encode(JSON.stringify(jsonCmd));
     this.socket.send(message);
-    if (jsonCmd.exdatalength > 0) {
-      sendQueueData(this.socket, jsonCmd.exdatalength, this.sendList);
-    }
+    this.isNewCmd = true;
   } catch (e) {
-    debug('TcpServerHelper.js sendCmdData failed: ' + e);
+    console.log('TcpServerHelper.js sendCmdData failed: ' + e);
   }
 }
 
@@ -91,6 +104,6 @@ function sendQueueData(socket, value, sendList) {
       }
     }
   } catch (e) {
-    debug('TcpServerHelper.js sendQueueData failed: ' + e);
+    console.log('TcpServerHelper.js sendQueueData failed: ' + e);
   }
 }

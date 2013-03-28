@@ -45,7 +45,7 @@ function musicHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     default:
       {
-        debug('MusicHelper.js undefined command :' + jsonCmd.command);
+        console.log('MusicHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
         jsonCmd.exdatalength = 0;
         jsonCmd.data = '';
@@ -54,7 +54,7 @@ function musicHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     }
   } catch (e) {
-    debug('MusicHelper.js musicHelper failed: ' + e);
+    console.log('MusicHelper.js musicHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -63,7 +63,7 @@ function musicHelper(jsonCmd, sendCallback, sendList, recvList) {
 }
 
 function addMusic(jsonCmd, sendCallback, sendList, recvList) {
-  doAddMusic(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data[1], jsonCmd.exdatalength);
+  doAddMusic(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data, jsonCmd.exdatalength);
 }
 
 function doAddMusic(jsonCmd, sendCallback, sendList, recvList, musicData, remainder) {
@@ -82,14 +82,15 @@ function doAddMusic(jsonCmd, sendCallback, sendList, recvList, musicData, remain
         }, 20);
       }
     } else {
-      musicDB.addFile(jsonCmd.data[0], dataUri2Blob(musicData));
+      var jsonMusicData = JSON.parse(musicData);
+      musicDB.addFile(jsonMusicData[0], dataUri2Blob(jsonMusicData[1]));
       jsonCmd.result = RS_OK;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     }
   } catch (e) {
-    debug('MusicHelper.js addMusic failed: ' + e);
+    console.log('MusicHelper.js addMusic failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -105,7 +106,7 @@ function deleteMusicByPath(jsonCmd, sendCallback) {
     jsonCmd.data = '';
     sendCallback(jsonCmd);
   } catch (e) {
-    debug('MusicHelper.js deleteMusicByPath failed: ' + e);
+    console.log('MusicHelper.js deleteMusicByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -147,7 +148,7 @@ function getAllMusicsInfo(jsonCmd, sendCallback, sendList) {
       }
     });
   } catch (e) {
-    debug('MusicHelper.js getAllMusicsInfo failed: ' + e);
+    console.log('MusicHelper.js getAllMusicsInfo failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -182,7 +183,7 @@ function getMusicByPath(jsonCmd, sendCallback, sendList) {
       };
     });
   } catch (e) {
-    debug('MusicHelper.js getMusicByPath failed: ' + e);
+    console.log('MusicHelper.js getMusicByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -200,7 +201,7 @@ function initMusic(jsonCmd, sendCallback) {
     });
     musicDB.onunavailable = function(event) {
       //get all the reasons from event
-      debug('MusicHelper.js musicDB is unavailable');
+      console.log('MusicHelper.js musicDB is unavailable');
       jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
@@ -208,20 +209,31 @@ function initMusic(jsonCmd, sendCallback) {
     };
     musicDB.onready = function() {
       self.musicDB.scan();
-      debug('MusicHelper.js musicDB is ready');
+      console.log('MusicHelper.js musicDB is ready');
     };
     musicDB.onscanstart = function() {
-      debug('MusicHelper.js musicDB scan start');
+      console.log('MusicHelper.js musicDB scan start');
     };
     musicDB.onscanend = function() {
-      debug('MusicHelper.js musicDB scan end');
+      console.log('MusicHelper.js musicDB scan end');
       jsonCmd.result = RS_OK;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     };
+    musicDB.oncreated = function(event) {
+      console.log('MusicHelper.js music file created');
+      if (self.bRename) {
+        self.bRename = false;
+        self.musicDB.deleteFile(self.oldName);
+        jsonCmd.result = RS_OK;
+        jsonCmd.exdatalength = 0;
+        jsonCmd.data = '';
+        sendCallback(jsonCmd);
+      }
+    };
   } catch (e) {
-    debug('MusicHelper.js initDB failed: ' + e);
+    console.log('MusicHelper.js initDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -231,8 +243,9 @@ function initMusic(jsonCmd, sendCallback) {
 
 function renameMusic(jsonCmd, sendCallback) {
   try {
-    oldName = jsonCmd.data[0];
-    var newFile = jsonCmd.data[1];
+    var jsonMusicData = JSON.parse(jsonCmd.data);
+    oldName = jsonMusicData[0];
+    var newFile = jsonMusicData[1];
     if (oldName == newFile) {
       jsonCmd.result = RS_OK;
       jsonCmd.exdatalength = 0;
@@ -241,17 +254,6 @@ function renameMusic(jsonCmd, sendCallback) {
     } else {
       musicDB.getFile(oldName, function(file) {
         bRename = true;
-        musicDB.oncreated = function(event) {
-          debug('MusicHelper.js music file created');
-          if (self.bRename) {
-            self.bRename = false;
-            self.musicDB.deleteFile(self.oldName);
-            jsonCmd.result = RS_OK;
-            jsonCmd.exdatalength = 0;
-            jsonCmd.data = '';
-            sendCallback(jsonCmd);
-          }
-        };
         musicDB.addFile(newFile, file);
       }, function(event) {
         jsonCmd.result = RS_ERROR.MUSIC_RENAME;
@@ -261,7 +263,7 @@ function renameMusic(jsonCmd, sendCallback) {
       });
     }
   } catch (e) {
-    debug('MusicHelper.js renameMusic failed: ' + e);
+    console.log('MusicHelper.js renameMusic failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';

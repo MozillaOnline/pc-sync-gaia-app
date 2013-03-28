@@ -4,5 +4,5 @@
 	"command":"getStorage",
 	"result":null,
 	"data":"videos",
-	"exdatalength":"0"
+	"exdatalength":0
 }

@@ -46,7 +46,7 @@ function contactHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     default:
       {
-        debug('ContactHelper.js undefined command :' + jsonCmd.command);
+        console.log('ContactHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
         jsonCmd.exdatalength = 0;
         jsonCmd.data = '';
@@ -55,7 +55,7 @@ function contactHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     }
   } catch (e) {
-    debug('ContactHelper.js contactHelper failed: ' + e);
+    console.log('ContactHelper.js contactHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -84,7 +84,7 @@ function doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, re
       }
     } else {
       var newContact = new mozContact();
-      debug('ContactHelper.js addContact contactData is: ' + contactData);
+      console.log('ContactHelper.js addContact contactData is: ' + contactData);
       newContact.init(JSON.parse(contactData));
       var saveRequest = window.navigator.mozContacts.save(newContact);
       saveRequest.onsuccess = function() {
@@ -128,7 +128,7 @@ function doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, re
       };
     }
   } catch (e) {
-    debug('ContactHelper.js addContact failed: ' + e);
+    console.log('ContactHelper.js addContact failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -152,7 +152,7 @@ function clearAllContacts(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('ContactHelper.js clearAllContacts failed: ' + e);
+    console.log('ContactHelper.js clearAllContacts failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -194,7 +194,7 @@ function getAllContacts(jsonCmd, sendCallback, sendList) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('ContactHelper.js getAllContacts failed: ' + e);
+    console.log('ContactHelper.js getAllContacts failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -237,7 +237,7 @@ function getContactById(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('ContactHelper.js getContactById failed: ' + e);
+    console.log('ContactHelper.js getContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -290,7 +290,7 @@ function getContactPicById(jsonCmd, sendCallback, sendList) {
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('ContactHelper.js getContactPicById failed: ' + e);
+    console.log('ContactHelper.js getContactPicById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -322,14 +322,14 @@ function removeContactById(jsonCmd, sendCallback) {
       };
     };
     findRequest.onerror = function() {
-      debug('pcsync contact.js line108');
+      console.log('pcsync contact.js line108');
       jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     };
   } catch (e) {
-    debug('ContactHelper.js removeContactById failed: ' + e);
+    console.log('ContactHelper.js removeContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -400,7 +400,7 @@ function doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remain
       };
     }
   } catch (e) {
-    debug('ContactHelper.js updateContactById failed: ' + e);
+    console.log('ContactHelper.js updateContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';

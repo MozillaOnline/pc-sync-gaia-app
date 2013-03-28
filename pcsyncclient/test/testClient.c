@@ -175,13 +175,17 @@ int runOneTestCase(char * testCase, char * testData)
     }
     
 	//将testCase发送到server
-	printf("Send testCase is:\t%s \n", buffer);
-	//向服务器发送buffer中的数据
 	send(client_socket,buffer,read_length,0);
+	printf("Send testCase is:\t%s \n", buffer);
 	
 	//判断是否发送testData
 	int exdataLength = cJSON_GetObjectItem(json,"exdatalength")->valueint; 
+	printf("Send exdataLength is:\t%d \n", exdataLength);
 	if(exdataLength > 0){
+		//接收服务器返回
+		bzero(buffer,BUFFER_SIZE);
+		recv(client_socket,buffer,BUFFER_SIZE,0);
+		printf("Can Send Exdata\n");
 		//判断参数是否合法
 		if(!testData||!strcmp(testData,"")||(strlen(testData)<strlen("*.tcd"))){
 			printf("Error: Please input available testData name(*.tcd)\n");
@@ -213,6 +217,7 @@ int runOneTestCase(char * testCase, char * testData)
 			//向服务器发送testdata中的数据
 			send(client_socket,testdata,read_length,0);
 			exdataLength -= read_length;
+			printf("Send exdata last is:\t%d \n", exdataLength);
 		}
 		close(fp);
 	}
@@ -229,6 +234,17 @@ int runOneTestCase(char * testCase, char * testData)
 		return 1;
 	}
 	int recvExdataLength = cJSON_GetObjectItem(jsonRecv,"exdatalength")->valueint; 
+	
+	if(recvExdataLength > 0){
+		cJSON *jsonResult,*jsonData;   
+		jsonResult=cJSON_CreateObject();      
+		cJSON_AddNumberToObject(jsonResult,"result",   2048); 
+		cJSON_ReplaceItemInObject(jsonRecv,"result",jsonResult);
+		jsonData=cJSON_CreateObject();      
+		cJSON_AddItemToObject(jsonData, "data", cJSON_CreateString(""));  
+		cJSON_ReplaceItemInObject(jsonRecv,"data",jsonData);
+		send(client_socket,cJSON_Print(jsonRecv),read_length,0);
+	}
 	cJSON_Delete(jsonRecv);
 	printf("Info： Recv exdata length is %d\n",recvExdataLength);
 	while(recvExdataLength > 0){

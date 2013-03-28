@@ -1,6 +1,6 @@
 [
 {"testCase":"./unit/picture/initPicture.tc", "testData":""},
-{"testCase":"./unit/picture/addPicture.tc", "testData":"./unit/Picture/pictureData.tcd"},
+{"testCase":"./unit/picture/addPicture.tc", "testData":"./unit/picture/pictureData.tcd"},
 {"testCase":"./unit/picture/getAllPicturesInfo.tc", "testData":""},
 {"testCase":"./unit/picture/getPictureByPath.tc", "testData":""},
 {"testCase":"./unit/picture/renamePicture.tc", "testData":""},

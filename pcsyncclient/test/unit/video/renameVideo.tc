@@ -4,5 +4,5 @@
 	"command":"renameVideo",
 	"result":null,
 	"data":"[\"/sdcard/video/test.ogg\",\"/sdcard/video/newtest.ogg\"]",
-	"exdatalength":"0"
+	"exdatalength":0
 }

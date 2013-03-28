@@ -16,7 +16,7 @@ function deviceInfoHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     default:
       {
-        debug('DeviceInfoHelper.js undefined command :' + jsonCmd.command);
+        console.log('DeviceInfoHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
         jsonCmd.exdatalength = 0;
         jsonCmd.data = '';
@@ -25,7 +25,7 @@ function deviceInfoHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     }
   } catch (e) {
-    debug('DeviceInfoHelper.js deviceInfoHelper failed: ' + e);
+    console.log('DeviceInfoHelper.js deviceInfoHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
@@ -45,7 +45,7 @@ function getStorage(jsonCmd, sendCallback) {
       var request = deviceStorage.freeSpace();
       request.onsuccess = function(e) {
         var freeSpace = e.target.result;
-        debug('DeviceInfoHelper.js freeSpace: ' + freeSpace);
+        console.log('DeviceInfoHelper.js freeSpace: ' + freeSpace);
         var requestused = deviceStorage.usedSpace();
         requestused.onsuccess = function(e) {
           var usedSpace = e.target.result;
@@ -56,7 +56,7 @@ function getStorage(jsonCmd, sendCallback) {
             'freeSpace': freeSpace
           };
           jsonCmd.data = JSON.stringify(storageData);
-          debug('DeviceInfoHelper.js getStorage: ' + jsonCmd.data);
+          console.log('DeviceInfoHelper.js getStorage: ' + jsonCmd.data);
           sendCallback(jsonCmd);
         };
         requestused.onerror = function(e) {
@@ -78,6 +78,6 @@ function getStorage(jsonCmd, sendCallback) {
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
     sendCallback(jsonCmd);
-    debug('SmsHelper.js getStorage failed: ' + e);
+    console.log('SmsHelper.js getStorage failed: ' + e);
   }
 }
