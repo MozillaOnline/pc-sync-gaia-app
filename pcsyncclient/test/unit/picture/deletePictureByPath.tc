@@ -3,6 +3,6 @@
 	"type":"picture",
 	"command":"deletePictureByPath",
 	"result":null,
-	"data":"/sdcard/picture/newtest.jpg",
+	"data":"picture/newtest.jpg",
 	"exdatalength":0
 }

@@ -3,6 +3,6 @@
 	"type":"video",
 	"command":"getVideoByPath",
 	"result":null,
-	"data":"/sdcard/video/test.ogg",
+	"data":"video/test.ogg",
 	"exdatalength":0
 }

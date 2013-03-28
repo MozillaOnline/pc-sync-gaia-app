@@ -3,6 +3,6 @@
 	"type":"picture",
 	"command":"getPictureByPath",
 	"result":null,
-	"data":"/sdcard/picture/test.jpg",
+	"data":"picture/test.jpg",
 	"exdatalength":0
 }

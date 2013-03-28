@@ -3,6 +3,6 @@
 	"type":"video",
 	"command":"deleteVideoByPath",
 	"result":null,
-	"data":"/sdcard/video/newtest.ogg",
+	"data":"video/newtest.ogg",
 	"exdatalength":0
 }

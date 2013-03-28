@@ -3,6 +3,6 @@
 	"type":"picture",
 	"command":"renamePicture",
 	"result":null,
-	"data":"[\"/sdcard/picture/test.jpg\",\"/sdcard/picture/newtest.jpg\"]",
+	"data":"[\"picture/test.jpg\",\"picture/newtest.jpg\"]",
 	"exdatalength":0
 }

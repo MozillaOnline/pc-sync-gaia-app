@@ -3,6 +3,6 @@
 	"type":"music",
 	"command":"renameMusic",
 	"result":null,
-	"data":"[\"/sdcard/music/test.ogg\",\"/sdcard/music/newtest.ogg\"]",
+	"data":"[\"music/test.ogg\",\"music/newtest.ogg\"]",
 	"exdatalength":0
 }

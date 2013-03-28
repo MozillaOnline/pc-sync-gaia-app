@@ -7,8 +7,6 @@
  *----------------------------------------------------------------------------------------------------------*/
 
 var musicDB = null;
-var bRename = false;
-var oldName = null;
 
 function musicHelper(jsonCmd, sendCallback, sendList, recvList) {
   try {
@@ -83,11 +81,17 @@ function doAddMusic(jsonCmd, sendCallback, sendList, recvList, musicData, remain
       }
     } else {
       var jsonMusicData = JSON.parse(musicData);
-      musicDB.addFile(jsonMusicData[0], dataUri2Blob(jsonMusicData[1]));
-      jsonCmd.result = RS_OK;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      musicDB.addFile(jsonMusicData[0], dataUri2Blob(jsonMusicData[1]), function() {
+        jsonCmd.result = RS_OK;
+        jsonCmd.exdatalength = 0;
+        jsonCmd.data = '';
+        sendCallback(jsonCmd);
+      }, function() {
+        jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
+        jsonCmd.exdatalength = 0;
+        jsonCmd.data = '';
+        sendCallback(jsonCmd);
+      });
     }
   } catch (e) {
     console.log('MusicHelper.js addMusic failed: ' + e);
@@ -221,17 +225,6 @@ function initMusic(jsonCmd, sendCallback) {
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     };
-    musicDB.oncreated = function(event) {
-      console.log('MusicHelper.js music file created');
-      if (self.bRename) {
-        self.bRename = false;
-        self.musicDB.deleteFile(self.oldName);
-        jsonCmd.result = RS_OK;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
-      }
-    };
   } catch (e) {
     console.log('MusicHelper.js initDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
@@ -244,7 +237,7 @@ function initMusic(jsonCmd, sendCallback) {
 function renameMusic(jsonCmd, sendCallback) {
   try {
     var jsonMusicData = JSON.parse(jsonCmd.data);
-    oldName = jsonMusicData[0];
+    var oldName = jsonMusicData[0];
     var newFile = jsonMusicData[1];
     if (oldName == newFile) {
       jsonCmd.result = RS_OK;
@@ -253,8 +246,19 @@ function renameMusic(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     } else {
       musicDB.getFile(oldName, function(file) {
-        bRename = true;
-        musicDB.addFile(newFile, file);
+        musicDB.addFile(newFile, file, function() {
+          console.log('MusicHelper.js deleteFile oldName: ' + oldName);
+          musicDB.deleteFile(oldName);
+          jsonCmd.result = RS_OK;
+          jsonCmd.exdatalength = 0;
+          jsonCmd.data = '';
+          sendCallback(jsonCmd);
+        }, function() {
+          jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
+          jsonCmd.exdatalength = 0;
+          jsonCmd.data = '';
+          sendCallback(jsonCmd);
+        });
       }, function(event) {
         jsonCmd.result = RS_ERROR.MUSIC_RENAME;
         jsonCmd.exdatalength = 0;

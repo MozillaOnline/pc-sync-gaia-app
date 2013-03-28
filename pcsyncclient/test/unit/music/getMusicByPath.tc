@@ -3,6 +3,6 @@
 	"type":"music",
 	"command":"getMusicByPath",
 	"result":null,
-	"data":"/sdcard/music/test.ogg",
+	"data":"music/test.ogg",
 	"exdatalength":0
 }

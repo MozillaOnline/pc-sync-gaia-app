@@ -615,7 +615,8 @@ var MediaDB = (function() {
     // will cause mediadb to add the file to its database, and that will
     // send out a mediadb event to the application UI.
     //
-    addFile: function addFile(filename, file) {
+    //dxue add successCallback and errorCallback
+    addFile: function addFile(filename, file, successCallback, errorCallback) {
       if (this.state !== MediaDB.READY)
         throw Error('MediaDB is not ready. State: ' + this.state);
 
@@ -630,6 +631,10 @@ var MediaDB = (function() {
         request.onerror = function() {
           console.error('MediaDB: Failed to store', filename,
                         'in DeviceStorage:', request.error.name);
+          errorCallback();
+        };
+        request.onsuccess = function() {
+          successCallback();
         };
       }
     },

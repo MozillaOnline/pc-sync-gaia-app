@@ -7,8 +7,6 @@
  *----------------------------------------------------------------------------------------------------------*/
 
 var videoDB = null;
-var bRename = false;
-var oldName = null;
 
 function videoHelper(jsonCmd, sendCallback, sendList, recvList) {
   try {
@@ -83,11 +81,17 @@ function doAddVideo(jsonCmd, sendCallback, sendList, recvList, videoData, remain
       }
     } else {
       var jsonVideoData = JSON.parse(videoData);
-      videoDB.addFile(jsonVideoData[0], dataUri2Blob(jsonVideoData[1]));
-      jsonCmd.result = RS_OK;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      videoDB.addFile(jsonVideoData[0], dataUri2Blob(jsonVideoData[1]), function() {
+        jsonCmd.result = RS_OK;
+        jsonCmd.exdatalength = 0;
+        jsonCmd.data = '';
+        sendCallback(jsonCmd);
+      }, function() {
+        jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
+        jsonCmd.exdatalength = 0;
+        jsonCmd.data = '';
+        sendCallback(jsonCmd);
+      });
     }
   } catch (e) {
     console.log('VideoHelper.js addVideo failed: ' + e);
@@ -219,17 +223,6 @@ function initVideo(jsonCmd, sendCallback) {
       jsonCmd.data = '';
       sendCallback(jsonCmd);
     };
-    videoDB.oncreated = function(event) {
-      console.log('VideoHelper.js video file created');
-      if (self.bRename) {
-        self.bRename = false;
-        self.videoDB.deleteFile(self.oldName);
-        jsonCmd.result = RS_OK;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
-      }
-    };
   } catch (e) {
     console.log('VideoHelper.js videoDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
@@ -242,7 +235,7 @@ function initVideo(jsonCmd, sendCallback) {
 function renameVideo(jsonCmd, sendCallback) {
   try {
     var jsonVideoData = JSON.parse(jsconCmd.data);
-    oldName = jsonVideoData[0];
+    var oldName = jsonVideoData[0];
     var newFile = jsonVideoData[1];
     if (oldName == newFile) {
       jsonCmd.result = RS_OK;
@@ -251,8 +244,19 @@ function renameVideo(jsonCmd, sendCallback) {
       sendCallback(jsonCmd);
     } else {
       videoDB.getFile(oldName, function(file) {
-        bRename = true;
-        videoDB.addFile(newFile, file);
+        videoDB.addFile(newFile, file, function() {
+          console.log('VideoHelper.js deleteFile oldName: ' + oldName);
+          videoDB.deleteFile(oldName);
+          jsonCmd.result = RS_OK;
+          jsonCmd.exdatalength = 0;
+          jsonCmd.data = '';
+          sendCallback(jsonCmd);
+        }, function() {
+          jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
+          jsonCmd.exdatalength = 0;
+          jsonCmd.data = '';
+          sendCallback(jsonCmd);
+        });
       }, function(event) {
         jsonCmd.result = RS_ERROR.VIDEO_RENAME;
         jsonCmd.exdatalength = 0;

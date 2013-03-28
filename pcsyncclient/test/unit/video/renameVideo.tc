@@ -3,6 +3,6 @@
 	"type":"video",
 	"command":"renameVideo",
 	"result":null,
-	"data":"[\"/sdcard/video/test.ogg\",\"/sdcard/video/newtest.ogg\"]",
+	"data":"[\"video/test.ogg\",\"video/newtest.ogg\"]",
 	"exdatalength":0
 }

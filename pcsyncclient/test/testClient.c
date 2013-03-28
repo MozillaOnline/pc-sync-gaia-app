@@ -235,15 +235,12 @@ int runOneTestCase(char * testCase, char * testData)
 	}
 	int recvExdataLength = cJSON_GetObjectItem(jsonRecv,"exdatalength")->valueint; 
 	
-	if(recvExdataLength > 0){
-		cJSON *jsonResult,*jsonData;   
-		jsonResult=cJSON_CreateObject();      
-		cJSON_AddNumberToObject(jsonResult,"result",   2048); 
-		cJSON_ReplaceItemInObject(jsonRecv,"result",jsonResult);
-		jsonData=cJSON_CreateObject();      
-		cJSON_AddItemToObject(jsonData, "data", cJSON_CreateString(""));  
-		cJSON_ReplaceItemInObject(jsonRecv,"data",jsonData);
-		send(client_socket,cJSON_Print(jsonRecv),read_length,0);
+	if(recvExdataLength > 0){   
+		cJSON_ReplaceItemInObject(jsonRecv,"result",cJSON_CreateNumber(2048));
+		cJSON_ReplaceItemInObject(jsonRecv,"data",cJSON_CreateString(""));
+		bzero(buffer,BUFFER_SIZE);
+		strcpy(buffer,cJSON_PrintUnformatted(jsonRecv));
+		send(client_socket,buffer,strlen(buffer),0);
 	}
 	cJSON_Delete(jsonRecv);
 	printf("Info： Recv exdata length is %d\n",recvExdataLength);

@@ -3,6 +3,6 @@
 	"type":"music",
 	"command":"deleteMusicByPath",
 	"result":null,
-	"data":"/sdcard/music/newtest.ogg",
+	"data":"music/newtest.ogg",
 	"exdatalength":0
 }
