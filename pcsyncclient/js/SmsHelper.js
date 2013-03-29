@@ -41,7 +41,7 @@ function smsHelper(jsonCmd, sendCallback, sendList, recvList) {
       }
     case "sendMessages":
       {
-        sendMessages(jsonCmd, sendCallback);
+        sendMessages(jsonCmd, sendCallback, sendList);
         break;
       }
     default:
@@ -274,38 +274,107 @@ function sendMessage(jsonCmd, sendCallback) {
   }
 }
 
-function sendMessages(jsonCmd, sendCallback) {
+function sendMessages(jsonCmd, sendCallback, sendList) {
   try {
+    var messageList = [];
     var message = JSON.parse(jsonCmd.data);
+    if (message.number.length == 0) {
+      jsonCmd.result = SMS_EMPTYNUMBER;
+      jsonCmd.data = "";
+      jsonCmd.exdatalength = 0;
+      sendCallback(jsonCmd);
+    }
     var request = window.navigator.mozSms.send(message.number, message.message);
-    for(var i=0;i<request.length;i++){
+    jsonCmd.result = RS_OK;
+    for (var i = 0; i < request.length; i++) {
       request[i].onsuccess = function(event) {
         if (event.target.result) {
-          var smsMessage = {
-            'id': event.target.result.id,
-            'delivery': event.target.result.delivery,
-            'sender': event.target.result.sender,
-            'receiver': event.target.result.receiver,
-            'body': event.target.result.body,
-            'timestamp': event.target.result.timestamp,
-            'read': event.target.result.read
+          var resultData = {
+            'result': RS_OK,
+            'smsMessage': {
+              'id': event.target.result.id,
+              'delivery': event.target.result.delivery,
+              'sender': event.target.result.sender,
+              'receiver': event.target.result.receiver,
+              'body': event.target.result.body,
+              'timestamp': event.target.result.timestamp,
+              'read': event.target.result.read
+            }
           };
-          jsonCmd.result = RS_OK;
-          jsonCmd.data = JSON.stringify(smsMessage);
-          jsonCmd.exdatalength = 0;
-          sendCallback(jsonCmd);
+          messageList.push(resultData);
+          if (messageList.length == request.length) {
+            var messagesData = JSON.stringify(messageList);
+            if (messagesData.length <= MAX_PACKAGE_SIZE) {
+              jsonCmd.data = messagesData;
+              jsonCmd.exdatalength = 0;
+              sendCallback(jsonCmd);
+            } else {
+              jsonCmd.data = messagesData.substr(0, MAX_PACKAGE_SIZE);
+              jsonCmd.exdatalength = messagesData.length - MAX_PACKAGE_SIZE;
+              for (var i = MAX_PACKAGE_SIZE; i < messagesData.length; i += MAX_PACKAGE_SIZE) {
+                if (i + MAX_PACKAGE_SIZE < messagesData.length) {
+                  sendList.push(messagesData.substr(i, MAX_PACKAGE_SIZE));
+                } else {
+                  sendList.push(messagesData.substr(i));
+                }
+              }
+              sendCallback(jsonCmd);
+            }
+          }
         } else {
-          jsonCmd.result = RS_ERROR.SMS_SENDMESSAGE;
-          jsonCmd.exdatalength = 0;
-          jsonCmd.data = '';
-          sendCallback(jsonCmd);
+          var resultData = {
+            'result': RS_ERROR.SMS_SENDMESSAGE,
+            'smsMessage': null
+          };
+          messageList.push(resultData);
+          if (messageList.length == request.length) {
+            var messagesData = JSON.stringify(messageList);
+            if (messagesData.length <= MAX_PACKAGE_SIZE) {
+              jsonCmd.data = messagesData;
+              jsonCmd.exdatalength = 0;
+              sendCallback(jsonCmd);
+            } else {
+              jsonCmd.data = messagesData.substr(0, MAX_PACKAGE_SIZE);
+              jsonCmd.exdatalength = messagesData.length - MAX_PACKAGE_SIZE;
+              for (var i = MAX_PACKAGE_SIZE; i < messagesData.length; i += MAX_PACKAGE_SIZE) {
+                if (i + MAX_PACKAGE_SIZE < messagesData.length) {
+                  sendList.push(messagesData.substr(i, MAX_PACKAGE_SIZE));
+                } else {
+                  sendList.push(messagesData.substr(i));
+                }
+              }
+              sendCallback(jsonCmd);
+            }
+          }
         }
       };
       request[i].onerror = function(event) {
-        jsonCmd.result = RS_ERROR.SMS_SENDMESSAGE;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        var resultData = {
+          'result': RS_ERROR.SMS_SENDMESSAGE,
+          'smsMessage': null
+        };
+        console.log('SmsHelper.js messagesData failed: ' + JSON.stringify(resultData));
+        messageList.push(resultData);
+        if (messageList.length == request.length) {
+          var messagesData = JSON.stringify(messageList);
+          console.log('SmsHelper.js messagesData failed: ' + messagesData);
+          if (messagesData.length <= MAX_PACKAGE_SIZE) {
+            jsonCmd.data = messagesData;
+            jsonCmd.exdatalength = 0;
+            sendCallback(jsonCmd);
+          } else {
+            jsonCmd.data = messagesData.substr(0, MAX_PACKAGE_SIZE);
+            jsonCmd.exdatalength = messagesData.length - MAX_PACKAGE_SIZE;
+            for (var i = MAX_PACKAGE_SIZE; i < messagesData.length; i += MAX_PACKAGE_SIZE) {
+              if (i + MAX_PACKAGE_SIZE < messagesData.length) {
+                sendList.push(messagesData.substr(i, MAX_PACKAGE_SIZE));
+              } else {
+                sendList.push(messagesData.substr(i));
+              }
+            }
+            sendCallback(jsonCmd);
+          }
+        }
       };
     }
   } catch (e) {
