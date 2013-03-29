@@ -22,8 +22,8 @@
 #include "cJSON.h"
 
 #define SERVER_PORT    10010
-#define BUFFER_SIZE 5120
-#define PACKAGE_SIZE 2048
+#define BUFFER_SIZE 51200
+#define PACKAGE_SIZE 40960
 #define FILE_NAME_MAX_SIZE 512
 
 int runOneTestCase(char * testCase, char * testData);

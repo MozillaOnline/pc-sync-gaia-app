@@ -236,8 +236,11 @@ function markReadMessageById(jsonCmd, sendCallback) {
 function sendMessage(jsonCmd, sendCallback) {
   try {
     var message = JSON.parse(jsonCmd.data);
+    console.log('SmsHelper.js sendMessage message ' + message);
     var request = window.navigator.mozSms.send(message.number, message.message);
+    console.log('SmsHelper.js sendMessage request ' + request);
     request.onsuccess = function(event) {
+      console.log('SmsHelper.js sendMessage onsuccess ');
       if (event.target.result) {
         var smsMessage = {
           'id': event.target.result.id,
@@ -260,6 +263,7 @@ function sendMessage(jsonCmd, sendCallback) {
       }
     };
     request.onerror = function(event) {
+      console.log('SmsHelper.js sendMessage onerror ');
       jsonCmd.result = RS_ERROR.SMS_SENDMESSAGE;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
