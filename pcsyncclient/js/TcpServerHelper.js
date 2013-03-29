@@ -76,8 +76,15 @@ tcpServerHelper.prototype = {
 function sendCmdData(jsonCmd) {
   try {
     console.log('TcpServerHelper.js sendCmdData start: ' + JSON.stringify(jsonCmd));
-    var message = TextEncoder('utf-8').encode(JSON.stringify(jsonCmd));
-    this.socket.send(message);
+    var jsonCmdData = {
+      'id': jsonCmd.id,
+      'type': jsonCmd.type,
+      'command': jsonCmd.command,
+      'result': jsonCmd.result,
+      'data': jsonCmd.data,
+      'exdatalength': jsonCmd.exdatalength
+    };
+    this.socket.send(TextEncoder('utf-8').encode(JSON.stringify(jsonCmdData)));
     this.isNewCmd = true;
     console.log('TcpServerHelper.js sendCmdData end ');
   } catch (e) {

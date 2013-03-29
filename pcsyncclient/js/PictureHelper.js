@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------------------------------------------*/
 
 var photoDB = null;
+var isPictureCreated = false;
 
 function pictureHelper(jsonCmd, sendCallback, sendList, recvList) {
   try {
@@ -83,10 +84,7 @@ function doAddPicture(jsonCmd, sendCallback, sendList, recvList, picData, remain
       var jsonPictureData = JSON.parse(picData);
       console.log('PictureHelper.js addPicture : ' + jsonPictureData[0]);
       photoDB.addFile(jsonPictureData[0], dataUri2Blob(jsonPictureData[1]), function() {
-        jsonCmd.result = RS_OK;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        waitAddPictureFile(null, jsonCmd, sendCallback);
       }, function() {
         jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
         jsonCmd.exdatalength = 0;
@@ -198,41 +196,71 @@ function getPictureByPath(jsonCmd, sendCallback, sendList) {
 
 function initPicture(jsonCmd, sendCallback) {
   try {
-    photoDB = new MediaDB('pictures', metadataParsers.imageMetadataParser, {
-      mimeTypes: ['image/jpeg', 'image/png'],
-      version: 2,
-      autoscan: false,
-      batchHoldTime: 350,
-      batchSize: 12
-    });
-    photoDB.onunavailable = function(event) {
-      //get all the reasons from event
-      console.log('PictureHelper.js photoDB is unavailable');
-      jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
-    };
-    photoDB.onready = function() {
-      photoDB.scan();
-      console.log('PictureHelper.js photoDB is ready');
-    };
-    photoDB.onscanstart = function() {
-      console.log('PictureHelper.js photoDB scan start');
-    };
-    photoDB.onscanend = function() {
-      console.log('PictureHelper.js photoDB scan end');
+    if (photoDB == null) {
+      photoDB = new MediaDB('pictures', metadataParsers.imageMetadataParser, {
+        mimeTypes: ['image/jpeg', 'image/png'],
+        version: 2,
+        autoscan: false,
+        batchHoldTime: 350,
+        batchSize: 12
+      });
+      photoDB.onunavailable = function(event) {
+        //get all the reasons from event
+        console.log('PictureHelper.js photoDB is unavailable');
+        jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
+        jsonCmd.exdatalength = 0;
+        jsonCmd.data = '';
+        sendCallback(jsonCmd);
+      };
+      photoDB.onready = function() {
+        photoDB.scan();
+        console.log('PictureHelper.js photoDB is ready');
+      };
+      photoDB.onscanstart = function() {
+        console.log('PictureHelper.js photoDB scan start');
+      };
+      photoDB.onscanend = function() {
+        console.log('PictureHelper.js photoDB scan end');
+        jsonCmd.result = RS_OK;
+        jsonCmd.exdatalength = 0;
+        jsonCmd.data = '';
+        sendCallback(jsonCmd);
+      };
+      photoDB.oncreated = function() {
+        console.log('PictureHelper.js oncreated !!!!!!!!!!!!!!!!!!!!!!');
+        self.isPictureCreated = true;
+      };
+    } else {
       jsonCmd.result = RS_OK;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
       sendCallback(jsonCmd);
-    };
+    }
+
   } catch (e) {
     console.log('PictureHelper.js photoDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.exdatalength = 0;
     jsonCmd.data = '';
     sendCallback(jsonCmd);
+  }
+}
+
+function waitAddPictureFile(oldFile, jsonCmd, sendCallback) {
+  if(isPictureCreated == true){
+    isPictureCreated = false;
+    if(oldFile && (oldFile != "")){
+      photoDB.deleteFile(oldFile);
+    }
+    jsonCmd.result = RS_OK;
+    jsonCmd.exdatalength = 0;
+    jsonCmd.data = '';
+    sendCallback(jsonCmd);
+  }
+  else{
+    setTimeout(function() {
+      waitAddPictureFile(oldFile, jsonCmd, sendCallback)
+    }, 20);
   }
 }
 
@@ -249,12 +277,7 @@ function renamePicture(jsonCmd, sendCallback) {
     } else {
       photoDB.getFile(oldName, function(file) {
         photoDB.addFile(newFile, file, function() {
-          console.log('PictureHelper.js deleteFile oldName: ' + oldName);
-          photoDB.deleteFile(oldName);
-          jsonCmd.result = RS_OK;
-          jsonCmd.exdatalength = 0;
-          jsonCmd.data = '';
-          sendCallback(jsonCmd);
+          waitAddPictureFile(oldName, jsonCmd, sendCallback);
         }, function() {
           jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
           jsonCmd.exdatalength = 0;

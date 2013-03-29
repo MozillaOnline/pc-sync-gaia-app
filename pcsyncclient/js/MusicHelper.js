@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------------------------------------------*/
 
 var musicDB = null;
+var isMusicCreated = false;
 
 function musicHelper(jsonCmd, sendCallback, sendList, recvList) {
   try {
@@ -82,10 +83,7 @@ function doAddMusic(jsonCmd, sendCallback, sendList, recvList, musicData, remain
     } else {
       var jsonMusicData = JSON.parse(musicData);
       musicDB.addFile(jsonMusicData[0], dataUri2Blob(jsonMusicData[1]), function() {
-        jsonCmd.result = RS_OK;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        waitAddMusicFile(null, jsonCmd, sendCallback);
       }, function() {
         jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
         jsonCmd.exdatalength = 0;
@@ -197,34 +195,46 @@ function getMusicByPath(jsonCmd, sendCallback, sendList) {
 
 function initMusic(jsonCmd, sendCallback) {
   try {
-    musicDB = new MediaDB('music', parseAudioMetadata, {
-      indexes: ['metadata.album', 'metadata.artist', 'metadata.title', 'metadata.rated', 'metadata.played', 'date'],
-      batchSize: 1,
-      autoscan: false,
-      version: 2
-    });
-    musicDB.onunavailable = function(event) {
-      //get all the reasons from event
-      console.log('MusicHelper.js musicDB is unavailable');
-      jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
-    };
-    musicDB.onready = function() {
-      self.musicDB.scan();
-      console.log('MusicHelper.js musicDB is ready');
-    };
-    musicDB.onscanstart = function() {
-      console.log('MusicHelper.js musicDB scan start');
-    };
-    musicDB.onscanend = function() {
-      console.log('MusicHelper.js musicDB scan end');
+    if (musicDB == null) {
+      musicDB = new MediaDB('music', parseAudioMetadata, {
+        indexes: ['metadata.album', 'metadata.artist', 'metadata.title', 'metadata.rated', 'metadata.played', 'date'],
+        batchSize: 1,
+        autoscan: false,
+        version: 2
+      });
+      musicDB.onunavailable = function(event) {
+        //get all the reasons from event
+        console.log('MusicHelper.js musicDB is unavailable');
+        jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
+        jsonCmd.exdatalength = 0;
+        jsonCmd.data = '';
+        sendCallback(jsonCmd);
+      };
+      musicDB.onready = function() {
+        self.musicDB.scan();
+        console.log('MusicHelper.js musicDB is ready');
+      };
+      musicDB.onscanstart = function() {
+        console.log('MusicHelper.js musicDB scan start');
+      };
+      musicDB.onscanend = function() {
+        console.log('MusicHelper.js musicDB scan end');
+        jsonCmd.result = RS_OK;
+        jsonCmd.exdatalength = 0;
+        jsonCmd.data = '';
+        sendCallback(jsonCmd);
+      };
+      musicDB.oncreated = function() {
+        console.log('MusicHelper.js oncreated !!!!!!!!!!!!!!!!!!!!!!');
+        self.isMusicCreated = true;
+      };
+    } else {
       jsonCmd.result = RS_OK;
       jsonCmd.exdatalength = 0;
       jsonCmd.data = '';
       sendCallback(jsonCmd);
-    };
+    }
+
   } catch (e) {
     console.log('MusicHelper.js initDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
@@ -233,6 +243,25 @@ function initMusic(jsonCmd, sendCallback) {
     sendCallback(jsonCmd);
   }
 }
+
+function waitAddMusicFile(oldFile, jsonCmd, sendCallback) {
+  if(isMusicCreated == true){
+    isMusicCreated = false;
+    if(oldFile && (oldFile != "")){
+      musicDB.deleteFile(oldFile);
+    }
+    jsonCmd.result = RS_OK;
+    jsonCmd.exdatalength = 0;
+    jsonCmd.data = '';
+    sendCallback(jsonCmd);
+  }
+  else{
+    setTimeout(function() {
+      waitAddMusicFile(oldFile, jsonCmd, sendCallback)
+    }, 20);
+  }
+}
+
 
 function renameMusic(jsonCmd, sendCallback) {
   try {
@@ -247,12 +276,7 @@ function renameMusic(jsonCmd, sendCallback) {
     } else {
       musicDB.getFile(oldName, function(file) {
         musicDB.addFile(newFile, file, function() {
-          console.log('MusicHelper.js deleteFile oldName: ' + oldName);
-          musicDB.deleteFile(oldName);
-          jsonCmd.result = RS_OK;
-          jsonCmd.exdatalength = 0;
-          jsonCmd.data = '';
-          sendCallback(jsonCmd);
+          waitAddPictureFile(oldName, jsonCmd, sendCallback);
         }, function() {
           jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
           jsonCmd.exdatalength = 0;
