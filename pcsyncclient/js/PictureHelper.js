@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------------------------------------
  *File Name: PictureHelper.js
  *Created By: wdeng@mozilla.com
- *Description: Manage pic files
+ *Description: Manage picture files
  *Modified By: dxue@mozilla.com
  *Description: Format code
  *----------------------------------------------------------------------------------------------------------*/
@@ -12,108 +12,112 @@ var isPictureCreated = false;
 function pictureHelper(jsonCmd, sendCallback, sendList, recvList) {
   try {
     switch (jsonCmd.command) {
-    case "addPicture":
+    case PICTURE_COMMAND.addPicture:
       {
         addPicture(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
-    case "deletePictureByPath":
+    case PICTURE_COMMAND.deletePictureByPath:
       {
-        deletePictureByPath(jsonCmd, sendCallback);
+        deletePictureByPath(jsonCmd, sendCallback, recvList);
         break;
       }
-    case "getAllPicturesInfo":
+    case PICTURE_COMMAND.getAllPicturesInfo:
       {
         getAllPicturesInfo(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "getPictureByPath":
+    case PICTURE_COMMAND.getPictureByPath:
       {
-        getPictureByPath(jsonCmd, sendCallback, sendList);
+        getPictureByPath(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
-    case "initPicture":
+    case PICTURE_COMMAND.initPicture:
       {
         initPicture(jsonCmd, sendCallback);
         break;
       }
-    case "renamePicture":
+    case PICTURE_COMMAND.renamePicture:
       {
-        renamePicture(jsonCmd, sendCallback);
+        renamePicture(jsonCmd, sendCallback, recvList);
         break;
       }
     default:
       {
         console.log('PictureHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     console.log('PictureHelper.js pictureHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
 function addPicture(jsonCmd, sendCallback, sendList, recvList) {
-  doAddPicture(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data, jsonCmd.exdatalength);
+  var pictureData = recvList.shift();
+  var lastDatalen = jsonCmd.datalength - pictureData.length;
+  doAddPicture(jsonCmd, sendCallback, sendList, recvList, pictureData, lastDatalen);
 }
 
-function doAddPicture(jsonCmd, sendCallback, sendList, recvList, picData, remainder) {
+function doAddPicture(jsonCmd, sendCallback, sendList, recvList, pictureData, remainder) {
   try {
     if (remainder > 0) {
       if (recvList.length > 0) {
-        picData += recvList[0];
-        remainder -= recvList[0].length;
-        recvList.remove(0);
+        var recvData = recvList.shift();
+        pictureData += recvData;
+        remainder -= recvData.length;
         setTimeout(function() {
-          doAddPicture(jsonCmd, sendCallback, sendList, recvList, picData, remainder);
+          doAddPicture(jsonCmd, sendCallback, sendList, recvList, pictureData, remainder);
         }, 0);
       } else {
         setTimeout(function() {
-          doAddPicture(jsonCmd, sendCallback, sendList, recvList, picData, remainder);
+          doAddPicture(jsonCmd, sendCallback, sendList, recvList, pictureData, remainder);
         }, 20);
       }
     } else {
-      var jsonPictureData = JSON.parse(picData);
-      console.log('PictureHelper.js addPicture : ' + jsonPictureData[0]);
-      photoDB.addFile(jsonPictureData[0], dataUri2Blob(jsonPictureData[1]), function() {
+      var fileName = pictureData.substr(0, jsonCmd.smallDatalength);
+      var fileData = pictureData.substr(jsonCmd.smallDatalength, jsonCmd.largeDatalength);
+      console.log('MusicHelper.js addMusic fileName: ' + fileName);
+      console.log('MusicHelper.js addMusic fileData: ' + fileData);
+      photoDB.addFile(fileName, dataUri2Blob(fileData), function() {
         waitAddPictureFile(null, jsonCmd, sendCallback);
       }, function() {
         jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       });
     }
   } catch (e) {
     console.log('PictureHelper.js addPicture failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
-function deletePictureByPath(jsonCmd, sendCallback) {
+function deletePictureByPath(jsonCmd, sendCallback, recvList) {
   try {
-    photoDB.deleteFile(jsonCmd.data);
+    photoDB.deleteFile(recvList[0]);
     jsonCmd.result = RS_OK;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   } catch (e) {
     console.log('PictureHelper.js deletePictureByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+  jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
@@ -132,65 +136,61 @@ function getAllPicturesInfo(jsonCmd, sendCallback, sendList) {
         result.push(fileInfo);
       }
       jsonCmd.result = RS_OK;
-      var picsData = JSON.stringify(result);
-      if (picsData.length <= MAX_PACKAGE_SIZE) {
-        jsonCmd.data = picsData;
-        jsonCmd.exdatalength = 0;
-        sendCallback(jsonCmd);
+      var picturesData = JSON.stringify(result);
+      jsonCmd.smallDatalength = picturesData.length;
+        jsonCmd.largeDatalength = 0;
+      if (picturesData.length <= MAX_PACKAGE_SIZE) {
+        sendCallback(jsonCmd, picturesData);
       } else {
-        jsonCmd.data = picsData.substr(0, MAX_PACKAGE_SIZE);
-        jsonCmd.exdatalength = picsData.length - MAX_PACKAGE_SIZE;
-        for (var i = MAX_PACKAGE_SIZE; i < picsData.length; i += MAX_PACKAGE_SIZE) {
-          if (i + MAX_PACKAGE_SIZE < picsData.length) {
-            sendList.push(picsData.substr(i, MAX_PACKAGE_SIZE));
+        sendCallback(jsonCmd, picturesData.substr(0, MAX_PACKAGE_SIZE));
+        for (var i = MAX_PACKAGE_SIZE; i < picturesData.length; i += MAX_PACKAGE_SIZE) {
+          if (i + MAX_PACKAGE_SIZE < picturesData.length) {
+            sendList.push(picturesData.substr(i, MAX_PACKAGE_SIZE));
           } else {
-            sendList.push(picsData.substr(i));
+            sendList.push(picturesData.substr(i));
           }
         }
-        sendCallback(jsonCmd);
       }
     });
   } catch (e) {
     console.log('PictureHelper.js getAllPicturesInfo failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
-function getPictureByPath(jsonCmd, sendCallback, sendList) {
+function getPictureByPath(jsonCmd, sendCallback, sendList, recvList) {
   try {
-    photoDB.getFile(jsonCmd.data, function getPic(file) {
+    photoDB.getFile(recvList[0], function (file) {
       var fileReader = new FileReader();
       fileReader.readAsDataURL(file);
       fileReader.onload = function fileLoad(e) {
         jsonCmd.result = RS_OK;
-        var picsData = JSON.stringify(e.target.result);
-        if (picsData.length <= MAX_PACKAGE_SIZE) {
-          jsonCmd.data = picsData;
-          jsonCmd.exdatalength = 0;
-          sendCallback(jsonCmd);
+        var picturesData = JSON.stringify(e.target.result);
+        jsonCmd.smallDatalength = picturesData.length;
+        jsonCmd.largeDatalength = 0;
+        if (picturesData.length <= MAX_PACKAGE_SIZE) {
+          sendCallback(jsonCmd, picturesData);
         } else {
-          jsonCmd.data = picsData.substr(0, MAX_PACKAGE_SIZE);
-          jsonCmd.exdatalength = picsData.length - MAX_PACKAGE_SIZE;
-          for (var i = MAX_PACKAGE_SIZE; i < picsData.length; i += MAX_PACKAGE_SIZE) {
-            if (i + MAX_PACKAGE_SIZE < picsData.length) {
-              sendList.push(picsData.substr(i, MAX_PACKAGE_SIZE));
+          sendCallback(jsonCmd, picturesData.substr(0, MAX_PACKAGE_SIZE));
+          for (var i = MAX_PACKAGE_SIZE; i < picturesData.length; i += MAX_PACKAGE_SIZE) {
+            if (i + MAX_PACKAGE_SIZE < picturesData.length) {
+              sendList.push(picturesData.substr(i, MAX_PACKAGE_SIZE));
             } else {
-              sendList.push(picsData.substr(i));
+              sendList.push(picturesData.substr(i));
             }
           }
-          sendCallback(jsonCmd);
         }
       };
     });
   } catch (e) {
     console.log('PictureHelper.js getPictureByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
@@ -208,9 +208,9 @@ function initPicture(jsonCmd, sendCallback) {
         //get all the reasons from event
         console.log('PictureHelper.js photoDB is unavailable');
         jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+     jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       };
       photoDB.onready = function() {
         photoDB.scan();
@@ -222,9 +222,9 @@ function initPicture(jsonCmd, sendCallback) {
       photoDB.onscanend = function() {
         console.log('PictureHelper.js photoDB scan end');
         jsonCmd.result = RS_OK;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       };
       photoDB.oncreated = function() {
         console.log('PictureHelper.js oncreated !!!!!!!!!!!!!!!!!!!!!!');
@@ -232,70 +232,69 @@ function initPicture(jsonCmd, sendCallback) {
       };
     } else {
       jsonCmd.result = RS_OK;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+ jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     }
 
   } catch (e) {
     console.log('PictureHelper.js photoDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+  jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
 function waitAddPictureFile(oldFile, jsonCmd, sendCallback) {
-  if(isPictureCreated == true){
+  if (isPictureCreated == true) {
     isPictureCreated = false;
-    if(oldFile && (oldFile != "")){
+    if (oldFile && (oldFile != "")) {
       photoDB.deleteFile(oldFile);
     }
     jsonCmd.result = RS_OK;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
-  }
-  else{
+  jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
+  } else {
     setTimeout(function() {
       waitAddPictureFile(oldFile, jsonCmd, sendCallback)
     }, 20);
   }
 }
 
-function renamePicture(jsonCmd, sendCallback) {
+function renamePicture(jsonCmd, sendCallback, recvList) {
   try {
-    var jsonPictureData = JSON.parse(jsonCmd.data);
+    var jsonPictureData = JSON.parse(recvList[0]);
     var oldName = jsonPictureData[0];
     var newFile = jsonPictureData[1];
     if (oldName == newFile) {
       jsonCmd.result = RS_OK;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+     jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     } else {
       photoDB.getFile(oldName, function(file) {
         photoDB.addFile(newFile, file, function() {
           waitAddPictureFile(oldName, jsonCmd, sendCallback);
         }, function() {
           jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
-          jsonCmd.exdatalength = 0;
-          jsonCmd.data = '';
-          sendCallback(jsonCmd);
+         jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+          sendCallback(jsonCmd, null);
         });
       }, function(event) {
         jsonCmd.result = RS_ERROR.PICTURE_RENAME;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+   jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       });
     }
   } catch (e) {
     console.log('PictureHelper.js renamePicture failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }

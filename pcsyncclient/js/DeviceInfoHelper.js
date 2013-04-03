@@ -9,38 +9,38 @@
 function deviceInfoHelper(jsonCmd, sendCallback, sendList, recvList) {
   try {
     switch (jsonCmd.command) {
-    case "getStorage":
+    case DEVICEINFO_COMMAND.getStorage:
       {
-        getStorage(jsonCmd, sendCallback);
+        getStorage(jsonCmd, sendCallback, recvList);
         break;
       }
     default:
       {
         console.log('DeviceInfoHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     console.log('DeviceInfoHelper.js deviceInfoHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
-function getStorage(jsonCmd, sendCallback) {
+function getStorage(jsonCmd, sendCallback, recvList) {
   try {
-    var deviceStorage = window.navigator.getDeviceStorage(jsonCmd.data);
+    var deviceStorage = window.navigator.getDeviceStorage(recvList[0]);
     if (!deviceStorage) {
       jsonCmd.result = RS_ERROR.DEVICEINFO_GETSTORAGE;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     } else {
       var request = deviceStorage.freeSpace();
       request.onsuccess = function(e) {
@@ -50,34 +50,34 @@ function getStorage(jsonCmd, sendCallback) {
         requestused.onsuccess = function(e) {
           var usedSpace = e.target.result;
           jsonCmd.result = RS_OK;
-          jsonCmd.exdatalength = 0;
           var storageData = {
             'usedSpace': usedSpace,
             'freeSpace': freeSpace
           };
-          jsonCmd.data = JSON.stringify(storageData);
-          console.log('DeviceInfoHelper.js getStorage: ' + jsonCmd.data);
-          sendCallback(jsonCmd);
+          var sendData = JSON.stringify(storageData);
+          jsonCmd.smallDatalength = sendData.length;
+          jsonCmd.largeDatalength = 0;
+          sendCallback(jsonCmd, sendData);
         };
         requestused.onerror = function(e) {
           jsonCmd.result = RS_ERROR.DEVICEINFO_GETSTORAGE;
-          jsonCmd.exdatalength = 0;
-          jsonCmd.data = '';
-          sendCallback(jsonCmd);
+          jsonCmd.smallDatalength = 0;
+          jsonCmd.largeDatalength = 0;
+          sendCallback(jsonCmd, null);
         };
       }
       request.onerror = function(e) {
         jsonCmd.result = RS_ERROR.DEVICEINFO_GETSTORAGE;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       };
     }
   } catch (e) {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
     console.log('SmsHelper.js getStorage failed: ' + e);
   }
 }

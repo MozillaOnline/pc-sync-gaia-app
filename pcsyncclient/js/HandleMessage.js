@@ -9,56 +9,56 @@
 function handleMessage(jsonCmd, sendCallback, sendList, recvList) {
   try {
     switch (jsonCmd.type) {
-    case "contact":
-      {
-        contactHelper(jsonCmd, sendCallback, sendList, recvList);
-        break;
-      }
-    case "deviceInfo":
-      {
-        deviceInfoHelper(jsonCmd, sendCallback, sendList, recvList);
-        break;
-      }
-    case "sms":
-      {
-        smsHelper(jsonCmd, sendCallback, sendList, recvList);
-        break;
-      }
-    case "app":
+    case CMD_TYPE.app:
       {
         appManagerHelper(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
-    case "picture":
+    case CMD_TYPE.contact:
+      {
+        contactHelper(jsonCmd, sendCallback, sendList, recvList);
+        break;
+      }
+    case CMD_TYPE.deviceInfo:
+      {
+        deviceInfoHelper(jsonCmd, sendCallback, sendList, recvList);
+        break;
+      }
+    case CMD_TYPE.music:
+      {
+        musicHelper(jsonCmd, sendCallback, sendList, recvList);
+        break;
+      }
+    case CMD_TYPE.picture:
       {
         pictureHelper(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
-    case "video":
+    case CMD_TYPE.sms:
       {
-        videoHelper(jsonCmd, sendCallback, sendList, recvList);
+        smsHelper(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
-    case "music":
+    case CMD_TYPE.video:
       {
-        musicHelper(jsonCmd, sendCallback, sendList, recvList);
+        videoHelper(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
     default:
       {
         console.log('HandleMessage.js undefined type :' + jsonCmd.type);
         jsonCmd.result = RS_ERROR.TYPE_UNDEFINED;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     console.log('HandleMessage.js handleMessage failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }

@@ -1,8 +1,0 @@
-{
-	"id":"1234",
-	"type":"video",
-	"command":"renameVideo",
-	"result":null,
-	"data":"[\"video/test.ogg\",\"video/newtest.ogg\"]",
-	"exdatalength":0
-}

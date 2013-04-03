@@ -1,8 +1,0 @@
-{
-	"id":"1234",
-	"type":"picture",
-	"command":"deletePictureByPath",
-	"result":null,
-	"data":"picture/newtest.jpg",
-	"exdatalength":0
-}

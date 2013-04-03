@@ -9,88 +9,88 @@
 function smsHelper(jsonCmd, sendCallback, sendList, recvList) {
   try {
     switch (jsonCmd.command) {
-    case "deleteMessageById":
+    case SMS_COMMAND.deleteMessageById:
       {
-        deleteMessageById(jsonCmd, sendCallback);
+        deleteMessageById(jsonCmd, sendCallback, recvList);
         break;
       }
-    case "getAllMessages":
+    case SMS_COMMAND.getAllMessages:
       {
         getAllMessages(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "getMessageById":
+    case SMS_COMMAND.getMessageById:
       {
-        getMessageById(jsonCmd, sendCallback);
+        getMessageById(jsonCmd, sendCallback, recvList);
         break;
       }
-    case "listenMessage":
+    case SMS_COMMAND.listenMessage:
       {
         listenMessage(jsonCmd, sendCallback);
         break;
       }
-    case "markReadMessageById":
+    case SMS_COMMAND.markReadMessageById:
       {
-        markReadMessageById(jsonCmd, sendCallback);
+        markReadMessageById(jsonCmd, sendCallback, recvList);
         break;
       }
-    case "sendMessage":
+    case SMS_COMMAND.sendMessage:
       {
-        sendMessage(jsonCmd, sendCallback);
+        sendMessage(jsonCmd, sendCallback, recvList);
         break;
       }
-    case "sendMessages":
+    case SMS_COMMAND.sendMessages:
       {
-        sendMessages(jsonCmd, sendCallback, sendList);
+        sendMessages(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
     default:
       {
         console.log('SmsHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     console.log('SmsHelper.js smsHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
-function deleteMessageById(jsonCmd, sendCallback) {
+function deleteMessageById(jsonCmd, sendCallback, recvList) {
   try {
-    var request = window.navigator.mozSms.delete(jsonCmd.data);
+    var request = window.navigator.mozSms.delete(recvList[0]);
     request.onsuccess = function(event) {
       if (event.target.result) {
         jsonCmd.result = RS_OK;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       } else {
         jsonCmd.result = RS_ERROR.SMS_MESSAGE_NOTFOUND;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       }
     };
     request.onerror = function(event) {
       jsonCmd.result = RS_ERROR.SMS_DELETEMESSAGE;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('SmsHelper.js deleteMessageById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
@@ -117,13 +117,13 @@ function getAllMessages(jsonCmd, sendCallback, sendList) {
       } else {
         jsonCmd.result = RS_OK;
         var smsData = JSON.stringify(messages);
+
+        jsonCmd.smallDatalength = smsData.length;
+        jsonCmd.largeDatalength = 0;
         if (smsData.length <= MAX_PACKAGE_SIZE) {
-          jsonCmd.data = smsData;
-          jsonCmd.exdatalength = 0;
-          sendCallback(jsonCmd);
+          sendCallback(jsonCmd, smsData);
         } else {
-          jsonCmd.data = smsData.substr(0, MAX_PACKAGE_SIZE);
-          jsonCmd.exdatalength = smsData.length - MAX_PACKAGE_SIZE;
+          sendCallback(jsonCmd, smsData.substr(0, MAX_PACKAGE_SIZE));
           for (var i = MAX_PACKAGE_SIZE; i < smsData.length; i += MAX_PACKAGE_SIZE) {
             if (i + MAX_PACKAGE_SIZE < smsData.length) {
               sendList.push(smsData.substr(i, MAX_PACKAGE_SIZE));
@@ -131,28 +131,27 @@ function getAllMessages(jsonCmd, sendCallback, sendList) {
               sendList.push(smsData.substr(i));
             }
           }
-          sendCallback(jsonCmd);
         }
       }
     };
     request.onerror = function(event) {
       jsonCmd.result = RS_ERROR.SMS_GETALLMESSAGES;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('SmsHelper.js getAllMessages failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
-function getMessageById(jsonCmd, sendCallback) {
+function getMessageById(jsonCmd, sendCallback, recvList) {
   try {
-    var request = window.navigator.mozSms.getMessage(jsonCmd.data);
+    var request = window.navigator.mozSms.getMessage(recvList[0]);
     request.onsuccess = function(event) {
       var smsMessage = {
         'id': event.target.result.id,
@@ -164,22 +163,23 @@ function getMessageById(jsonCmd, sendCallback) {
         'read': event.target.result.read
       };
       jsonCmd.result = RS_OK;
-      jsonCmd.data = JSON.stringify(smsMessage);
-      jsonCmd.exdatalength = 0;
-      sendCallback(jsonCmd);
+      var sendData = JSON.stringify(smsMessage);
+      jsonCmd.smallDatalength = sendData.length;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, sendData);
     };
     request.onerror = function(event) {
       jsonCmd.result = RS_ERROR.SMS_GETMESSAGE;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('SmsHelper.js getMessageById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
@@ -196,46 +196,47 @@ function listenMessage(jsonCmd, sendCallback) {
         'read': event.message.read
       };
       jsonCmd.result = RS_OK;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = JSON.stringify(smsMessage);
-      sendCallback(jsonCmd);
+      var sendData = JSON.stringify(smsMessage);
+      jsonCmd.smallDatalength = sendData.length;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, sendData);
     };
   } catch (e) {
     console.log('SmsHelper.js listenMessage failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
-function markReadMessageById(jsonCmd, sendCallback) {
+function markReadMessageById(jsonCmd, sendCallback, recvList) {
   try {
-    var request = window.navigator.mozSms.markMessageRead(jsonCmd.data, true);
+    var request = window.navigator.mozSms.markMessageRead(recvList[0], true);
     request.onsuccess = function(event) {
       jsonCmd.result = RS_OK;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
     request.onerror = function(event) {
       jsonCmd.result = RS_ERROR.SMS_MARDREAD;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('SmsHelper.js markReadMessageById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
-function sendMessage(jsonCmd, sendCallback) {
+function sendMessage(jsonCmd, sendCallback, recvList) {
   try {
-    var message = JSON.parse(jsonCmd.data);
+    var message = JSON.parse(recvList[0]);
     console.log('SmsHelper.js sendMessage message ' + message);
     var request = window.navigator.mozSms.send(message.number, message.message);
     console.log('SmsHelper.js sendMessage request ' + request);
@@ -252,41 +253,42 @@ function sendMessage(jsonCmd, sendCallback) {
           'read': event.target.result.read
         };
         jsonCmd.result = RS_OK;
-        jsonCmd.data = JSON.stringify(smsMessage);
-        jsonCmd.exdatalength = 0;
-        sendCallback(jsonCmd);
+        var sendData = JSON.stringify(smsMessage);
+        jsonCmd.smallDatalength = sendData.length;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, sendData);
       } else {
         jsonCmd.result = RS_ERROR.SMS_SENDMESSAGE;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       }
     };
     request.onerror = function(event) {
       console.log('SmsHelper.js sendMessage onerror ');
       jsonCmd.result = RS_ERROR.SMS_SENDMESSAGE;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('SmsHelper.js sendMessage failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
-function sendMessages(jsonCmd, sendCallback, sendList) {
+function sendMessages(jsonCmd, sendCallback, sendList, recvList) {
   try {
     var messageList = [];
-    var message = JSON.parse(jsonCmd.data);
+    var message = JSON.parse(recvList[0]);
     if (message.number.length == 0) {
       jsonCmd.result = SMS_EMPTYNUMBER;
-      jsonCmd.data = "";
-      jsonCmd.exdatalength = 0;
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     }
     var request = window.navigator.mozSms.send(message.number, message.message);
     jsonCmd.result = RS_OK;
@@ -308,13 +310,12 @@ function sendMessages(jsonCmd, sendCallback, sendList) {
           messageList.push(resultData);
           if (messageList.length == request.length) {
             var messagesData = JSON.stringify(messageList);
+            jsonCmd.smallDatalength = messagesData.length;
+            jsonCmd.largeDatalength = 0;
             if (messagesData.length <= MAX_PACKAGE_SIZE) {
-              jsonCmd.data = messagesData;
-              jsonCmd.exdatalength = 0;
-              sendCallback(jsonCmd);
+              sendCallback(jsonCmd, messagesData);
             } else {
-              jsonCmd.data = messagesData.substr(0, MAX_PACKAGE_SIZE);
-              jsonCmd.exdatalength = messagesData.length - MAX_PACKAGE_SIZE;
+              sendCallback(jsonCmd, messagesData.substr(0, MAX_PACKAGE_SIZE));
               for (var i = MAX_PACKAGE_SIZE; i < messagesData.length; i += MAX_PACKAGE_SIZE) {
                 if (i + MAX_PACKAGE_SIZE < messagesData.length) {
                   sendList.push(messagesData.substr(i, MAX_PACKAGE_SIZE));
@@ -322,8 +323,8 @@ function sendMessages(jsonCmd, sendCallback, sendList) {
                   sendList.push(messagesData.substr(i));
                 }
               }
-              sendCallback(jsonCmd);
             }
+
           }
         } else {
           var resultData = {
@@ -333,13 +334,12 @@ function sendMessages(jsonCmd, sendCallback, sendList) {
           messageList.push(resultData);
           if (messageList.length == request.length) {
             var messagesData = JSON.stringify(messageList);
+            jsonCmd.smallDatalength = messagesData.length;
+            jsonCmd.largeDatalength = 0;
             if (messagesData.length <= MAX_PACKAGE_SIZE) {
-              jsonCmd.data = messagesData;
-              jsonCmd.exdatalength = 0;
-              sendCallback(jsonCmd);
+              sendCallback(jsonCmd, messagesData);
             } else {
-              jsonCmd.data = messagesData.substr(0, MAX_PACKAGE_SIZE);
-              jsonCmd.exdatalength = messagesData.length - MAX_PACKAGE_SIZE;
+              sendCallback(jsonCmd, messagesData.substr(0, MAX_PACKAGE_SIZE));
               for (var i = MAX_PACKAGE_SIZE; i < messagesData.length; i += MAX_PACKAGE_SIZE) {
                 if (i + MAX_PACKAGE_SIZE < messagesData.length) {
                   sendList.push(messagesData.substr(i, MAX_PACKAGE_SIZE));
@@ -347,7 +347,6 @@ function sendMessages(jsonCmd, sendCallback, sendList) {
                   sendList.push(messagesData.substr(i));
                 }
               }
-              sendCallback(jsonCmd);
             }
           }
         }
@@ -361,14 +360,13 @@ function sendMessages(jsonCmd, sendCallback, sendList) {
         messageList.push(resultData);
         if (messageList.length == request.length) {
           var messagesData = JSON.stringify(messageList);
-          console.log('SmsHelper.js messagesData failed: ' + messagesData);
+
+          jsonCmd.smallDatalength = messagesData.length;
+          jsonCmd.largeDatalength = 0;
           if (messagesData.length <= MAX_PACKAGE_SIZE) {
-            jsonCmd.data = messagesData;
-            jsonCmd.exdatalength = 0;
-            sendCallback(jsonCmd);
+            sendCallback(jsonCmd, messagesData);
           } else {
-            jsonCmd.data = messagesData.substr(0, MAX_PACKAGE_SIZE);
-            jsonCmd.exdatalength = messagesData.length - MAX_PACKAGE_SIZE;
+            sendCallback(jsonCmd, messagesData.substr(0, MAX_PACKAGE_SIZE));
             for (var i = MAX_PACKAGE_SIZE; i < messagesData.length; i += MAX_PACKAGE_SIZE) {
               if (i + MAX_PACKAGE_SIZE < messagesData.length) {
                 sendList.push(messagesData.substr(i, MAX_PACKAGE_SIZE));
@@ -376,16 +374,16 @@ function sendMessages(jsonCmd, sendCallback, sendList) {
                 sendList.push(messagesData.substr(i));
               }
             }
-            sendCallback(jsonCmd);
           }
+          console.log('SmsHelper.js messagesData failed: ' + messagesData);
         }
       };
     }
   } catch (e) {
     console.log('SmsHelper.js sendMessage failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }

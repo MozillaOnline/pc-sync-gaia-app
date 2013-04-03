@@ -9,37 +9,37 @@
 function contactHelper(jsonCmd, sendCallback, sendList, recvList) {
   try {
     switch (jsonCmd.command) {
-    case "addContact":
+    case CONTACT_COMMAND.addContact:
       {
         addContact(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
-    case "clearAllContacts":
+    case CONTACT_COMMAND.clearAllContacts:
       {
         clearAllContacts(jsonCmd, sendCallback);
         break;
       }
-    case "getAllContacts":
+    case CONTACT_COMMAND.getAllContacts:
       {
         getAllContacts(jsonCmd, sendCallback, sendList);
         break;
       }
-    case "getContactById":
+    case CONTACT_COMMAND.getContactById:
       {
-        getContactById(jsonCmd, sendCallback);
+        getContactById(jsonCmd, sendCallback, recvList);
         break;
       }
-    case "getContactPicById":
+    case CONTACT_COMMAND.getContactPicById:
       {
-        getContactPicById(jsonCmd, sendCallback, sendList);
+        getContactPicById(jsonCmd, sendCallback, sendList, recvList);
         break;
       }
-    case "removeContactById":
+    case CONTACT_COMMAND.removeContactById:
       {
-        removeContactById(jsonCmd, sendCallback);
+        removeContactById(jsonCmd, sendCallback, recvList);
         break;
       }
-    case "updateContactById":
+    case CONTACT_COMMAND.updateContactById:
       {
         updateContactById(jsonCmd, sendCallback, sendList, recvList);
         break;
@@ -48,32 +48,40 @@ function contactHelper(jsonCmd, sendCallback, sendList, recvList) {
       {
         console.log('ContactHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+
+        sendCallback(jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     console.log('ContactHelper.js contactHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
 function addContact(jsonCmd, sendCallback, sendList, recvList) {
-  doAddContact(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data, jsonCmd.exdatalength);
+  var contactData = recvList.shift();
+  var lastDatalen = jsonCmd.datalength - contactData.length;
+  console.log('tcpServerHelper.js jsonCmd.datalength  is: ' + jsonCmd.datalength);
+  console.log('tcpServerHelper.js contactData.length is: ' + contactData.length);
+  console.log('tcpServerHelper.js contactData is: ' + contactData);
+  doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, lastDatalen);
 }
 
 function doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, remainder) {
   try {
     if (remainder > 0) {
       if (recvList.length > 0) {
-        contactData = contactData + recvList[0];
-        remainder = remainder - recvList[0].length;
-        recvList.remove(0);
+        var recvData = recvList.shift();
+        console.log('tcpServerHelper.js recvData is: ' + recvData);
+        contactData = contactData + recvData;
+        remainder = remainder - recvData.length;
+        console.log('tcpServerHelper.js contactData2 is: ' + contactData);
         setTimeout(function() {
           doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, remainder);
         }, 0);
@@ -97,18 +105,18 @@ function doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, re
         request.onsuccess = function(e) {
           if (e.target.result.length == 0) {
             jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-            jsonCmd.data = '';
-            jsonCmd.exdatalength = 0;
-            sendCallback(jsonCmd);
+            jsonCmd.smallDatalength = 0;
+            jsonCmd.largeDatalength = 0;
+            sendCallback(jsonCmd, null);
           } else {
             jsonCmd.result = RS_OK;
             var foundContact = JSON.stringify(e.target.result[0]);
+            jsonCmd.smallDatalength = foundContact.length;
+            jsonCmd.largeDatalength = 0;
             if (foundContact.length <= MAX_PACKAGE_SIZE) {
-              jsonCmd.data = foundContact;
-              jsonCmd.exdatalength = 0;
-              sendCallback(jsonCmd);
+              sendCallback(jsonCmd, foundContact);
             } else {
-              jsonCmd.data = foundContact.substr(0, MAX_PACKAGE_SIZE);
+              sendCallback(jsonCmd, foundContact.substr(0, MAX_PACKAGE_SIZE));
               for (var i = MAX_PACKAGE_SIZE; i < foundContact.length; i += MAX_PACKAGE_SIZE) {
                 if (i + MAX_PACKAGE_SIZE < foundContact.length) {
                   sendList.push(foundContact.substr(i, MAX_PACKAGE_SIZE));
@@ -116,31 +124,29 @@ function doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, re
                   sendList.push(foundContact.substr(i));
                 }
               }
-              sendCallback(jsonCmd);
             }
           }
-
         };
         request.onerror = function() {
           jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-          jsonCmd.exdatalength = 0;
-          jsonCmd.data = '';
-          sendCallback(jsonCmd);
+          jsonCmd.smallDatalength = 0;
+          jsonCmd.largeDatalength = 0;
+          sendCallback(jsonCmd, null);
         };
       };
       saveRequest.onerror = function() {
         jsonCmd.result = RS_ERROR.CONTACT_ADDCONTACT;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       };
     }
   } catch (e) {
     console.log('ContactHelper.js addContact failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
@@ -149,22 +155,22 @@ function clearAllContacts(jsonCmd, sendCallback) {
     var request = window.navigator.mozContacts.clear();
     request.onsuccess = function() {
       jsonCmd.result = RS_OK;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_CLEARALLCONTACTS;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js clearAllContacts failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
@@ -177,14 +183,14 @@ function getAllContacts(jsonCmd, sendCallback, sendList) {
     var request = window.navigator.mozContacts.find(options);
     request.onsuccess = function() {
       jsonCmd.result = RS_OK;
+
       var contactsData = JSON.stringify(request.result);
+      jsonCmd.smallDatalength = contactsData.length;
+      jsonCmd.largeDatalength = 0;
       if (contactsData.length <= MAX_PACKAGE_SIZE) {
-        jsonCmd.data = contactsData;
-        jsonCmd.exdatalength = 0;
-        sendCallback(jsonCmd);
+        sendCallback(jsonCmd, contactsData);
       } else {
-        jsonCmd.data = contactsData.substr(0, MAX_PACKAGE_SIZE);
-        jsonCmd.exdatalength = contactsData.length - MAX_PACKAGE_SIZE;
+        sendCallback(jsonCmd, contactsData.substr(0, MAX_PACKAGE_SIZE));
         for (var i = MAX_PACKAGE_SIZE; i < contactsData.length; i += MAX_PACKAGE_SIZE) {
           if (i + MAX_PACKAGE_SIZE < contactsData.length) {
             sendList.push(contactsData.substr(i, MAX_PACKAGE_SIZE));
@@ -192,81 +198,79 @@ function getAllContacts(jsonCmd, sendCallback, sendList) {
             sendList.push(contactsData.substr(i));
           }
         }
-        sendCallback(jsonCmd);
       }
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_GETALLCONTACTS;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js getAllContacts failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
-function getContactById(jsonCmd, sendCallback) {
+function getContactById(jsonCmd, sendCallback, recvList) {
   try {
     var options = {
       filterBy: ['id'],
       filterOp: 'equals',
-      filterValue: jsonCmd.data
+      filterValue: recvList[0]
     };
     var request = window.navigator.mozContacts.find(options);
     request.onsuccess = function(e) {
       console.log('ContactHelper.js getContactById e.target.result: ' + e.target.result.length);
       if (e.target.result.length == 0) {
         jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-        jsonCmd.data = '';
-        jsonCmd.exdatalength = 0;
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       } else {
         jsonCmd.result = RS_OK;
+
         var contactData = JSON.stringify(e.target.result[0]);
+        jsonCmd.smallDatalength = contactData.length;
+        jsonCmd.largeDatalength = 0;
         if (contactData.length <= MAX_PACKAGE_SIZE) {
-          jsonCmd.data = contactData;
-          jsonCmd.exdatalength = 0;
-          sendCallback(jsonCmd);
+          sendCallback(jsonCmd, contactData);
         } else {
-          jsonCmd.data = contactData.substr(0, MAX_PACKAGE_SIZE);
-          jsonCmd.exdatalength = contactData.length - MAX_PACKAGE_SIZE;
-          for (i = MAX_PACKAGE_SIZE; i < contactData.length; i += MAX_PACKAGE_SIZE) {
+          sendCallback(jsonCmd, contactData.substr(0, MAX_PACKAGE_SIZE));
+          for (var i = MAX_PACKAGE_SIZE; i < contactData.length; i += MAX_PACKAGE_SIZE) {
             if (i + MAX_PACKAGE_SIZE < contactData.length) {
-              data.push(contactData.substr(i, MAX_PACKAGE_SIZE));
+              sendList.push(contactData.substr(i, MAX_PACKAGE_SIZE));
             } else {
-              data.push(contactData.substr(i));
+              sendList.push(contactData.substr(i));
             }
           }
-          sendCallback(jsonCmd);
         }
       }
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_GETCONTACT;
-      jsonCmd.data = '';
-      jsonCmd.exdatalength = 0;
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js getContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
-function getContactPicById(jsonCmd, sendCallback, sendList) {
+function getContactPicById(jsonCmd, sendCallback, sendList, recvList) {
   try {
     var options = {
       filterBy: ['id'],
       filterOp: 'equals',
-      filterValue: jsonCmd.data
+      filterValue: recvList[0]
     };
     var request = window.navigator.mozContacts.find(options);
     request.onsuccess = function() {
@@ -275,102 +279,103 @@ function getContactPicById(jsonCmd, sendCallback, sendList) {
         fileReader.readAsDataURL(request.result[0].photo[0]);
         fileReader.onload = function(e) {
           jsonCmd.result = RS_OK;
+
+          jsonCmd.smallDatalength = e.target.result.length;
+          jsonCmd.largeDatalength = 0;
           if (e.target.result.length <= MAX_PACKAGE_SIZE) {
-            jsonCmd.data = e.target.result;
-            jsonCmd.exdatalength = 0;
-            sendCallback(jsonCmd);
+            sendCallback(jsonCmd, e.target.result);
           } else {
-            jsonCmd.data = e.target.result.substr(0, MAX_PACKAGE_SIZE);
-            jsonCmd.exdatalength = e.target.result.length - MAX_PACKAGE_SIZE;
+            sendCallback(jsonCmd, e.target.result.substr(0, MAX_PACKAGE_SIZE));
             for (var i = MAX_PACKAGE_SIZE; i < e.target.result.length; i += MAX_PACKAGE_SIZE) {
-              if (i + MAX_PACKAGE_SIZE < e.target.result.length) {
+              if (i + MAX_PACKAGE_SIZE < appsData.length) {
                 sendList.push(e.target.result.substr(i, MAX_PACKAGE_SIZE));
               } else {
                 sendList.push(e.target.result.substr(i));
               }
             }
-            sendCallback(jsonCmd);
           }
         }
       } else {
         jsonCmd.result = RS_ERROR.CONTACT_NOCONTACTPIC;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       }
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_GETCONTACTPIC;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js getContactPicById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
-function removeContactById(jsonCmd, sendCallback) {
+function removeContactById(jsonCmd, sendCallback, recvList) {
   try {
     var options = {
       filterBy: ['id'],
       filterOp: 'equals',
-      filterValue: jsonCmd.data
+      filterValue: recvList[0]
     };
     var findRequest = window.navigator.mozContacts.find(options);
     findRequest.onsuccess = function(e) {
       if (e.target.result.length == 0) {
         jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-        jsonCmd.data = '';
-        jsonCmd.exdatalength = 0;
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       } else {
         var request = window.navigator.mozContacts.remove(e.target.result[0]);
         request.onsuccess = function(e) {
           jsonCmd.result = RS_OK;
-          jsonCmd.exdatalength = 0;
-          jsonCmd.data = '';
-          sendCallback(jsonCmd);
+          jsonCmd.smallDatalength = 0;
+          jsonCmd.largeDatalength = 0;
+          sendCallback(jsonCmd, null);
         }
         request.onerror = function() {
           jsonCmd.result = RS_ERROR.CONTACT_REMOVECONTACT;
-          jsonCmd.exdatalength = 0;
-          jsonCmd.data = '';
-          sendCallback(jsonCmd);
+          jsonCmd.smallDatalength = 0;
+          jsonCmd.largeDatalength = 0;
+          sendCallback(jsonCmd, null);
         };
       }
     };
     findRequest.onerror = function() {
       console.log('pcsync contact.js line108');
       jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-      jsonCmd.exdatalength = 0;
-      jsonCmd.data = '';
-      sendCallback(jsonCmd);
+      jsonCmd.smallDatalength = 0;
+      jsonCmd.largeDatalength = 0;
+      sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js removeContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }
 
 function updateContactById(jsonCmd, sendCallback, sendList, recvList) {
-  doUpdate(jsonCmd, sendCallback, sendList, recvList, jsonCmd.data, jsonCmd.exdatalength);
+  var contactData = recvList.shift();
+  var lastDatalen = jsonCmd.datalength - contactData.length;
+  doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, lastDatalen);
 }
 
 function doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remainder) {
   try {
     if (remainder > 0) {
       if (recvList.length > 0) {
-        contactData = contactData + recvList[0];
-        remainder = remainder - recvList[0].length;
-        recvList.remove(0);
+        var recvData = recvList.shift();
+        contactData = contactData + recvData;
+        remainder = remainder - recvData.length;
         setTimeout(doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remainder));
       } else {
         setTimeout(doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remainder), 20);
@@ -386,9 +391,9 @@ function doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remain
       request.onsuccess = function(e) {
         if (e.target.result.length == 0) {
           jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-          jsonCmd.data = '';
-          jsonCmd.exdatalength = 0;
-          sendCallback(jsonCmd);
+          jsonCmd.smallDatalength = 0;
+          jsonCmd.largeDatalength = 0;
+          sendCallback(jsonCmd, null);
         } else {
           var updateContact = e.target.result[0];
           for (var uname in newContact) {
@@ -397,13 +402,14 @@ function doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remain
           var saveRequest = window.navigator.mozContacts.save(updateContact);
           saveRequest.onsuccess = function() {
             jsonCmd.result = RS_OK;
+
             var savedContact = JSON.stringify(updateContact);
+            jsonCmd.smallDatalength = savedContact.length;
+            jsonCmd.largeDatalength = 0;
             if (savedContact.length <= MAX_PACKAGE_SIZE) {
-              jsonCmd.data = savedContact;
-              jsonCmd.exdatalength = 0;
-              sendCallback(jsonCmd);
+              sendCallback(jsonCmd, savedContact);
             } else {
-              jsonCmd.data = savedContact.substr(0, MAX_PACKAGE_SIZE);
+              sendCallback(jsonCmd, savedContact.substr(0, MAX_PACKAGE_SIZE));
               for (var i = MAX_PACKAGE_SIZE; i < savedContact.length; i += MAX_PACKAGE_SIZE) {
                 if (i + MAX_PACKAGE_SIZE < savedContact.length) {
                   sendList.push(savedContact.substr(i, MAX_PACKAGE_SIZE));
@@ -411,29 +417,28 @@ function doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remain
                   sendList.push(savedContact.substr(i));
                 }
               }
-              sendCallback(jsonCmd);
             }
           };
           saveRequest.onerror = function() {
             jsonCmd.result = RS_ERROR.CONTACT_SAVECONTACT;
-            jsonCmd.exdatalength = 0;
-            jsonCmd.data = '';
-            sendCallback(jsonCmd);
+            jsonCmd.smallDatalength = 0;
+            jsonCmd.largeDatalength = 0;
+            sendCallback(jsonCmd, null);
           };
         }
       };
       request.onerror = function() {
         jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-        jsonCmd.exdatalength = 0;
-        jsonCmd.data = '';
-        sendCallback(jsonCmd);
+        jsonCmd.smallDatalength = 0;
+        jsonCmd.largeDatalength = 0;
+        sendCallback(jsonCmd, null);
       };
     }
   } catch (e) {
     console.log('ContactHelper.js updateContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.exdatalength = 0;
-    jsonCmd.data = '';
-    sendCallback(jsonCmd);
+    jsonCmd.smallDatalength = 0;
+    jsonCmd.largeDatalength = 0;
+    sendCallback(jsonCmd, null);
   }
 }

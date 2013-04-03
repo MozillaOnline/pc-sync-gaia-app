@@ -1,8 +1,0 @@
-{
-	"id":"1234",
-	"type":"picture",
-	"command":"renamePicture",
-	"result":null,
-	"data":"[\"picture/test.jpg\",\"picture/newtest.jpg\"]",
-	"exdatalength":0
-}
