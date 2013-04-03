@@ -268,10 +268,10 @@ int runOneTestCase(char * testCase, char * testData)
 		printf("Recv type is:\t%d \n", type);
 		printf("Recv command is:\t%d \n", command);
 		printf("Recv result is:\t%d \n", result);
-		printf("Recv datalen is:\t%d \n", recvExdataLength);
+		
 		
 		recvExdataLength = recvExdataLength - length + 24;
-		
+		printf("Recv datalen is:\t%d \n", recvExdataLength);
 		while(recvExdataLength > 0){
 			printf("Recv last datalen is:\t%d \n", recvExdataLength);
 			bzero(buffer,BUFFER_SIZE);

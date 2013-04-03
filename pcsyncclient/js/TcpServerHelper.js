@@ -26,18 +26,20 @@ tcpServerHelper.prototype = {
       if (this.isNewCmd) {
         if (event.data.length >= TITLE_SIZE) {
           var jsonCmd = titleArray2Json(event.data);
-          console.log('tcpServerHelper.js jsonCmd is: ' + JSON.stringify(jsonCmd));
-          if (jsonCmd.datalength != 0) {
-            this.isNewCmd = false;
+          if (jsonCmd != null) {
+            console.log('tcpServerHelper.js jsonCmd is: ' + JSON.stringify(jsonCmd));
+            if (jsonCmd.datalength != 0) {
+              this.isNewCmd = false;
+            }
+            this.lastRecvLength = jsonCmd.datalength;
+            if (event.data.length > TITLE_SIZE) {
+              var message = TextDecoder('utf-8').decode(createNewArray(event.data.subarray(TITLE_SIZE, event.data.length)));
+              console.log('tcpServerHelper.js message is: ' + message);
+              this.recvList.push(message);
+              this.lastRecvLength = this.lastRecvLength - message.length;
+            }
+            handleMessage(jsonCmd, sendCmdData.bind(this), this.sendList, this.recvList);
           }
-          this.lastRecvLength = jsonCmd.datalength;
-          if (event.data.length > TITLE_SIZE) {
-            var message = TextDecoder('utf-8').decode(createNewArray(event.data.subarray(TITLE_SIZE, event.data.length)));
-            console.log('tcpServerHelper.js message is: ' + message);
-            this.recvList.push(message);
-            this.lastRecvLength = this.lastRecvLength - message.length;
-          }
-          handleMessage(jsonCmd, sendCmdData.bind(this), this.sendList, this.recvList);
         } else {
           //ignore length < TITLE_SIZE data
         }
@@ -93,17 +95,21 @@ function sendQueueData(socket, value, sendList) {
 function sendCmdData(jsonCmd, data) {
   try {
     var sendData = null;
-    jsonCmd.datalength = jsonCmd.smallDatalength + jsonCmd.largeDatalength;
+    jsonCmd.datalength = jsonCmd.firstDatalength + jsonCmd.secondDatalength;
     console.log('TcpServerHelper.js jsonCmd: ' + JSON.stringify(jsonCmd));
     if (jsonCmd.datalength == 0) {
       sendData = json2TitleArray(jsonCmd);
-      console.log('TcpServerHelper.js sendData: ' + sendData);
-      this.socket.send(sendData);
+      if (sendData != null) {
+        console.log('TcpServerHelper.js sendData: ' + sendData);
+        this.socket.send(sendData);
+      }
     } else {
       sendData = jsonAndData2Array(jsonCmd, data);
-      console.log('TcpServerHelper.js sendData: ' + sendData);
-      this.socket.send(sendData);
-      this.lastSendLength = jsonCmd.datalength - data.length
+      if (sendData != null) {
+        console.log('TcpServerHelper.js sendData: ' + sendData);
+        this.socket.send(sendData);
+        this.lastSendLength = jsonCmd.datalength - data.length;
+      }
     }
   } catch (e) {
     console.log('TcpServerHelper.js sendCmdData failed: ' + e);

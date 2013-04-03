@@ -1,0 +1,8 @@
+[
+{"testCase":"./unit/video/initVideo.tc", "testData":""},
+{"testCase":"./unit/video/addVideo.tc", "testData":"./unit/video/videoData.tcd"},
+{"testCase":"./unit/video/getAllVideosInfo.tc", "testData":""},
+{"testCase":"./unit/video/getVideoByPath.tc", "testData":""},
+{"testCase":"./unit/video/renameVideo.tc", "testData":""},
+{"testCase":"./unit/video/deleteVideoByPath.tc", "testData":""}
+]

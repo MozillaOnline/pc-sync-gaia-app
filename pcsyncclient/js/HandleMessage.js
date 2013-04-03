@@ -48,8 +48,8 @@ function handleMessage(jsonCmd, sendCallback, sendList, recvList) {
       {
         console.log('HandleMessage.js undefined type :' + jsonCmd.type);
         jsonCmd.result = RS_ERROR.TYPE_UNDEFINED;
-        jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
         sendCallback(jsonCmd, null);
         break;
       }
@@ -57,8 +57,8 @@ function handleMessage(jsonCmd, sendCallback, sendList, recvList) {
   } catch (e) {
     console.log('HandleMessage.js handleMessage failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-    jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }

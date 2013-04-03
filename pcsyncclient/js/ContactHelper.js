@@ -48,8 +48,8 @@ function contactHelper(jsonCmd, sendCallback, sendList, recvList) {
       {
         console.log('ContactHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
 
         sendCallback(jsonCmd, null);
         break;
@@ -58,14 +58,17 @@ function contactHelper(jsonCmd, sendCallback, sendList, recvList) {
   } catch (e) {
     console.log('ContactHelper.js contactHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-    jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
 
 function addContact(jsonCmd, sendCallback, sendList, recvList) {
-  var contactData = recvList.shift();
+  var contactData = "";
+  if(recvList.length > 0){
+    contactData = recvList.shift();
+  }
   var lastDatalen = jsonCmd.datalength - contactData.length;
   console.log('tcpServerHelper.js jsonCmd.datalength  is: ' + jsonCmd.datalength);
   console.log('tcpServerHelper.js contactData.length is: ' + contactData.length);
@@ -105,14 +108,14 @@ function doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, re
         request.onsuccess = function(e) {
           if (e.target.result.length == 0) {
             jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-            jsonCmd.smallDatalength = 0;
-            jsonCmd.largeDatalength = 0;
+            jsonCmd.firstDatalength = 0;
+            jsonCmd.secondDatalength = 0;
             sendCallback(jsonCmd, null);
           } else {
             jsonCmd.result = RS_OK;
             var foundContact = JSON.stringify(e.target.result[0]);
-            jsonCmd.smallDatalength = foundContact.length;
-            jsonCmd.largeDatalength = 0;
+            jsonCmd.firstDatalength = foundContact.length;
+            jsonCmd.secondDatalength = 0;
             if (foundContact.length <= MAX_PACKAGE_SIZE) {
               sendCallback(jsonCmd, foundContact);
             } else {
@@ -129,23 +132,23 @@ function doAddContact(jsonCmd, sendCallback, sendList, recvList, contactData, re
         };
         request.onerror = function() {
           jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-          jsonCmd.smallDatalength = 0;
-          jsonCmd.largeDatalength = 0;
+          jsonCmd.firstDatalength = 0;
+          jsonCmd.secondDatalength = 0;
           sendCallback(jsonCmd, null);
         };
       };
       saveRequest.onerror = function() {
         jsonCmd.result = RS_ERROR.CONTACT_ADDCONTACT;
-        jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
         sendCallback(jsonCmd, null);
       };
     }
   } catch (e) {
     console.log('ContactHelper.js addContact failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-    jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
@@ -155,21 +158,21 @@ function clearAllContacts(jsonCmd, sendCallback) {
     var request = window.navigator.mozContacts.clear();
     request.onsuccess = function() {
       jsonCmd.result = RS_OK;
-      jsonCmd.smallDatalength = 0;
-      jsonCmd.largeDatalength = 0;
+      jsonCmd.firstDatalength = 0;
+      jsonCmd.secondDatalength = 0;
       sendCallback(jsonCmd, null);
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_CLEARALLCONTACTS;
-      jsonCmd.smallDatalength = 0;
-      jsonCmd.largeDatalength = 0;
+      jsonCmd.firstDatalength = 0;
+      jsonCmd.secondDatalength = 0;
       sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js clearAllContacts failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-    jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
@@ -185,8 +188,8 @@ function getAllContacts(jsonCmd, sendCallback, sendList) {
       jsonCmd.result = RS_OK;
 
       var contactsData = JSON.stringify(request.result);
-      jsonCmd.smallDatalength = contactsData.length;
-      jsonCmd.largeDatalength = 0;
+      jsonCmd.firstDatalength = contactsData.length;
+      jsonCmd.secondDatalength = 0;
       if (contactsData.length <= MAX_PACKAGE_SIZE) {
         sendCallback(jsonCmd, contactsData);
       } else {
@@ -202,15 +205,15 @@ function getAllContacts(jsonCmd, sendCallback, sendList) {
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_GETALLCONTACTS;
-      jsonCmd.smallDatalength = 0;
-      jsonCmd.largeDatalength = 0;
+      jsonCmd.firstDatalength = 0;
+      jsonCmd.secondDatalength = 0;
       sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js getAllContacts failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-    jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
@@ -227,15 +230,15 @@ function getContactById(jsonCmd, sendCallback, recvList) {
       console.log('ContactHelper.js getContactById e.target.result: ' + e.target.result.length);
       if (e.target.result.length == 0) {
         jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-        jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
         sendCallback(jsonCmd, null);
       } else {
         jsonCmd.result = RS_OK;
 
         var contactData = JSON.stringify(e.target.result[0]);
-        jsonCmd.smallDatalength = contactData.length;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = contactData.length;
+        jsonCmd.secondDatalength = 0;
         if (contactData.length <= MAX_PACKAGE_SIZE) {
           sendCallback(jsonCmd, contactData);
         } else {
@@ -252,15 +255,15 @@ function getContactById(jsonCmd, sendCallback, recvList) {
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_GETCONTACT;
-      jsonCmd.smallDatalength = 0;
-      jsonCmd.largeDatalength = 0;
+      jsonCmd.firstDatalength = 0;
+      jsonCmd.secondDatalength = 0;
       sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js getContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-    jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
@@ -280,8 +283,8 @@ function getContactPicById(jsonCmd, sendCallback, sendList, recvList) {
         fileReader.onload = function(e) {
           jsonCmd.result = RS_OK;
 
-          jsonCmd.smallDatalength = e.target.result.length;
-          jsonCmd.largeDatalength = 0;
+          jsonCmd.firstDatalength = e.target.result.length;
+          jsonCmd.secondDatalength = 0;
           if (e.target.result.length <= MAX_PACKAGE_SIZE) {
             sendCallback(jsonCmd, e.target.result);
           } else {
@@ -297,22 +300,22 @@ function getContactPicById(jsonCmd, sendCallback, sendList, recvList) {
         }
       } else {
         jsonCmd.result = RS_ERROR.CONTACT_NOCONTACTPIC;
-        jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
         sendCallback(jsonCmd, null);
       }
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_GETCONTACTPIC;
-      jsonCmd.smallDatalength = 0;
-      jsonCmd.largeDatalength = 0;
+      jsonCmd.firstDatalength = 0;
+      jsonCmd.secondDatalength = 0;
       sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js getContactPicById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-    jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
@@ -328,21 +331,21 @@ function removeContactById(jsonCmd, sendCallback, recvList) {
     findRequest.onsuccess = function(e) {
       if (e.target.result.length == 0) {
         jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-        jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
         sendCallback(jsonCmd, null);
       } else {
         var request = window.navigator.mozContacts.remove(e.target.result[0]);
         request.onsuccess = function(e) {
           jsonCmd.result = RS_OK;
-          jsonCmd.smallDatalength = 0;
-          jsonCmd.largeDatalength = 0;
+          jsonCmd.firstDatalength = 0;
+          jsonCmd.secondDatalength = 0;
           sendCallback(jsonCmd, null);
         }
         request.onerror = function() {
           jsonCmd.result = RS_ERROR.CONTACT_REMOVECONTACT;
-          jsonCmd.smallDatalength = 0;
-          jsonCmd.largeDatalength = 0;
+          jsonCmd.firstDatalength = 0;
+          jsonCmd.secondDatalength = 0;
           sendCallback(jsonCmd, null);
         };
       }
@@ -350,15 +353,15 @@ function removeContactById(jsonCmd, sendCallback, recvList) {
     findRequest.onerror = function() {
       console.log('pcsync contact.js line108');
       jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-      jsonCmd.smallDatalength = 0;
-      jsonCmd.largeDatalength = 0;
+      jsonCmd.firstDatalength = 0;
+      jsonCmd.secondDatalength = 0;
       sendCallback(jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js removeContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-    jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
@@ -391,8 +394,8 @@ function doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remain
       request.onsuccess = function(e) {
         if (e.target.result.length == 0) {
           jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-          jsonCmd.smallDatalength = 0;
-          jsonCmd.largeDatalength = 0;
+          jsonCmd.firstDatalength = 0;
+          jsonCmd.secondDatalength = 0;
           sendCallback(jsonCmd, null);
         } else {
           var updateContact = e.target.result[0];
@@ -404,8 +407,8 @@ function doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remain
             jsonCmd.result = RS_OK;
 
             var savedContact = JSON.stringify(updateContact);
-            jsonCmd.smallDatalength = savedContact.length;
-            jsonCmd.largeDatalength = 0;
+            jsonCmd.firstDatalength = savedContact.length;
+            jsonCmd.secondDatalength = 0;
             if (savedContact.length <= MAX_PACKAGE_SIZE) {
               sendCallback(jsonCmd, savedContact);
             } else {
@@ -421,24 +424,24 @@ function doUpdate(jsonCmd, sendCallback, sendList, recvList, contactData, remain
           };
           saveRequest.onerror = function() {
             jsonCmd.result = RS_ERROR.CONTACT_SAVECONTACT;
-            jsonCmd.smallDatalength = 0;
-            jsonCmd.largeDatalength = 0;
+            jsonCmd.firstDatalength = 0;
+            jsonCmd.secondDatalength = 0;
             sendCallback(jsonCmd, null);
           };
         }
       };
       request.onerror = function() {
         jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-        jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
         sendCallback(jsonCmd, null);
       };
     }
   } catch (e) {
     console.log('ContactHelper.js updateContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-    jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }

@@ -46,8 +46,8 @@ function pictureHelper(jsonCmd, sendCallback, sendList, recvList) {
       {
         console.log('PictureHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
         sendCallback(jsonCmd, null);
         break;
       }
@@ -55,14 +55,17 @@ function pictureHelper(jsonCmd, sendCallback, sendList, recvList) {
   } catch (e) {
     console.log('PictureHelper.js pictureHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
 
 function addPicture(jsonCmd, sendCallback, sendList, recvList) {
-  var pictureData = recvList.shift();
+  var pictureData = "";
+  if(recvList.length > 0){
+    pictureData = recvList.shift();
+  }
   var lastDatalen = jsonCmd.datalength - pictureData.length;
   doAddPicture(jsonCmd, sendCallback, sendList, recvList, pictureData, lastDatalen);
 }
@@ -83,24 +86,24 @@ function doAddPicture(jsonCmd, sendCallback, sendList, recvList, pictureData, re
         }, 20);
       }
     } else {
-      var fileName = pictureData.substr(0, jsonCmd.smallDatalength);
-      var fileData = pictureData.substr(jsonCmd.smallDatalength, jsonCmd.largeDatalength);
+      var fileName = pictureData.substr(0, jsonCmd.firstDatalength);
+      var fileData = pictureData.substr(jsonCmd.firstDatalength, jsonCmd.secondDatalength);
       console.log('MusicHelper.js addMusic fileName: ' + fileName);
       console.log('MusicHelper.js addMusic fileData: ' + fileData);
       photoDB.addFile(fileName, dataUri2Blob(fileData), function() {
         waitAddPictureFile(null, jsonCmd, sendCallback);
       }, function() {
         jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
-        jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
         sendCallback(jsonCmd, null);
       });
     }
   } catch (e) {
     console.log('PictureHelper.js addPicture failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
@@ -109,14 +112,14 @@ function deletePictureByPath(jsonCmd, sendCallback, recvList) {
   try {
     photoDB.deleteFile(recvList[0]);
     jsonCmd.result = RS_OK;
-jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   } catch (e) {
     console.log('PictureHelper.js deletePictureByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-  jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+  jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
@@ -137,8 +140,8 @@ function getAllPicturesInfo(jsonCmd, sendCallback, sendList) {
       }
       jsonCmd.result = RS_OK;
       var picturesData = JSON.stringify(result);
-      jsonCmd.smallDatalength = picturesData.length;
-        jsonCmd.largeDatalength = 0;
+      jsonCmd.firstDatalength = picturesData.length;
+        jsonCmd.secondDatalength = 0;
       if (picturesData.length <= MAX_PACKAGE_SIZE) {
         sendCallback(jsonCmd, picturesData);
       } else {
@@ -155,8 +158,8 @@ function getAllPicturesInfo(jsonCmd, sendCallback, sendList) {
   } catch (e) {
     console.log('PictureHelper.js getAllPicturesInfo failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
@@ -169,8 +172,8 @@ function getPictureByPath(jsonCmd, sendCallback, sendList, recvList) {
       fileReader.onload = function fileLoad(e) {
         jsonCmd.result = RS_OK;
         var picturesData = JSON.stringify(e.target.result);
-        jsonCmd.smallDatalength = picturesData.length;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = picturesData.length;
+        jsonCmd.secondDatalength = 0;
         if (picturesData.length <= MAX_PACKAGE_SIZE) {
           sendCallback(jsonCmd, picturesData);
         } else {
@@ -188,8 +191,8 @@ function getPictureByPath(jsonCmd, sendCallback, sendList, recvList) {
   } catch (e) {
     console.log('PictureHelper.js getPictureByPath failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+    jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
@@ -208,8 +211,8 @@ function initPicture(jsonCmd, sendCallback) {
         //get all the reasons from event
         console.log('PictureHelper.js photoDB is unavailable');
         jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
-     jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+     jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
         sendCallback(jsonCmd, null);
       };
       photoDB.onready = function() {
@@ -222,8 +225,8 @@ function initPicture(jsonCmd, sendCallback) {
       photoDB.onscanend = function() {
         console.log('PictureHelper.js photoDB scan end');
         jsonCmd.result = RS_OK;
-        jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
         sendCallback(jsonCmd, null);
       };
       photoDB.oncreated = function() {
@@ -232,16 +235,16 @@ function initPicture(jsonCmd, sendCallback) {
       };
     } else {
       jsonCmd.result = RS_OK;
- jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+ jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
       sendCallback(jsonCmd, null);
     }
 
   } catch (e) {
     console.log('PictureHelper.js photoDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-  jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+  jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }
@@ -253,8 +256,8 @@ function waitAddPictureFile(oldFile, jsonCmd, sendCallback) {
       photoDB.deleteFile(oldFile);
     }
     jsonCmd.result = RS_OK;
-  jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+  jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   } else {
     setTimeout(function() {
@@ -270,8 +273,8 @@ function renamePicture(jsonCmd, sendCallback, recvList) {
     var newFile = jsonPictureData[1];
     if (oldName == newFile) {
       jsonCmd.result = RS_OK;
-     jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+     jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
       sendCallback(jsonCmd, null);
     } else {
       photoDB.getFile(oldName, function(file) {
@@ -279,22 +282,22 @@ function renamePicture(jsonCmd, sendCallback, recvList) {
           waitAddPictureFile(oldName, jsonCmd, sendCallback);
         }, function() {
           jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
-         jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+         jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
           sendCallback(jsonCmd, null);
         });
       }, function(event) {
         jsonCmd.result = RS_ERROR.PICTURE_RENAME;
-   jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+   jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
         sendCallback(jsonCmd, null);
       });
     }
   } catch (e) {
     console.log('PictureHelper.js renamePicture failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-jsonCmd.smallDatalength = 0;
-        jsonCmd.largeDatalength = 0;
+jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
     sendCallback(jsonCmd, null);
   }
 }

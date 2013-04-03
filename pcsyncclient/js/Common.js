@@ -142,12 +142,14 @@ function string2Utf8Array(byteString) {
 }
 
 //dataArray.length == TITLE_SIZE
+
+
 function titleArray2Json(dataArray) {
   if (dataArray.length >= TITLE_SIZE) {
     var dataBuffer = new ArrayBuffer(TITLE_SIZE);
     var titleArray = new Uint8Array(dataBuffer);
     var int32Array = new Int32Array(dataBuffer);
-    for(var i=0; i<titleArray.length; i++){
+    for (var i = 0; i < titleArray.length; i++) {
       titleArray[i] = dataArray[i];
     }
     var dataJson = {
@@ -155,9 +157,9 @@ function titleArray2Json(dataArray) {
       type: int32Array[1],
       command: int32Array[2],
       result: int32Array[3],
-      smallDatalength: int32Array[4],
-      largeDatalength: int32Array[5],
-      datalength: int32Array[4]+int32Array[5]
+      firstDatalength: int32Array[4],
+      secondDatalength: int32Array[5],
+      datalength: int32Array[4] + int32Array[5]
     };
     return dataJson;
   } else {
@@ -169,21 +171,27 @@ function json2TitleArray(dataJson) {
   var dataArray = new ArrayBuffer(TITLE_SIZE);
   var int8Array = new Uint8Array(dataArray);
   var int32Array = new Int32Array(dataArray);
+  if (isNaN(dataJson.id) || isNaN(dataJson.id) || isNaN(dataJson.id) || isNaN(dataJson.id) || isNaN(dataJson.id) || isNaN(dataJson.id)) {
+    return null;
+  }
   int32Array[0] = dataJson.id;
   int32Array[1] = dataJson.type;
   int32Array[2] = dataJson.command;
   int32Array[3] = dataJson.result;
-  int32Array[4] = dataJson.smallDatalength;
-  int32Array[5] = dataJson.largeDatalength;
+  int32Array[4] = dataJson.firstDatalength;
+  int32Array[5] = dataJson.secondDatalength;
   return int8Array;
 }
 
 function jsonAndData2Array(dataJson, dataString) {
   var titleArray = json2TitleArray(dataJson);
+  if (titleArray == null) {
+    return null;
+  }
   var dataArray = string2Utf8Array(dataString);
   var int8Array = new Uint8Array(titleArray.length + dataArray.length);
-  int8Array.set(titleArray,0);
-  int8Array.set(dataArray,titleArray.length);
+  int8Array.set(titleArray, 0);
+  int8Array.set(dataArray, titleArray.length);
   console.log('AppsManagerHelper.js getInstalledApps int8Array: ' + int8Array.length);
   return int8Array;
 }
