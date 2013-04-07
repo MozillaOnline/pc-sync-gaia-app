@@ -65,7 +65,9 @@ function smsHelper(jsonCmd, sendCallback, sendList, recvList) {
 
 function deleteMessageById(jsonCmd, sendCallback, recvList) {
   try {
-    var request = window.navigator.mozSms.delete(recvList[0]);
+    var deleteId = parseInt(recvList[0]);
+    console.log('SmsHelper.js smsHelper deleteMessageById: ' + deleteId );
+    var request = window.navigator.mozSms.delete(deleteId);
     request.onsuccess = function(event) {
       if (event.target.result) {
         jsonCmd.result = RS_OK;
@@ -151,7 +153,8 @@ function getAllMessages(jsonCmd, sendCallback, sendList) {
 
 function getMessageById(jsonCmd, sendCallback, recvList) {
   try {
-    var request = window.navigator.mozSms.getMessage(recvList[0]);
+    var messageId = parseInt(recvList[0]);
+    var request = window.navigator.mozSms.getMessage(messageId);
     request.onsuccess = function(event) {
       var smsMessage = {
         'id': event.target.result.id,
@@ -212,7 +215,8 @@ function listenMessage(jsonCmd, sendCallback) {
 
 function markReadMessageById(jsonCmd, sendCallback, recvList) {
   try {
-    var request = window.navigator.mozSms.markMessageRead(recvList[0], true);
+    var messageId = parseInt(recvList[0]);
+    var request = window.navigator.mozSms.markMessageRead(messageId, true);
     request.onsuccess = function(event) {
       jsonCmd.result = RS_OK;
       jsonCmd.firstDatalength = 0;
