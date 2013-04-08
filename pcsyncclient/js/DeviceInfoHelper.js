@@ -6,12 +6,12 @@
  *Description:
  *----------------------------------------------------------------------------------------------------------*/
 
-function deviceInfoHelper(jsonCmd, sendCallback, sendList, recvList) {
+function deviceInfoHelper(socket,jsonCmd, sendCallback, recvList) {
   try {
     switch (jsonCmd.command) {
     case DEVICEINFO_COMMAND.getStorage:
       {
-        getStorage(jsonCmd, sendCallback, recvList);
+        getStorage(socket,jsonCmd, sendCallback, recvList);
         break;
       }
     default:
@@ -20,7 +20,7 @@ function deviceInfoHelper(jsonCmd, sendCallback, sendList, recvList) {
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
         jsonCmd.firstDatalength = 0;
         jsonCmd.secondDatalength = 0;
-        sendCallback(jsonCmd, null);
+        sendCallback(socket,jsonCmd, null,null);
         break;
       }
     }
@@ -29,18 +29,19 @@ function deviceInfoHelper(jsonCmd, sendCallback, sendList, recvList) {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.firstDatalength = 0;
     jsonCmd.secondDatalength = 0;
-    sendCallback(jsonCmd, null);
+    sendCallback(socket,jsonCmd, null,null);
   }
 }
 
-function getStorage(jsonCmd, sendCallback, recvList) {
+function getStorage(socket, jsonCmd, sendCallback, recvList) {
   try {
-    var deviceStorage = window.navigator.getDeviceStorage(recvList[0]);
+    var storageName = recvList.shift();
+    var deviceStorage = window.navigator.getDeviceStorage(storageName);
     if (!deviceStorage) {
       jsonCmd.result = RS_ERROR.DEVICEINFO_GETSTORAGE;
       jsonCmd.firstDatalength = 0;
       jsonCmd.secondDatalength = 0;
-      sendCallback(jsonCmd, null);
+      sendCallback(socket,jsonCmd, null,null);
     } else {
       var request = deviceStorage.freeSpace();
       request.onsuccess = function(e) {
@@ -57,27 +58,27 @@ function getStorage(jsonCmd, sendCallback, recvList) {
           var sendData = JSON.stringify(storageData);
           jsonCmd.firstDatalength = sendData.length;
           jsonCmd.secondDatalength = 0;
-          sendCallback(jsonCmd, sendData);
+          sendCallback(socket,jsonCmd, sendData,null);
         };
         requestused.onerror = function(e) {
           jsonCmd.result = RS_ERROR.DEVICEINFO_GETSTORAGE;
           jsonCmd.firstDatalength = 0;
           jsonCmd.secondDatalength = 0;
-          sendCallback(jsonCmd, null);
+          sendCallback(socket,jsonCmd, null,null);
         };
       }
       request.onerror = function(e) {
         jsonCmd.result = RS_ERROR.DEVICEINFO_GETSTORAGE;
         jsonCmd.firstDatalength = 0;
         jsonCmd.secondDatalength = 0;
-        sendCallback(jsonCmd, null);
+        sendCallback(socket,jsonCmd, null,null);
       };
     }
   } catch (e) {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.firstDatalength = 0;
     jsonCmd.secondDatalength = 0;
-    sendCallback(jsonCmd, null);
+    sendCallback(socket,jsonCmd, null,null);
     console.log('SmsHelper.js getStorage failed: ' + e);
   }
 }

@@ -6,42 +6,47 @@
  *Description:
  *----------------------------------------------------------------------------------------------------------*/
 
-function handleMessage(jsonCmd, sendCallback, sendList, recvList) {
+function handleMessage(socket, jsonCmd, sendCallback, recvList) {
   try {
     switch (jsonCmd.type) {
     case CMD_TYPE.app:
       {
-        appManagerHelper(jsonCmd, sendCallback, sendList, recvList);
+        appManagerHelper(socket,jsonCmd, sendCallback,  recvList);
         break;
       }
     case CMD_TYPE.contact:
       {
-        contactHelper(jsonCmd, sendCallback, sendList, recvList);
+        contactHelper(socket,jsonCmd, sendCallback,  recvList);
         break;
       }
     case CMD_TYPE.deviceInfo:
       {
-        deviceInfoHelper(jsonCmd, sendCallback, sendList, recvList);
+        deviceInfoHelper(socket,jsonCmd, sendCallback,  recvList);
         break;
       }
     case CMD_TYPE.music:
       {
-        musicHelper(jsonCmd, sendCallback, sendList, recvList);
+        musicHelper(socket,jsonCmd, sendCallback,  recvList);
         break;
       }
     case CMD_TYPE.picture:
       {
-        pictureHelper(jsonCmd, sendCallback, sendList, recvList);
+        pictureHelper(socket,jsonCmd, sendCallback,  recvList);
         break;
       }
     case CMD_TYPE.sms:
       {
-        smsHelper(jsonCmd, sendCallback, sendList, recvList);
+        smsHelper(socket,jsonCmd, sendCallback,  recvList);
         break;
       }
     case CMD_TYPE.video:
       {
-        videoHelper(jsonCmd, sendCallback, sendList, recvList);
+        videoHelper(socket,jsonCmd, sendCallback,  recvList);
+        break;
+      }
+    case CMD_TYPE.file:
+      {
+        fileHelper(socket,jsonCmd, sendCallback,  recvList);
         break;
       }
     default:
@@ -50,7 +55,7 @@ function handleMessage(jsonCmd, sendCallback, sendList, recvList) {
         jsonCmd.result = RS_ERROR.TYPE_UNDEFINED;
         jsonCmd.firstDatalength = 0;
         jsonCmd.secondDatalength = 0;
-        sendCallback(jsonCmd, null);
+        sendCallback(socket,jsonCmd, null,null);
         break;
       }
     }
@@ -59,6 +64,6 @@ function handleMessage(jsonCmd, sendCallback, sendList, recvList) {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.firstDatalength = 0;
     jsonCmd.secondDatalength = 0;
-    sendCallback(jsonCmd, null);
+    sendCallback(socket,jsonCmd, null,null);
   }
 }

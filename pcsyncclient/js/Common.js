@@ -16,7 +16,8 @@ var CMD_TYPE = {
   music: 4,
   sms: 5,
   picture: 6,
-  video: 7
+  video: 7,
+  file: 8
 };
 
 var APP_COMMAND = {
@@ -39,22 +40,23 @@ var DEVICEINFO_COMMAND = {
   getStorage: 1
 };
 
+var FILE_COMMAND = {
+  addFile: 1,
+  getFileByPath:2,
+  renameFile:3
+};
+
 var MUSIC_COMMAND = {
   addMusic: 1,
   deleteMusicByPath: 2,
   getAllMusicsInfo: 3,
   getMusicByPath: 4,
-  initMusic: 5,
-  renameMusic: 6
+  renameMusic: 5
 };
 
 var PICTURE_COMMAND = {
-  addPicture: 1,
-  deletePictureByPath: 2,
-  getAllPicturesInfo: 3,
-  getPictureByPath: 4,
-  initPicture: 5,
-  renamePicture: 6
+  deletePictureByPath: 1,
+  getAllPicturesInfo: 2
 };
 
 var SMS_COMMAND = {
@@ -68,12 +70,8 @@ var SMS_COMMAND = {
 };
 
 var VIDEO_COMMAND = {
-  addVideo: 1,
-  deleteVideoByPath: 2,
-  getAllVideosInfo: 3,
-  getVideoByPath: 4,
-  initVideo: 5,
-  renameVideo: 6
+  deleteVideoByPath: 1,
+  getAllVideosInfo: 2
 };
 
 var RS_OK = 0;
@@ -106,7 +104,10 @@ var RS_ERROR = {
   MUSIC_RENAME: 26,
   PICTURE_RENAME: 27,
   VIDEO_RENAME: 28,
-  MEDIADB_ADDFILE: 29
+  MEDIADB_ADDFILE: 29,
+  FILE_CREATE: 30,
+  FILE_WRITE: 31,
+  OPEN_DB: 32
 };
 
 function printArray(array) {
@@ -183,12 +184,24 @@ function json2TitleArray(dataJson) {
   return int8Array;
 }
 
-function jsonAndData2Array(dataJson, dataString) {
+function jsonAndFirstData2Array(dataJson, dataString) {
   var titleArray = json2TitleArray(dataJson);
   if (titleArray == null) {
     return null;
   }
   var dataArray = string2Utf8Array(dataString);
+  var int8Array = new Uint8Array(titleArray.length + dataArray.length);
+  int8Array.set(titleArray, 0);
+  int8Array.set(dataArray, titleArray.length);
+  console.log('AppsManagerHelper.js getInstalledApps int8Array: ' + int8Array.length);
+  return int8Array;
+}
+
+function jsonAndSecondData2Array(dataJson, dataArray) {
+  var titleArray = json2TitleArray(dataJson);
+  if (titleArray == null) {
+    return null;
+  }
   var int8Array = new Uint8Array(titleArray.length + dataArray.length);
   int8Array.set(titleArray, 0);
   int8Array.set(dataArray, titleArray.length);
