@@ -47,16 +47,17 @@ var FILE_COMMAND = {
 };
 
 var MUSIC_COMMAND = {
-  addMusic: 1,
-  deleteMusicByPath: 2,
-  getAllMusicsInfo: 3,
-  getMusicByPath: 4,
-  renameMusic: 5
+  deleteMusicByPath: 1,
+  getAllMusicsInfo: 2,
+  initMusic: 3,
+  renameMusic: 4
 };
 
 var PICTURE_COMMAND = {
   deletePictureByPath: 1,
-  getAllPicturesInfo: 2
+  getAllPicturesInfo: 2,
+  initPicture: 3,
+  renamePicture: 4
 };
 
 var SMS_COMMAND = {
@@ -71,7 +72,9 @@ var SMS_COMMAND = {
 
 var VIDEO_COMMAND = {
   deleteVideoByPath: 1,
-  getAllVideosInfo: 2
+  getAllVideosInfo: 2,
+  initVideo: 3,
+  renameVideo: 4
 };
 
 var RS_OK = 0;
@@ -101,13 +104,17 @@ var RS_ERROR = {
   APPSMANAGER_UNSTALLAPP: 23,
   APPSMANAGER_NOTFOUNDAPP: 24,
   DEVICESTORAGE_UNAVAILABLE: 25,
-  MUSIC_RENAME: 26,
-  PICTURE_RENAME: 27,
-  VIDEO_RENAME: 28,
-  MEDIADB_ADDFILE: 29,
-  FILE_CREATE: 30,
-  FILE_WRITE: 31,
-  OPEN_DB: 32
+  MUSIC_INIT:26,
+  MUSIC_RENAME: 27,
+  PICTURE_INIT:28,
+  PICTURE_RENAME: 29,
+  VIDEO_INIT:30,
+  VIDEO_RENAME: 31,
+  MEDIADB_ADDFILE: 32,
+  FILE_CREATE: 33,
+  FILE_GET: 34,
+  FILE_WRITE: 35,
+  OPEN_DB: 36
 };
 
 function printArray(array) {
