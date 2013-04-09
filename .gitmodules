@@ -1,0 +1,3 @@
+[submodule "pcsyncclient/js/common"]
+	path = pcsyncclient/js/common
+	url = ssh://git@tool1.g-fox.cn/repository/git/repositories/ratel-common.git
