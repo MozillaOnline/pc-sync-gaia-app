@@ -18,7 +18,10 @@ var backgroundService = {
       var tcpServer = window.navigator.mozTCPSocket.listen(this.PORT, this.OPTIONS, this.BACKLOG);
       if (tcpServer) {
         tcpServer.onaccept = function(event) {
-          new tcpServerHelper(event);
+          new TCPSocketWrapper({
+            socket: event,
+            onmessage: handleMessage
+          });
         };
       } else {
         console.log('Background.js listen failed');
