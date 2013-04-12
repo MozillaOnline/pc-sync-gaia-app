@@ -69,7 +69,11 @@ function addContact(socket, jsonCmd, sendCallback, recvList) {
       var contactData = recvList.shift();
       var newContact = new mozContact();
       console.log('ContactHelper.js addContact contactData is: ' + contactData);
-      newContact.init(JSON.parse(contactData));
+      var jsonContact = JSON.parse(contactData)
+      newContact.init(jsonContact);
+      if (jsonContact.photo.length > 0) {
+        newContact.photo = [dataUri2Blob(jsonContact.photo[0])];
+      }
       var saveRequest = window.navigator.mozContacts.save(newContact);
       saveRequest.onsuccess = function() {
         var options = {
@@ -317,7 +321,11 @@ function updateContactById(socket,jsonCmd, sendCallback,  recvList) {
         } else {
           var updateContact = e.target.result[0];
           for (var uname in newContact) {
-            updateContact[uname] = newContact[uname];
+            if (uname == 'photo' && newContact.photo.length > 0) {
+              updateContact.photo = [dataUri2Blob(newContact.photo[0])];
+            } else {
+              updateContact[uname] = newContact[uname];
+            }
           }
           var saveRequest = window.navigator.mozContacts.save(updateContact);
           saveRequest.onsuccess = function() {
