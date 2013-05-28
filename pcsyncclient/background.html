@@ -2,16 +2,22 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <script type="text/javascript" src="js/3rd/encoding-indexes.js"></script>
-    <script type="text/javascript" src="js/3rd/encoding.js"></script>
-    <script type="text/javascript" src="js/shared/mediadb.js"></script>
-    <script type="text/javascript" src="js/shared/blobview.js"></script>
-    <script type="text/javascript" src="js/shared/get_video_rotation.js"></script>
-    <script type="text/javascript" src="js/shared/jpeg_metadata_parser.js"></script>
-    <script type="text/javascript" src="js/shared/video_metadata_parser.js"></script>
-    <script type="text/javascript" src="js/shared/music_metadata_parser.js"></script>
-    <script type="text/javascript" src="js/shared/MetadataParser.js"></script>
+    <!-- Shared code -->
+    <script defer src="shared/js/l10n.js"></script>
+    <script defer src="shared/js/mouse_event_shim.js"></script>
+    <script defer src="shared/js/mediadb.js"></script>
+    <script defer src="shared/js/blobview.js"></script>
+    <script defer src="shared/js/media/get_video_rotation.js"></script>
+    <script defer src="shared/js/media/jpeg_metadata_parser.js"></script>
+    <script defer src="shared/js/lazy_loader.js"></script>
+    <script defer src="shared/js/async_storage.js"></script>
+    <!-- Specific code -->
+    <script type="text/javascript" src="js/common/encoding-indexes.js"></script>
+    <script type="text/javascript" src="js/common/encoding.js"></script>
     <script type="text/javascript" src="js/common/common.js"></script>
+    <script type="text/javascript" src="js/video_metadata_parser.js"></script>
+    <script type="text/javascript" src="js/music_metadata_parser.js"></script>
+    <script type="text/javascript" src="js/MetadataParser.js"></script>
     <script type="text/javascript" src="js/ContactHelper.js"></script>
     <script type="text/javascript" src="js/DeviceInfoHelper.js"></script>
     <script type="text/javascript" src="js/AppManagerHelper.js"></script>

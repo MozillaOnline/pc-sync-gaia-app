@@ -27,11 +27,6 @@ function musicHelper(socket, jsonCmd, sendCallback, recvList) {
         initMusic(socket, jsonCmd, sendCallback);
         break;
       }
-    case MUSIC_COMMAND.renameMusic:
-      {
-        renameMusic(socket, jsonCmd, sendCallback, recvList);
-        break;
-      }
     default:
       {
         console.log('MusicHelper.js undefined command :' + jsonCmd.command);
@@ -145,57 +140,3 @@ function initMusic(socket, jsonCmd, sendCallback) {
   }
 }
 
-function waitAddMusicFile(socket, oldFile, jsonCmd, sendCallback) {
-  if (isMusicCreated == true) {
-    isMusicCreated = false;
-    if (oldFile && (oldFile != "")) {
-      musicDB.deleteFile(oldFile);
-    }
-    jsonCmd.result = RS_OK;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
-  } else {
-    setTimeout(function() {
-      waitAddMusicFile(socket,oldFile, jsonCmd, sendCallback)
-    }, 20);
-  }
-}
-
-
-function renameMusic(socket, jsonCmd, sendCallback, recvList) {
-  try {
-    var fileName = recvList.shift();
-    var jsonMusicData = JSON.parse(fileName);
-    var oldName = jsonMusicData[0];
-    var newFile = jsonMusicData[1];
-    if (oldName == newFile) {
-      jsonCmd.result = RS_OK;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
-    } else {
-      musicDB.getFile(oldName, function(file) {
-        musicDB.addFile(newFile, file, function() {
-          waitAddMusicFile(socket,oldName, jsonCmd, sendCallback);
-        }, function() {
-          jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
-          jsonCmd.firstDatalength = 0;
-          jsonCmd.secondDatalength = 0;
-          sendCallback(socket, jsonCmd, null, null);
-        });
-      }, function(event) {
-        jsonCmd.result = RS_ERROR.MUSIC_RENAME;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, null, null);
-      });
-    }
-  } catch (e) {
-    console.log('MusicHelper.js renameMusic failed: ' + e);
-    jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
-  }
-}

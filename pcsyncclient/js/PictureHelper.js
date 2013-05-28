@@ -27,11 +27,6 @@ function pictureHelper(socket, jsonCmd, sendCallback, recvList) {
         initPicture(socket, jsonCmd, sendCallback);
         break;
       }
-    case PICTURE_COMMAND.renamePicture:
-      {
-        renamePicture(socket, jsonCmd, sendCallback, recvList);
-        break;
-      }
     default:
       {
         console.log('PictureHelper.js undefined command :' + jsonCmd.command);
@@ -140,60 +135,6 @@ function initPicture(socket, jsonCmd, sendCallback) {
 
   } catch (e) {
     console.log('PictureHelper.js photoDB failed: ' + e);
-    jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
-  }
-}
-
-function waitAddPictureFile(socket, oldFile, jsonCmd, sendCallback) {
-  if (isPictureCreated == true) {
-    isPictureCreated = false;
-    if (oldFile && (oldFile != "")) {
-      photoDB.deleteFile(oldFile);
-    }
-    jsonCmd.result = RS_OK;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
-  } else {
-    setTimeout(function() {
-      waitAddPictureFile(socket, oldFile, jsonCmd, sendCallback)
-    }, 20);
-  }
-}
-
-function renamePicture(socket, jsonCmd, sendCallback, recvList) {
-  try {
-    var fileName = recvList.shift();
-    var jsonPictureData = JSON.parse(fileName);
-    var oldName = jsonPictureData[0];
-    var newFile = jsonPictureData[1];
-    if (oldName == newFile) {
-      jsonCmd.result = RS_OK;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
-    } else {
-      photoDB.getFile(oldName, function(file) {
-        photoDB.addFile(newFile, file, function() {
-          waitAddPictureFile(socket, oldName, jsonCmd, sendCallback);
-        }, function() {
-          jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
-          jsonCmd.firstDatalength = 0;
-          jsonCmd.secondDatalength = 0;
-          sendCallback(socket, jsonCmd, null, null);
-        });
-      }, function(event) {
-        jsonCmd.result = RS_ERROR.PICTURE_RENAME;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, null, null);
-      });
-    }
-  } catch (e) {
-    console.log('PictureHelper.js renamePicture failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.firstDatalength = 0;
     jsonCmd.secondDatalength = 0;

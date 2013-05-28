@@ -27,11 +27,6 @@ function videoHelper(socket,jsonCmd, sendCallback, recvList) {
         initVideo(socket,jsonCmd, sendCallback);
         break;
       }
-    case VIDEO_COMMAND.renameVideo:
-      {
-        renameVideo(socket,jsonCmd, sendCallback, recvList);
-        break;
-      }
     default:
       {
         console.log('VideoHelper.js undefined command :' + jsonCmd.command);
@@ -139,60 +134,6 @@ function initVideo(socket,jsonCmd, sendCallback) {
 
   } catch (e) {
     console.log('VideoHelper.js videoDB failed: ' + e);
-    jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket,jsonCmd, null,null);
-  }
-}
-
-function waitAddVideoFile(socket,oldFile, jsonCmd, sendCallback) {
-  if (isVideoCreated == true) {
-    isVideoCreated = false;
-    if (oldFile && (oldFile != "")) {
-      videoDB.deleteFile(oldFile);
-    }
-    jsonCmd.result = RS_OK;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket,jsonCmd, null,null);
-  } else {
-    setTimeout(function() {
-      waitAddVideoFile(socket,oldFile, jsonCmd, sendCallback)
-    }, 20);
-  }
-}
-
-function renameVideo(socket,jsonCmd, sendCallback, recvList) {
-  try {
-    var fileName = recvList.shift();
-    var jsonVideoData = JSON.parse(fileName);
-    var oldName = jsonVideoData[0];
-    var newFile = jsonVideoData[1];
-    if (oldName == newFile) {
-      jsonCmd.result = RS_OK;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket,jsonCmd, null,null);
-    } else {
-      videoDB.getFile(oldName, function(file) {
-        videoDB.addFile(newFile, file, function() {
-          waitAddVideoFile(socket,oldName, jsonCmd, sendCallback);
-        }, function() {
-          jsonCmd.result = RS_ERROR.MEDIADB_ADDFILE;
-          jsonCmd.firstDatalength = 0;
-          jsonCmd.secondDatalength = 0;
-          sendCallback(socket,jsonCmd, null,null);
-        });
-      }, function(event) {
-        jsonCmd.result = RS_ERROR.VIDEO_RENAME;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket,jsonCmd, null,null);
-      });
-    }
-  } catch (e) {
-    console.log('VideoHelper.js renameVideo failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.firstDatalength = 0;
     jsonCmd.secondDatalength = 0;
