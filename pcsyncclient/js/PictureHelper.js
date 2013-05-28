@@ -7,7 +7,6 @@
  *----------------------------------------------------------------------------------------------------------*/
 
 var photoDB = null;
-var isPictureCreated = false;
 
 function pictureHelper(socket, jsonCmd, sendCallback, recvList) {
   try {
@@ -20,11 +19,6 @@ function pictureHelper(socket, jsonCmd, sendCallback, recvList) {
     case PICTURE_COMMAND.getAllPicturesInfo:
       {
         getAllPicturesInfo(socket, jsonCmd, sendCallback);
-        break;
-      }
-    case PICTURE_COMMAND.initPicture:
-      {
-        initPicture(socket, jsonCmd, sendCallback);
         break;
       }
     default:
@@ -65,36 +59,6 @@ function deletePictureByPath(socket, jsonCmd, sendCallback, recvList) {
 
 function getAllPicturesInfo(socket, jsonCmd, sendCallback) {
   try {
-    photoDB.getAll(function(records) {
-      var photos = records;
-      var result = [];
-      for (var i = 0; i < photos.length; i++) {
-        var fileInfo = {
-          'name': photos[i].name,
-          'type': photos[i].type,
-          'size': photos[i].size,
-          'date': photos[i].date
-        };
-        result.push(fileInfo);
-      }
-      jsonCmd.result = RS_OK;
-      var picturesData = JSON.stringify(result);
-      jsonCmd.firstDatalength = picturesData.length;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, picturesData, null);
-
-    });
-  } catch (e) {
-    console.log('PictureHelper.js getAllPicturesInfo failed: ' + e);
-    jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
-  }
-}
-
-function initPicture(socket, jsonCmd, sendCallback) {
-  try {
     if (photoDB == null) {
       photoDB = new MediaDB('pictures', metadataParsers.imageMetadataParser, {
         mimeTypes: ['image/jpeg', 'image/png'],
@@ -120,10 +84,25 @@ function initPicture(socket, jsonCmd, sendCallback) {
       };
       photoDB.onscanend = function() {
         console.log('PictureHelper.js photoDB scan end');
-        jsonCmd.result = RS_OK;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, null, null);
+        photoDB.getAll(function(records) {
+          var photos = records;
+          var result = [];
+          for (var i = 0; i < photos.length; i++) {
+            var fileInfo = {
+              'name': photos[i].name,
+              'type': photos[i].type,
+              'size': photos[i].size,
+              'date': photos[i].date
+            };
+            result.push(fileInfo);
+          }
+          jsonCmd.result = RS_OK;
+          var picturesData = JSON.stringify(result);
+          jsonCmd.firstDatalength = picturesData.length;
+          jsonCmd.secondDatalength = 0;
+          sendCallback(socket, jsonCmd, picturesData, null);
+
+        });
       };
       photoDB.oncreated = function() {
         console.log('PictureHelper.js oncreated !!!!!!!!!!!!!!!!!!!!!!');
