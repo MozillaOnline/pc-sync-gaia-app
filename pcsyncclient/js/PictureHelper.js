@@ -6,16 +6,10 @@
  *Description: Format code
  *----------------------------------------------------------------------------------------------------------*/
 
-var photoDB = null;
 
 function pictureHelper(socket, jsonCmd, sendCallback, recvList) {
   try {
     switch (jsonCmd.command) {
-    case PICTURE_COMMAND.deletePictureByPath:
-      {
-        deletePictureByPath(socket, jsonCmd, sendCallback, recvList);
-        break;
-      }
     case PICTURE_COMMAND.getAllPicturesInfo:
       {
         getAllPicturesInfo(socket, jsonCmd, sendCallback);
@@ -40,27 +34,9 @@ function pictureHelper(socket, jsonCmd, sendCallback, recvList) {
   }
 }
 
-function deletePictureByPath(socket, jsonCmd, sendCallback, recvList) {
-  try {
-    var fileName = recvList.shift();
-    photoDB.deleteFile(fileName);
-    jsonCmd.result = RS_OK;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
-  } catch (e) {
-    console.log('PictureHelper.js deletePictureByPath failed: ' + e);
-    jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
-  }
-}
-
 function getAllPicturesInfo(socket, jsonCmd, sendCallback) {
   try {
-    if (photoDB == null) {
-      photoDB = new MediaDB('pictures', metadataParsers.imageMetadataParser, {
+      var photoDB = new MediaDB('pictures', metadataParsers.imageMetadataParser, {
         mimeTypes: ['image/jpeg', 'image/png'],
         version: 2,
         autoscan: false,
@@ -79,9 +55,6 @@ function getAllPicturesInfo(socket, jsonCmd, sendCallback) {
         self.photoDB.scan();
         console.log('PictureHelper.js photoDB is ready');
       };
-      photoDB.onscanstart = function() {
-        console.log('PictureHelper.js photoDB scan start');
-      };
       photoDB.onscanend = function() {
         console.log('PictureHelper.js photoDB scan end');
         photoDB.getAll(function(records) {
@@ -92,7 +65,8 @@ function getAllPicturesInfo(socket, jsonCmd, sendCallback) {
               'name': photos[i].name,
               'type': photos[i].type,
               'size': photos[i].size,
-              'date': photos[i].date
+              'date': photos[i].date,
+              'metadate': photos[i].metadata
             };
             result.push(fileInfo);
           }
@@ -104,13 +78,6 @@ function getAllPicturesInfo(socket, jsonCmd, sendCallback) {
 
         });
       };
-      photoDB.oncreated = function() {
-        console.log('PictureHelper.js oncreated !!!!!!!!!!!!!!!!!!!!!!');
-        self.isPictureCreated = true;
-      };
-    } else {
-      photoDB.scan();
-    }
 
   } catch (e) {
     console.log('PictureHelper.js photoDB failed: ' + e);
