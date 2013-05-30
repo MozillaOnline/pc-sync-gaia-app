@@ -1,6 +1,3 @@
 [
-{"testCase":"./unit/video/initVideo.tc", "testData":""},
-{"testCase":"./unit/video/getAllVideosInfo.tc", "testData":""},
-{"testCase":"./unit/video/renameVideo.tc", "testData":""},
-{"testCase":"./unit/video/deleteVideoByPath.tc", "testData":""}
+{"testCase":"./unit/video/getAllVideosInfo.tc", "testData":""}
 ]

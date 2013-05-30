@@ -1,6 +1,3 @@
 [
-{"testCase":"./unit/picture/initPicture.tc", "testData":""},
-{"testCase":"./unit/picture/getAllPicturesInfo.tc", "testData":""},
-{"testCase":"./unit/picture/renamePicture.tc", "testData":""},
-{"testCase":"./unit/picture/deletePictureByPath.tc", "testData":""}
+{"testCase":"./unit/picture/getAllPicturesInfo.tc", "testData":""}
 ]
