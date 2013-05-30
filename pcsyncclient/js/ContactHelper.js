@@ -151,7 +151,7 @@ function getAllContacts(socket, jsonCmd, sendCallback) {
     var request = window.navigator.mozContacts.find(options);
     request.onsuccess = function() {
       jsonCmd.result = RS_OK;
-      if (request.result.length > 0) {
+/*if (request.result.length > 0) {
         var contactsData = JSON.stringify(request.result);
         jsonCmd.firstDatalength = contactsData.length;
         jsonCmd.secondDatalength = 0;
@@ -160,7 +160,11 @@ function getAllContacts(socket, jsonCmd, sendCallback) {
         jsonCmd.firstDatalength = 0;
         jsonCmd.secondDatalength = 0;
         sendCallback(socket, jsonCmd, null, null);
-      }
+      }*/
+      var contactsData = JSON.stringify(request.result);
+      jsonCmd.firstDatalength = contactsData.length;
+      jsonCmd.secondDatalength = 0;
+      sendCallback(socket, jsonCmd, contactsData, null);
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_GETALLCONTACTS;
