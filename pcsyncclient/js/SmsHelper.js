@@ -24,6 +24,16 @@ function smsHelper(socket, jsonCmd, sendCallback,  recvList) {
         getMessageById(socket,jsonCmd, sendCallback, recvList);
         break;
       }
+    case SMS_COMMAND.getThreadMessagesById:
+      {
+        getThreadMessagesById(socket,jsonCmd, sendCallback, recvList);
+        break;
+      }
+    case SMS_COMMAND.getThreads:
+      {
+        getThreads(socket,jsonCmd, sendCallback);
+        break;
+      }      
     case SMS_COMMAND.listenMessage:
       {
         listenMessage(socket,jsonCmd, sendCallback);
@@ -68,7 +78,9 @@ function deleteMessageById(socket,jsonCmd, sendCallback, recvList) {
     var smsId = recvList.shift();
     var deleteId = parseInt(smsId);
     console.log('SmsHelper.js smsHelper deleteMessageById: ' + deleteId );
-    var request = window.navigator.mozSms.delete(deleteId);
+    var _mozMobileMessage = navigator.mozMobileMessage ||
+                    window.DesktopMockNavigatormozMobileMessage;
+    var request = _mozMobileMessage.delete(deleteId);
     request.onsuccess = function(event) {
       if (event.target.result) {
         jsonCmd.result = RS_OK;
@@ -97,36 +109,142 @@ function deleteMessageById(socket,jsonCmd, sendCallback, recvList) {
   }
 }
 
-function getAllMessages(socket,jsonCmd, sendCallback) {
+function getThreads(socket,jsonCmd, sendCallback) {
   try {
     var filter = new MozSmsFilter();
     var messages = [];
-    var request = window.navigator.mozSms.getMessages(filter, false);
-    request.onsuccess = function(event) {
-      var cursor = request.result;
-      if (cursor.message) {
-        var smsMessage = {
-          'id': cursor.message.id,
-          'delivery': cursor.message.delivery,
-          'sender': cursor.message.sender,
-          'receiver': cursor.message.receiver,
-          'body': cursor.message.body,
-          'timestamp': cursor.message.timestamp,
-          'read': cursor.message.read
-        };
+    var _mozMobileMessage = navigator.mozMobileMessage ||
+                    window.DesktopMockNavigatormozMobileMessage;
+    var cursor = _mozMobileMessage.getThreads();
+    cursor.onsuccess = function(event) {	
+      if (!this.done) {
+      var smsMessage = {
+        'id': this.result.id,
+        'body': this.result.body,
+        'timestamp': this.result.timestamp,
+        'unreadCount': this.result.unreadCount,
+	'participants': this.result.participants,
+	'lastMessageType': this.result.lastMessageType
+      };
         messages.push(smsMessage);
-        cursor.
+	console.log('SmsHelper.js deleteMessageById event: ' + JSON.stringify(smsMessage));
+        this.
         continue ();
       } else {
         jsonCmd.result = RS_OK;
         var smsData = JSON.stringify(messages);
-
         jsonCmd.firstDatalength = smsData.length;
         jsonCmd.secondDatalength = 0;
           sendCallback(socket,jsonCmd, smsData,null);
       }
     };
-    request.onerror = function(event) {
+    cursor.onerror = function(event) {
+      jsonCmd.result = RS_ERROR.SMS_GETALLMESSAGES;
+      jsonCmd.firstDatalength = 0;
+      jsonCmd.secondDatalength = 0;
+      sendCallback(socket,jsonCmd, null,null);
+    };
+  } catch (e) {
+    console.log('SmsHelper.js getAllMessages failed: ' + e);
+    jsonCmd.result = RS_ERROR.UNKNOWEN;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
+    sendCallback(socket,jsonCmd, null,null);
+  }
+}
+
+function getThreadMessagesById(socket,jsonCmd, sendCallback, recvList) {
+  try {
+    var smsId = recvList.shift();
+    var messageId = parseInt(smsId);
+    var filter = new MozSmsFilter();
+    var messages = [];
+    var _mozMobileMessage = navigator.mozMobileMessage ||
+                    window.DesktopMockNavigatormozMobileMessage;
+    filter.threadId = messageId;
+    //console.log('SmsHelper.js deleteMessageById filter.threadId: ' + filter.threadId);
+    var cursor = _mozMobileMessage.getMessages(filter, false);
+    cursor.onsuccess = function(event) {
+//      for(var uname in this.result)
+//	console.log('SmsHelper.js deleteMessageById event: ' + uname);
+      if (!this.done) {
+	var smsMessage = {
+	'type': this.result.type,
+	'id': this.result.id,
+        'threadId': this.result.threadId,
+        'delivery': this.result.delivery,
+	'deliveryStatus': this.result.deliveryStatus,
+        'sender': this.result.sender,
+        'receiver': this.result.receiver,
+        'body': this.result.body,
+	'messageClass': this.result.messageClass,
+        'timestamp': this.result.timestamp,
+        'read': this.result.read
+      };
+        messages.push(smsMessage);
+	console.log('SmsHelper.js deleteMessageById event: ' + JSON.stringify(smsMessage));
+        this.
+        continue ();
+      } else {
+        jsonCmd.result = RS_OK;
+        var smsData = JSON.stringify(messages);
+        jsonCmd.firstDatalength = smsData.length;
+        jsonCmd.secondDatalength = 0;
+          sendCallback(socket,jsonCmd, smsData,null);
+      }
+    };
+    cursor.onerror = function(event) {
+      jsonCmd.result = RS_ERROR.SMS_GETALLMESSAGES;
+      jsonCmd.firstDatalength = 0;
+      jsonCmd.secondDatalength = 0;
+      sendCallback(socket,jsonCmd, null,null);
+    };
+  } catch (e) {
+    console.log('SmsHelper.js getAllMessages failed: ' + e);
+    jsonCmd.result = RS_ERROR.UNKNOWEN;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
+    sendCallback(socket,jsonCmd, null,null);
+  }
+}
+
+function getAllMessages(socket,jsonCmd, sendCallback) {
+  try {
+    var filter = new MozSmsFilter();
+    var messages = [];
+    var _mozMobileMessage = navigator.mozMobileMessage ||
+                    window.DesktopMockNavigatormozMobileMessage;
+    var cursor = _mozMobileMessage.getMessages(filter, false);
+    cursor.onsuccess = function(event) {
+//      for(var uname in this.result)
+//	console.log('SmsHelper.js deleteMessageById event: ' + uname);
+      if (!this.done) {
+	var smsMessage = {
+	'type': this.result.type,
+	'id': this.result.id,
+        'threadId': this.result.threadId,
+        'delivery': this.result.delivery,
+	'deliveryStatus': this.result.deliveryStatus,
+        'sender': this.result.sender,
+        'receiver': this.result.receiver,
+        'body': this.result.body,
+	'messageClass': this.result.messageClass,
+        'timestamp': this.result.timestamp,
+        'read': this.result.read
+      };
+        messages.push(smsMessage);
+	console.log('SmsHelper.js deleteMessageById event: ' + JSON.stringify(smsMessage));
+        this.
+        continue ();
+      } else {
+        jsonCmd.result = RS_OK;
+        var smsData = JSON.stringify(messages);
+        jsonCmd.firstDatalength = smsData.length;
+        jsonCmd.secondDatalength = 0;
+          sendCallback(socket,jsonCmd, smsData,null);
+      }
+    };
+    cursor.onerror = function(event) {
       jsonCmd.result = RS_ERROR.SMS_GETALLMESSAGES;
       jsonCmd.firstDatalength = 0;
       jsonCmd.secondDatalength = 0;
@@ -145,16 +263,22 @@ function getMessageById(socket,jsonCmd, sendCallback, recvList) {
   try {
     var smsId = recvList.shift();
     var messageId = parseInt(smsId);
-    var request = window.navigator.mozSms.getMessage(messageId);
+    var _mozMobileMessage = navigator.mozMobileMessage ||
+                    window.DesktopMockNavigatormozMobileMessage;
+    var request = _mozMobileMessage.getMessage(messageId);
     request.onsuccess = function(event) {
       var smsMessage = {
-        'id': event.target.result.id,
-        'delivery': event.target.result.delivery,
-        'sender': event.target.result.sender,
-        'receiver': event.target.result.receiver,
-        'body': event.target.result.body,
-        'timestamp': event.target.result.timestamp,
-        'read': event.target.result.read
+        'type': this.result.type,
+	'id': this.result.id,
+        'threadId': this.result.threadId,
+        'delivery': this.result.delivery,
+	'deliveryStatus': this.result.deliveryStatus,
+        'sender': this.result.sender,
+        'receiver': this.result.receiver,
+        'body': this.result.body,
+	'messageClass': this.result.messageClass,
+        'timestamp': this.result.timestamp,
+        'read': this.result.read
       };
       jsonCmd.result = RS_OK;
       var sendData = JSON.stringify(smsMessage);
@@ -179,15 +303,21 @@ function getMessageById(socket,jsonCmd, sendCallback, recvList) {
 
 function listenMessage(socket,jsonCmd, sendCallback) {
   try {
-    window.navigator.mozSms.onreceived = function(event) {
+    var _mozMobileMessage = navigator.mozMobileMessage ||
+                    window.DesktopMockNavigatormozMobileMessage;
+    _mozMobileMessage.onreceived = function(event) {
       var smsMessage = {
-        'id': event.message.id,
-        'delivery': event.message.delivery,
-        'sender': event.message.sender,
-        'receiver': event.message.receiver,
-        'body': event.message.body,
-        'timestamp': event.message.timestamp,
-        'read': event.message.read
+        'type': this.result.type,
+	'id': this.result.id,
+        'threadId': this.result.threadId,
+        'delivery': this.result.delivery,
+	'deliveryStatus': this.result.deliveryStatus,
+        'sender': this.result.sender,
+        'receiver': this.result.receiver,
+        'body': this.result.body,
+	'messageClass': this.result.messageClass,
+        'timestamp': this.result.timestamp,
+        'read': this.result.read
       };
       jsonCmd.result = RS_OK;
       var sendData = JSON.stringify(smsMessage);
@@ -208,7 +338,9 @@ function markReadMessageById(socket,jsonCmd, sendCallback, recvList) {
   try {
     var smsId = recvList.shift();
     var messageId = parseInt(smsId);
-    var request = window.navigator.mozSms.markMessageRead(messageId, true);
+    var _mozMobileMessage = navigator.mozMobileMessage ||
+                    window.DesktopMockNavigatormozMobileMessage;
+    var request = _mozMobileMessage.markMessageRead(messageId, true);
     request.onsuccess = function(event) {
       jsonCmd.result = RS_OK;
       jsonCmd.firstDatalength = 0;
@@ -235,19 +367,25 @@ function sendMessage(socket,jsonCmd, sendCallback, recvList) {
     var smsId = recvList.shift();
     var message = JSON.parse(smsId);
     console.log('SmsHelper.js sendMessage message ' + message);
-    var request = window.navigator.mozSms.send(message.number, message.message);
+    var _mozMobileMessage = navigator.mozMobileMessage ||
+                    window.DesktopMockNavigatormozMobileMessage;
+    var request = _mozMobileMessage.send(message.number, message.message);
     console.log('SmsHelper.js sendMessage request ' + request);
     request.onsuccess = function(event) {
       console.log('SmsHelper.js sendMessage onsuccess ');
       if (event.target.result) {
         var smsMessage = {
-          'id': event.target.result.id,
-          'delivery': event.target.result.delivery,
-          'sender': event.target.result.sender,
-          'receiver': event.target.result.receiver,
-          'body': event.target.result.body,
-          'timestamp': event.target.result.timestamp,
-          'read': event.target.result.read
+          'type': this.result.type,
+	  'id': this.result.id,
+	  'threadId': this.result.threadId,
+	  'delivery': this.result.delivery,
+	  'deliveryStatus': this.result.deliveryStatus,
+	  'sender': this.result.sender,
+	  'receiver': this.result.receiver,
+	  'body': this.result.body,
+	  'messageClass': this.result.messageClass,
+	  'timestamp': this.result.timestamp,
+	  'read': this.result.read
         };
         jsonCmd.result = RS_OK;
         var sendData = JSON.stringify(smsMessage);
@@ -288,7 +426,9 @@ function sendMessages(socket,jsonCmd, sendCallback, recvList) {
       jsonCmd.secondDatalength = 0;
       sendCallback(socket,jsonCmd, null,null);
     }
-    var request = window.navigator.mozSms.send(message.number, message.message);
+    var _mozMobileMessage = navigator.mozMobileMessage ||
+                    window.DesktopMockNavigatormozMobileMessage;
+    var request = _mozMobileMessage.send(message.number, message.message);
     jsonCmd.result = RS_OK;
     for (var i = 0; i < request.length; i++) {
       request[i].onsuccess = function(event) {
@@ -296,13 +436,17 @@ function sendMessages(socket,jsonCmd, sendCallback, recvList) {
           var resultData = {
             'result': RS_OK,
             'smsMessage': {
-              'id': event.target.result.id,
-              'delivery': event.target.result.delivery,
-              'sender': event.target.result.sender,
-              'receiver': event.target.result.receiver,
-              'body': event.target.result.body,
-              'timestamp': event.target.result.timestamp,
-              'read': event.target.result.read
+              'type': this.result.type,
+	      'id': this.result.id,
+	      'threadId': this.result.threadId,
+	      'delivery': this.result.delivery,
+	      'deliveryStatus': this.result.deliveryStatus,
+	      'sender': this.result.sender,
+	      'receiver': this.result.receiver,
+	      'body': this.result.body,
+	      'messageClass': this.result.messageClass,
+	      'timestamp': this.result.timestamp,
+	      'read': this.result.read
             }
           };
           messageList.push(resultData);
