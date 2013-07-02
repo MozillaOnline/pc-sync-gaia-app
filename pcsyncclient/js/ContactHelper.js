@@ -29,6 +29,11 @@ function contactHelper(socket, jsonCmd, sendCallback, recvList) {
         getContactById(socket, jsonCmd, sendCallback, recvList);
         break;
       }
+    case CONTACT_COMMAND.getContactByPhoneNumber:
+      {
+        getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvList);
+        break;
+      }
     case CONTACT_COMMAND.getContactPicById:
       {
         getContactPicById(socket, jsonCmd, sendCallback, recvList);
@@ -214,6 +219,46 @@ function getContactById(socket, jsonCmd, sendCallback, recvList) {
     };
   } catch (e) {
     console.log('ContactHelper.js getContactById failed: ' + e);
+    jsonCmd.result = RS_ERROR.UNKNOWEN;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
+    sendCallback(socket, jsonCmd, null, null);
+  }
+}
+
+function getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvList) {
+  try {
+    var contactData = recvList.shift();
+    var options = {
+      filterBy: ['tel'],
+      filterOp: 'equals',
+      filterValue: contactData
+    };
+    var request = window.navigator.mozContacts.find(options);
+    request.onsuccess = function(e) {
+      console.log('ContactHelper.js getContactByPhoneNumber e.target.result: ' + e.target.result.length);
+      if (e.target.result.length == 0) {
+        jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
+        sendCallback(socket, jsonCmd, null, null);
+      } else {
+        jsonCmd.result = RS_OK;
+
+        var contactData = JSON.stringify(e.target.result[0]);
+        jsonCmd.firstDatalength = contactData.length;
+        jsonCmd.secondDatalength = 0;
+        sendCallback(socket, jsonCmd, contactData, null);
+      }
+    };
+    request.onerror = function() {
+      jsonCmd.result = RS_ERROR.CONTACT_GETCONTACT;
+      jsonCmd.firstDatalength = 0;
+      jsonCmd.secondDatalength = 0;
+      sendCallback(socket, jsonCmd, null, null);
+    };
+  } catch (e) {
+    console.log('ContactHelper.js getContactByPhoneNumber failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.firstDatalength = 0;
     jsonCmd.secondDatalength = 0;

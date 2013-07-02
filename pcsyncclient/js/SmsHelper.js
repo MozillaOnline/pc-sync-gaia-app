@@ -355,9 +355,32 @@ function listenMessage(socket,jsonCmd, sendCallback) {
       jsonCmd.secondDatalength = 0;
       sendCallback(socket,jsonCmd, sendData,null);
     });
+    _mozMobileMessage.addEventListener('failed', function onMessageFailed(e){
+      var message = e.message;
+      console.log('SmsHelper.js listenMessage message: ' + message);
+      if (message.messageClass === 'class-0') {
+        return;
+      }
+      var smsMessage = {
+        'type': message.type,
+	'id': message.id,
+        'threadId': message.threadId,
+        'delivery': message.delivery,
+	'deliveryStatus': message.deliveryStatus,
+        'sender': message.sender,
+        'receiver': message.receiver,
+        'body': message.body,
+	'messageClass': message.messageClass,
+	'timestamp': message.timestamp.getTime(),
+        'read': message.read
+      };
+      jsonCmd.result = RS_OK;
+      var sendData = JSON.stringify(smsMessage);
+      jsonCmd.firstDatalength = sendData.length;
+      jsonCmd.secondDatalength = 0;
+      sendCallback(socket,jsonCmd, sendData,null);
+    });
 /*    this._mozMobileMessage.addEventListener('sending', this.onMessageSending);
-    this._mozMobileMessage.addEventListener('sent', this.onMessageSent);
-    this._mozMobileMessage.addEventListener('failed', this.onMessageFailed);
     window.addEventListener('hashchange', this.onHashChange.bind(this));
     document.addEventListener('mozvisibilitychange',
                               this.onVisibilityChange.bind(this));*/
@@ -436,7 +459,6 @@ function sendMessage(socket,jsonCmd, sendCallback, recvList) {
       }
     };
     request.onerror = function(event) {
-      console.log('SmsHelper.js sendMessage onerror ');
       jsonCmd.result = RS_ERROR.SMS_SENDMESSAGE;
       jsonCmd.firstDatalength = 0;
       jsonCmd.secondDatalength = 0;
