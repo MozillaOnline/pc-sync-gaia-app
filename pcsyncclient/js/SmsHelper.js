@@ -33,11 +33,6 @@ function smsHelper(socket, jsonCmd, sendCallback,  recvList) {
       {
         getThreads(socket,jsonCmd, sendCallback);
         break;
-      }      
-    case SMS_COMMAND.listenMessage:
-      {
-        listenMessage(socket,jsonCmd, sendCallback);
-        break;
       }
     case SMS_COMMAND.markReadMessageById:
       {
@@ -294,98 +289,6 @@ function getMessageById(socket,jsonCmd, sendCallback, recvList) {
     };
   } catch (e) {
     console.log('SmsHelper.js getMessageById failed: ' + e);
-    jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket,jsonCmd, null,null);
-  }
-}
-
-function listenMessage(socket,jsonCmd, sendCallback) {
-  try {
-    var _mozMobileMessage = navigator.mozMobileMessage ||
-                    window.DesktopMockNavigatormozMobileMessage;
-    _mozMobileMessage.addEventListener('received', function onMessageReceived(e){
-      var message = e.message;
-      console.log('SmsHelper.js listenMessage message: ' + message);
-      if (message.messageClass === 'class-0') {
-        return;
-      }
-      var smsMessage = {
-        'type': message.type,
-	'id': message.id,
-        'threadId': message.threadId,
-        'delivery': message.delivery,
-	'deliveryStatus': message.deliveryStatus,
-        'sender': message.sender,
-        'receiver': message.receiver,
-        'body': message.body,
-	'messageClass': message.messageClass,
-	'timestamp': message.timestamp.getTime(),
-        'read': message.read
-      };
-      jsonCmd.result = RS_OK;
-      var sendData = JSON.stringify(smsMessage);
-      jsonCmd.firstDatalength = sendData.length;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket,jsonCmd, sendData,null);
-    });
-    _mozMobileMessage.addEventListener('sent', function onMessageReceived(e){
-      var message = e.message;
-      console.log('SmsHelper.js listenMessage message: ' + message);
-      if (message.messageClass === 'class-0') {
-        return;
-      }
-      var smsMessage = {
-        'type': message.type,
-	'id': message.id,
-        'threadId': message.threadId,
-        'delivery': message.delivery,
-	'deliveryStatus': message.deliveryStatus,
-        'sender': message.sender,
-        'receiver': message.receiver,
-        'body': message.body,
-	'messageClass': message.messageClass,
-	'timestamp': message.timestamp.getTime(),
-        'read': message.read
-      };
-      jsonCmd.result = RS_OK;
-      var sendData = JSON.stringify(smsMessage);
-      jsonCmd.firstDatalength = sendData.length;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket,jsonCmd, sendData,null);
-    });
-    _mozMobileMessage.addEventListener('failed', function onMessageFailed(e){
-      var message = e.message;
-      console.log('SmsHelper.js listenMessage message: ' + message);
-      if (message.messageClass === 'class-0') {
-        return;
-      }
-      var smsMessage = {
-        'type': message.type,
-	'id': message.id,
-        'threadId': message.threadId,
-        'delivery': message.delivery,
-	'deliveryStatus': message.deliveryStatus,
-        'sender': message.sender,
-        'receiver': message.receiver,
-        'body': message.body,
-	'messageClass': message.messageClass,
-	'timestamp': message.timestamp.getTime(),
-        'read': message.read
-      };
-      jsonCmd.result = RS_OK;
-      var sendData = JSON.stringify(smsMessage);
-      jsonCmd.firstDatalength = sendData.length;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket,jsonCmd, sendData,null);
-    });
-/*    this._mozMobileMessage.addEventListener('sending', this.onMessageSending);
-    window.addEventListener('hashchange', this.onHashChange.bind(this));
-    document.addEventListener('mozvisibilitychange',
-                              this.onVisibilityChange.bind(this));*/
-  } catch (e) {
-    console.log('SmsHelper.js listenMessage failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.firstDatalength = 0;
     jsonCmd.secondDatalength = 0;

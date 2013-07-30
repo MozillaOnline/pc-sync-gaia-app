@@ -1,12 +1,55 @@
+<!DOCTYPE html>
 <html>
-<head>
+  <head>
   <meta charset="utf-8">
   <meta http-equiv="pragma" content="no-cache">
-  <title>Indexed Database Property Test</title>
-  <script defer src="shared/js/lazy_loader.js"></script>
+  <title>PC Sync</title>
+    <!-- Include shared building blocks -->
+    <link rel="stylesheet" type="text/css" href="shared/style/headers.css"/>
+    <link rel="stylesheet" type="text/css" href="style/pcsync.css"/>
+    <!-- Localization -->
+    <link rel="resource" type="application/l10n" href="locales/locales.ini">
+    <!-- Shared code -->
+    <script defer src="shared/js/mediadb.js"></script>
+    <script defer src="shared/js/blobview.js"></script>
+    <script defer src="shared/js/media/get_video_rotation.js"></script>
+    <script defer src="shared/js/media/jpeg_metadata_parser.js"></script>
+    <script defer src="shared/js/lazy_loader.js"></script>
+    <script defer src="shared/js/async_storage.js"></script>
+    <!-- Specific code -->
+    <script type="text/javascript" src="js/common/encoding-indexes.js"></script>
+    <script type="text/javascript" src="js/common/encoding.js"></script>
+    <script type="text/javascript" src="js/common/common.js"></script>
+    <script type="text/javascript" src="js/video_metadata_parser.js"></script>
     <script type="text/javascript" src="js/music_metadata_parser.js"></script>
-    <script type="text/javascript" src="js/mediadb.js"></script>
-    <script type="text/javascript" src="js/blobview.js"></script>
-  <script type="text/javascript" defer src="js/tester.js"></script>
-</head>
+    <script type="text/javascript" src="js/MetadataParser.js"></script>
+    <script type="text/javascript" src="js/ContactHelper.js"></script>
+    <script type="text/javascript" src="js/DeviceInfoHelper.js"></script>
+    <script type="text/javascript" src="js/AppManagerHelper.js"></script>
+    <script type="text/javascript" src="js/SmsHelper.js"></script>
+    <script type="text/javascript" src="js/PictureHelper.js"></script>
+    <script type="text/javascript" src="js/VideoHelper.js"></script>
+    <script type="text/javascript" src="js/MusicHelper.js"></script>
+    <script type="text/javascript" src="js/ListenHelper.js"></script>
+    <script type="text/javascript" src="js/HandleMessage.js"></script>
+    <script type="text/javascript" src="js/common/socket.js"></script>
+    <script type="text/javascript" src="js/Background.js"></script>
+  </head>
+  <body role="application">
+    <section role="region" id="root" class="current">
+      <header>
+        <h1 data-l10n-id="pcsynctitle"> PC Sync </h1>
+      </header>
+      <div>
+        <header id="icc-mainheader">
+          <h2 data-l10n-id="connectionstatus">USB Connection Status</h2>
+        </header>
+        <ul id="icc-mainentry">
+          <li>
+            <a id="menuItem-icc" class="menu-item">Unconnect</a>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </body>
 </html>

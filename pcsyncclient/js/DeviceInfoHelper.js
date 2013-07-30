@@ -14,6 +14,11 @@ function deviceInfoHelper(socket, jsonCmd, sendCallback, recvList) {
         getStorage(socket, jsonCmd, sendCallback);
         break;
       }
+    case DEVICEINFO_COMMAND.getSettings:
+      {
+        getSettings(socket, jsonCmd, sendCallback);
+        break;
+      }
     default:
       {
         console.log('DeviceInfoHelper.js undefined command :' + jsonCmd.command);
@@ -118,6 +123,33 @@ function getStorage(socket, jsonCmd, sendCallback) {
         };
       }
     });
+  } catch (e) {
+    jsonCmd.result = RS_ERROR.UNKNOWEN;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
+    sendCallback(socket, jsonCmd, null, null);
+  }
+}
+
+function getSettings(socket, jsonCmd, sendCallback) {
+  try {
+    var key = '*';
+    var request = navigator.mozSettings.createLock().get(key);
+    request.onsuccess = function successGetCurrentSound() {
+      console.log('success get current settings: ' + request.result);
+      jsonCmd.result = RS_OK;
+      var sendData = JSON.stringify(request.result);
+      console.log('deviceInfoHelper.js getSettings sendData: ' + sendData.length);
+      jsonCmd.firstDatalength = sendData.length;
+      jsonCmd.secondDatalength = 0;
+      sendCallback(socket, jsonCmd, sendData, null);
+    };
+    request.onerror = function errorGetCurrentSound() {
+      jsonCmd.result = RS_ERROR.UNKNOWEN;
+      jsonCmd.firstDatalength = 0;
+      jsonCmd.secondDatalength = 0;
+      sendCallback(socket, jsonCmd, null, null);
+    };
   } catch (e) {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     jsonCmd.firstDatalength = 0;

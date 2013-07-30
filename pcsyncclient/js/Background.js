@@ -18,10 +18,20 @@ var backgroundService = {
       var tcpServer = window.navigator.mozTCPSocket.listen(this.PORT, this.OPTIONS, this.BACKLOG);
       if (tcpServer) {
         tcpServer.onconnect = function(event) {
+          var deviceStatus = document.getElementById('menuItem-icc');
+          if(deviceStatus){
+            deviceStatus.textContent = "Connected";
+          }
           console.log('Background.js listen onconnect ' + event);
           new TCPSocketWrapper({
             socket: event,
-            onmessage: handleMessage
+            onmessage: handleMessage,
+            onclose: function (){
+              var deviceStatus = document.getElementById('menuItem-icc');
+              if(deviceStatus){
+                deviceStatus.textContent = "Unconnect";
+              }
+            }
           });
         };
       } else {
@@ -34,6 +44,11 @@ var backgroundService = {
 };
 
 backgroundService.createSocketServer();
-
-
-
+/*
+document.addEventListener('mozvisibilitychange', function() {
+  console.log('Background.js document.mozHidden: ' + document.mozHidden);
+  if (document.mozHidden) {
+    confirm("123");
+  } else {
+  }
+});*/

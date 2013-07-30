@@ -1,48 +1,61 @@
 {
-  "name": "PCSyncClient",
   "description": "Connect to PC",
-  "type": "certified",
-  "developer": {
-    "name": "The BeiJing Team",
-    "url": "https://github.com/mozilla-b2g/gaia"
-  },
+  "default_locale": "en-US",
+  "orientation": "portrait-primary",
+  "name": "PCSyncClient",
+  "launch_path": "/index.html",
   "permissions": {
-    "device-storage:music":{ "access": "readwrite" },
-    "device-storage:pictures":{ "access": "readwrite" },
-    "device-storage:videos":{ "access": "readwrite" },
-    "device-storage:apps":{ "access": "readwrite" },
-    "device-storage:sdcard":{ "access": "readwrite" },
-    "contacts":{ "access": "readwrite" },
-    "storage":{},
-    "sms":{},
-    "settings":{ "access": "readwrite" },
-    "tcp-socket":{},
-    "mobileconnection":{},
-    "bluetooth":{},
-    "webapps-manage":{},
-    "permissions":{},
-    "wifi-manage":{},
-    "attention":{},
-    "time":{},
-    "desktop-notification":{},
-    "power":{},
-    "telephony":{},
-    "alarms":{},
-    "systemXHR":{},
-    "backgroundservice":{}
+    "device-storage:sdcard": {
+      "access": "readwrite"
+    },
+    "device-storage:apps": {
+      "access": "readwrite"
+    },
+    "storage": {},
+    "bluetooth": {},
+    "telephony": {},
+    "webapps-manage": {},
+    "tcp-socket": {},
+    "device-storage:pictures": {
+      "access": "readwrite"
+    },
+    "wifi-manage": {},
+    "contacts": {
+      "access": "readwrite"
+    },
+    "sms": {},
+    "device-storage:music": {
+      "access": "readwrite"
+    },
+    "permissions": {},
+    "desktop-notification": {},
+    "power": {},
+    "attention": {},
+    "systemXHR": {},
+    "mobileconnection": {},
+    "backgroundservice": {},
+    "settings": {
+      "access": "readwrite"
+    },
+    "device-storage:videos": {
+      "access": "readwrite"
+    },
+    "time": {},
+    "alarms": {}
   },
+  "type": "certified",
   "locales": {
+    "zh-TW": {
+      "name": "PC\u8fde\u63a5\u5668",
+      "description": "PC\u8fde\u63a5\u5668"
+    },
     "en-US": {
       "name": "PCSyncClient",
       "description": "Connect to PC"
-    },
-    "zh-TW": {
-      "name": "PC连接器",
-      "description": "PC连接器"
     }
   },
-  "default_locale": "en-US",
-  "background_page": "/background.html#0",
-  "launch_path": "/index.html",
-  "orientation": "portrait-primary"
+  "developer": {
+    "url": "https://github.com/mozilla-b2g/gaia",
+    "name": "The BeiJing Team"
+  }
 }

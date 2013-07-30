@@ -49,6 +49,11 @@ function handleMessage(socket, jsonCmd, sendCallback, recvList) {
         fileHelper(socket,jsonCmd, sendCallback,  recvList);
         break;
       }
+    case CMD_TYPE.listen:
+      {
+        listenHelper(socket,jsonCmd, sendCallback,  recvList);
+        break;
+      }
     default:
       {
         console.log('HandleMessage.js undefined type :' + jsonCmd.type);
