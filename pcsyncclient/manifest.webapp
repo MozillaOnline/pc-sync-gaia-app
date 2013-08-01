@@ -54,6 +54,10 @@
       "description": "Connect to PC"
     }
   },
+  "icons": {
+    "60": "/style/icons/60/pcsyncclient.png",
+    "120": "/style/icons/pcsyncclient.png"
+  },
   "developer": {
     "url": "https://github.com/mozilla-b2g/gaia",
     "name": "The BeiJing Team"
