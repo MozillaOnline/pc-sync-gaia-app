@@ -52,7 +52,7 @@ function getAllPicturesInfo(socket, jsonCmd, sendCallback) {
         sendCallback(socket, jsonCmd, null, null);
       };
       photoDB.onready = function() {
-        self.photoDB.scan();
+        photoDB.scan();
         console.log('PictureHelper.js photoDB is ready');
       };
       photoDB.onscanend = function() {

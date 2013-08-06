@@ -45,7 +45,7 @@ function getAllVideosInfo(socket, jsonCmd, sendCallback) {
       sendCallback(socket, jsonCmd, null, null);
     };
     videoDB.onready = function() {
-      self.videoDB.scan();
+      videoDB.scan();
       console.log('VideoHelper.js videoDB is ready');
     };
     videoDB.onscanend = function() {
