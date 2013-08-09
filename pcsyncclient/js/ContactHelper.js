@@ -72,7 +72,7 @@ function addContact(socket, jsonCmd, sendCallback, recvList) {
     var jsonContact = JSON.parse(contactData)
     newContact.init(jsonContact);
     if (jsonContact.photo.length > 0) {
-      newContact.photo = [dataUri2Blob(jsonContact.photo[0])];
+      newContact.photo = [dataUri2Blob(jsonContact.photo)];
     }
     var saveRequest = window.navigator.mozContacts.save(newContact);
     saveRequest.onsuccess = function() {
@@ -416,7 +416,7 @@ function updateContactById(socket, jsonCmd, sendCallback, recvList) {
         var updateContact = e.target.result[0];
         for (var uname in newContact) {
           if (uname == 'photo' && newContact.photo.length > 0) {
-            updateContact.photo = [dataUri2Blob(newContact.photo[0])];
+            updateContact.photo = [dataUri2Blob(newContact.photo)];
           } else {
             updateContact[uname] = newContact[uname];
           }
