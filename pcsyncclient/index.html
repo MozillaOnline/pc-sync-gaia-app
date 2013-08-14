@@ -12,6 +12,7 @@
     <!-- Shared code -->
     <script defer src="shared/js/mediadb.js"></script>
     <script defer src="shared/js/blobview.js"></script>
+    <script defer src="shared/js/l10n.js"></script>
     <script defer src="shared/js/media/get_video_rotation.js"></script>
     <script defer src="shared/js/media/jpeg_metadata_parser.js"></script>
     <script defer src="shared/js/lazy_loader.js"></script>
@@ -38,15 +39,25 @@
   <body role="application">
     <section role="region" id="root" class="current">
       <header>
-        <h1 data-l10n-id="pcsynctitle"> PC Sync </h1>
+        <h1 data-l10n-id="pcsync-title">PC Sync</h1>
       </header>
       <div>
-        <header id="icc-mainheader">
-          <h2 data-l10n-id="connectionstatus">USB Connection Status</h2>
+        <header>
+          <h2 data-l10n-id="connection-title">USB Connection Status</h2>
         </header>
-        <ul id="icc-mainentry">
+        <ul>
           <li>
-            <a id="menuItem-icc" class="menu-item">Unconnect</a>
+            <a id="menuItem-device-unconnected" data-l10n-id="device-unconnected" class="menu-item">Unconnect</a>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <header>
+          <h2 data-l10n-id="wifi-title">WiFi Connection Code</h2>
+        </header>
+        <ul>
+          <li>
+            <a id="menuItem-wifi-connect-number" data-l10n-id="wifi-connect-number" class="menu-item">Unknown</a>
           </li>
         </ul>
       </div>
