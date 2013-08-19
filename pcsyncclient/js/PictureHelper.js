@@ -6,13 +6,18 @@
  *Description: Format code
  *----------------------------------------------------------------------------------------------------------*/
 
-
+var photoDB = null;
 function pictureHelper(socket, jsonCmd, sendCallback, recvList) {
   try {
     switch (jsonCmd.command) {
     case PICTURE_COMMAND.getAllPicturesInfo:
       {
         getAllPicturesInfo(socket, jsonCmd, sendCallback);
+        break;
+      }
+    case PICTURE_COMMAND.getPicturePosterByName:
+      {
+        getPicturePosterByName(socket, jsonCmd, sendCallback, recvList);
         break;
       }
     default:
@@ -36,7 +41,7 @@ function pictureHelper(socket, jsonCmd, sendCallback, recvList) {
 
 function getAllPicturesInfo(socket, jsonCmd, sendCallback) {
   try {
-      var photoDB = new MediaDB('pictures', metadataParsers.imageMetadataParser, {
+      photoDB = new MediaDB('pictures', metadataParsers.imageMetadataParser, {
         mimeTypes: ['image/jpeg', 'image/png'],
         version: 2,
         autoscan: false,
@@ -66,7 +71,7 @@ function getAllPicturesInfo(socket, jsonCmd, sendCallback) {
               'type': photos[i].type,
               'size': photos[i].size,
               'date': photos[i].date,
-              'metadate': photos[i].metadata
+              'metadata': photos[i].metadata
             };
             result.push(fileInfo);
           }
@@ -75,10 +80,52 @@ function getAllPicturesInfo(socket, jsonCmd, sendCallback) {
           jsonCmd.firstDatalength = picturesData.length;
           jsonCmd.secondDatalength = 0;
           sendCallback(socket, jsonCmd, picturesData, null);
-
         });
       };
+  } catch (e) {
+    console.log('PictureHelper.js photoDB failed: ' + e);
+    jsonCmd.result = RS_ERROR.UNKNOWEN;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
+    sendCallback(socket, jsonCmd, null, null);
+  }
+}
 
+function getPicturePosterByName(socket, jsonCmd, sendCallback, recvList) {
+  try {
+    var fileName = recvList.shift();
+    if(photoDB && fileName) {
+      photoDB.getAll(function(records) {
+        var photos = records;
+        console.log('PictureHelper.js photos.length: ' + photos.length);
+        for (var i = 0; i < photos.length; i++) {
+          if(photos[i].name == fileName) {
+            var imageblob = photos[i].metadata.thumbnail;
+            if (imageblob != null) {
+              var fileReader = new FileReader();
+              fileReader.readAsDataURL(imageblob);
+              fileReader.onload = function(e) {
+                console.log('PictureHelper.js e.target.result: ' + e.target.result);
+                jsonCmd.result = RS_OK;
+                jsonCmd.firstDatalength = e.target.result.length;
+                jsonCmd.secondDatalength = 0;
+                sendCallback(socket, jsonCmd, e.target.result, null);
+              }
+            } else {
+              jsonCmd.result = RS_OK;
+              jsonCmd.firstDatalength = 0;
+              jsonCmd.secondDatalength = 0;
+              sendCallback(socket, jsonCmd, null, null);
+            }
+            return;
+          }
+        }
+        jsonCmd.result = RS_ERROR.FILE_GET;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
+        sendCallback(socket, jsonCmd, null, null);
+      });
+    }
   } catch (e) {
     console.log('PictureHelper.js photoDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;

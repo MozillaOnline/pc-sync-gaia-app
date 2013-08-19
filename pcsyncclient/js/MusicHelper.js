@@ -65,7 +65,7 @@ function getAllMusicsInfo(socket, jsonCmd, sendCallback) {
             'type': musics[i].type,
             'size': musics[i].size,
             'date': musics[i].date,
-            'metadate': musics[i].metadata
+            'metadata': musics[i].metadata
           };
           result.push(fileInfo);
         }

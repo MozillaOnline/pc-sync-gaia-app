@@ -6,12 +6,18 @@
  *Description: Format code
  *----------------------------------------------------------------------------------------------------------*/
 
+var videoDB = null;
 function videoHelper(socket, jsonCmd, sendCallback, recvList) {
   try {
     switch (jsonCmd.command) {
     case VIDEO_COMMAND.getAllVideosInfo:
       {
         getAllVideosInfo(socket, jsonCmd, sendCallback);
+        break;
+      }
+    case VIDEO_COMMAND.getVideoPosterByName:
+      {
+        getVideoPosterByName(socket, jsonCmd, sendCallback, recvList);
         break;
       }
     default:
@@ -35,7 +41,7 @@ function videoHelper(socket, jsonCmd, sendCallback, recvList) {
 
 function getAllVideosInfo(socket, jsonCmd, sendCallback) {
   try {
-    var videoDB = new MediaDB('videos', metaDataParser);
+    videoDB = new MediaDB('videos', metaDataParser);
     videoDB.onunavailable = function(event) {
       //get all the reasons from event
       console.log('VideoHelper.js videoDB is unavailable');
@@ -75,8 +81,53 @@ function getAllVideosInfo(socket, jsonCmd, sendCallback) {
         sendCallback(socket, jsonCmd, videosData, null);
       });
     };
+  } catch (e) {
+    console.log('VideoHelper.js videoDB failed: ' + e);
+    jsonCmd.result = RS_ERROR.UNKNOWEN;
+    jsonCmd.firstDatalength = 0;
+    jsonCmd.secondDatalength = 0;
+    sendCallback(socket, jsonCmd, null, null);
+  }
+}
 
-
+function getVideoPosterByName(socket, jsonCmd, sendCallback, recvList) {
+  try {
+    var fileName = recvList.shift();
+    if(videoDB && fileName) {
+      videoDB.getAll(function(records) {
+        var videos = records;
+        console.log('VideoHelper.js videos.length: ' + videos.length);
+        for (var i = 0; i < videos.length; i++) {
+          if (!videos[i].metadata.isVideo) {
+            continue;
+          }
+          if(videos[i].name == fileName) {
+            var imageblob = videos[i].metadata.bookmark || videos[i].metadata.poster;
+            if (imageblob != null) {
+              var fileReader = new FileReader();
+              fileReader.readAsDataURL(imageblob);
+              fileReader.onload = function(e) {
+                console.log('VideoHelper.js e.target.result: ' + e.target.result);
+                jsonCmd.result = RS_OK;
+                jsonCmd.firstDatalength = e.target.result.length;
+                jsonCmd.secondDatalength = 0;
+                sendCallback(socket, jsonCmd, e.target.result, null);
+              }
+            } else {
+              jsonCmd.result = RS_OK;
+              jsonCmd.firstDatalength = 0;
+              jsonCmd.secondDatalength = 0;
+              sendCallback(socket, jsonCmd, null, null);
+            }
+            return;
+          }
+        }
+        jsonCmd.result = RS_ERROR.FILE_GET;
+        jsonCmd.firstDatalength = 0;
+        jsonCmd.secondDatalength = 0;
+        sendCallback(socket, jsonCmd, null, null);
+      });
+    }
   } catch (e) {
     console.log('VideoHelper.js videoDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
