@@ -5,11 +5,11 @@
   <meta http-equiv="pragma" content="no-cache">
   <title>PC Sync</title>
     <!-- Include shared building blocks -->
-    <link rel="stylesheet" type="text/css" href="shared/style/headers.css"/>
     <link rel="stylesheet" type="text/css" href="style/pcsync.css"/>
     <!-- Localization -->
     <link rel="resource" type="application/l10n" href="locales/locales.ini">
     <!-- Shared code -->
+    <script defer src="shared/js/device_storage/enumerate_all.js"></script>
     <script defer src="shared/js/mediadb.js"></script>
     <script defer src="shared/js/blobview.js"></script>
     <script defer src="shared/js/l10n.js"></script>
@@ -36,31 +36,28 @@
     <script type="text/javascript" src="js/common/socket.js"></script>
     <script type="text/javascript" src="js/Background.js"></script>
   </head>
-  <body role="application">
-    <section role="region" id="root" class="current">
-      <header>
-        <h1 data-l10n-id="pcsync-title">PC Sync</h1>
-      </header>
-      <div>
-        <header>
-          <h2 data-l10n-id="connection-title">USB Connection Status</h2>
-        </header>
-        <ul>
-          <li>
-            <a id="menuItem-device-unconnected" data-l10n-id="device-unconnected" class="menu-item">Unconnect</a>
-          </li>
-        </ul>
+  <body>
+      <div class="title-bar">
+        <div data-l10n-id="pcsync-title">PC Sync</div>
       </div>
-      <div>
-        <header>
-          <h2 data-l10n-id="wifi-title">WiFi Connection Code</h2>
-        </header>
-        <ul>
-          <li>
-            <a id="menuItem-wifi-connect-number" data-l10n-id="wifi-connect-number" class="menu-item">Unknown</a>
-          </li>
-        </ul>
+      <div class="status-bar">
+        <a data-l10n-id="connection-title">Device Connection Status - </a>
+        <a id="menuItem-device-unconnected" data-l10n-id="device-unconnected" class="menu-item">Unconnect</a>
       </div>
-    </section>
+      <div class="content">
+        <header data-l10n-id="connection-type"></header>
+        <div class="connection-line">
+            <div class="usb-connection-img"></div>
+            <div class="connection-text" data-l10n-id="usb-connection"></div>
+        </div>
+        <div class="connection-line">
+            <div class="wifi-connection-img"></div>
+            <div class="connection-text" data-l10n-id="wifi-connection"></div>
+        </div>
+        <div class="wifi-connection-line">
+            <li data-l10n-id="wifi-title"></li>
+            <li id="menuItem-wifi-connect-number" data-l10n-id="wifi-connect-number" class="menu-item">Unknown</li>
+        </div>
+      </div>
   </body>
 </html>
