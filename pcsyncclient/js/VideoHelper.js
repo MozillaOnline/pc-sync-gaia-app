@@ -77,8 +77,7 @@ function getVideoList(socket, jsonCmd, sendCallback) {
       detail: null
     };
     jsonCmd.result = RS_OK;
-    var videoData = JSON.stringify(videoMessage);
-    sendCallback(socket, jsonCmd, videoData);
+    sendCallback(socket, jsonCmd, null);
   }
 }
 
@@ -111,7 +110,13 @@ function addVideo(video) {
       sendCallback(socket, jsonCmd, videoData);
       index++;
       if(count == 0) {
-        done();
+        var videoMessage = {
+          type: 'video',
+          callbackID: 'enumerate-done',
+          detail: null
+        };
+        jsonCmd.result = RS_OK;
+        sendCallback(socket, jsonCmd, null);
       }
     }
   } else {
