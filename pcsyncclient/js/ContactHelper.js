@@ -6,12 +6,12 @@
  *Description:
  *----------------------------------------------------------------------------------------------------------*/
 
-function contactHelper(socket, jsonCmd, sendCallback, recvList) {
+function contactHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
     switch (jsonCmd.command) {
     case CONTACT_COMMAND.addContact:
       {
-        addContact(socket, jsonCmd, sendCallback, recvList);
+        addContact(socket, jsonCmd, sendCallback, recvData);
         break;
       }
     case CONTACT_COMMAND.clearAllContacts:
@@ -26,47 +26,42 @@ function contactHelper(socket, jsonCmd, sendCallback, recvList) {
       }
     case CONTACT_COMMAND.getContactById:
       {
-        getContactById(socket, jsonCmd, sendCallback, recvList);
+        getContactById(socket, jsonCmd, sendCallback, recvData);
         break;
       }
     case CONTACT_COMMAND.getContactByPhoneNumber:
       {
-        getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvList);
+        getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvData);
         break;
       }
     case CONTACT_COMMAND.removeContactById:
       {
-        removeContactById(socket, jsonCmd, sendCallback, recvList);
+        removeContactById(socket, jsonCmd, sendCallback, recvData);
         break;
       }
     case CONTACT_COMMAND.updateContactById:
       {
-        updateContactById(socket, jsonCmd, sendCallback, recvList);
+        updateContactById(socket, jsonCmd, sendCallback, recvData);
         break;
       }
     default:
       {
         console.log('ContactHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-
-        sendCallback(socket, jsonCmd, null, null);
+        sendCallback(socket, jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     console.log('ContactHelper.js contactHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 }
 
-function addContact(socket, jsonCmd, sendCallback, recvList) {
+function addContact(socket, jsonCmd, sendCallback, recvData) {
   try {
-    var contactData = recvList.shift();
+    var contactData = recvData;
     var newContact = new mozContact();
     console.log('ContactHelper.js addContact contactData is: ' + contactData);
     var jsonContact = JSON.parse(contactData)
@@ -78,22 +73,16 @@ function addContact(socket, jsonCmd, sendCallback, recvList) {
     saveRequest.onsuccess = function() {
       jsonCmd.result = RS_OK;
       var foundContact = JSON.stringify(newContact.id);
-      jsonCmd.firstDatalength = foundContact.length;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, foundContact, null);
+      sendCallback(socket, jsonCmd, foundContact);
     };
     saveRequest.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_ADDCONTACT;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
+      sendCallback(socket, jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js addContact failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 }
 
@@ -102,22 +91,16 @@ function clearAllContacts(socket, jsonCmd, sendCallback) {
     var request = window.navigator.mozContacts.clear();
     request.onsuccess = function() {
       jsonCmd.result = RS_OK;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
+      sendCallback(socket, jsonCmd, null);
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_CLEARALLCONTACTS;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
+      sendCallback(socket, jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js clearAllContacts failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 }
 
@@ -146,7 +129,7 @@ function getAllContacts(socket, jsonCmd, sendCallback) {
           honorificSuffix: contact.honorificSuffix,
           nickname: contact.nickname,
           email: contact.email,
-          url:contact.url,
+          url: contact.url,
           category: contact.category,
           adr: contact.adr,
           tel: contact.tel,
@@ -165,39 +148,35 @@ function getAllContacts(socket, jsonCmd, sendCallback) {
           fileReader.onload = function(e) {
             contactJson.photo = e.target.result;
             chunk.push(contactJson);
-            request.continue();
+            request.
+            continue ();
           }
-        }else{
+        } else {
           chunk.push(contactJson);
-          request.continue();
+          request.
+          continue ();
         }
       } else {
         jsonCmd.result = RS_OK;
         var contactsData = JSON.stringify(chunk);
-        jsonCmd.firstDatalength = contactsData.length;
-        jsonCmd.secondDatalength = 0;
         console.log('ContactHelper.js getAllContacts contactsData: ' + contactsData);
-        sendCallback(socket, jsonCmd, contactsData, null);
+        sendCallback(socket, jsonCmd, contactsData);
       }
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_GETALLCONTACTS;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
+      sendCallback(socket, jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js getAllContacts failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 }
 
-function getContactById(socket, jsonCmd, sendCallback, recvList) {
+function getContactById(socket, jsonCmd, sendCallback, recvData) {
   try {
-    var contactData = recvList.shift();
+    var contactData = recvData;
     var options = {
       filterBy: ['id'],
       filterOp: 'equals',
@@ -208,9 +187,7 @@ function getContactById(socket, jsonCmd, sendCallback, recvList) {
       console.log('ContactHelper.js getContactById e.target.result: ' + evt.target.result.length);
       if (evt.target.result.length == 0) {
         jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, null, null);
+        sendCallback(socket, jsonCmd, null);
       } else {
         var contact = evt.target.result[0];
         var contactJson = {
@@ -224,7 +201,7 @@ function getContactById(socket, jsonCmd, sendCallback, recvList) {
           honorificSuffix: contact.honorificSuffix,
           nickname: contact.nickname,
           email: contact.email,
-          url:contact.url,
+          url: contact.url,
           category: contact.category,
           adr: contact.adr,
           tel: contact.tel,
@@ -244,50 +221,40 @@ function getContactById(socket, jsonCmd, sendCallback, recvList) {
             contactJson.photo = e.target.result;
             jsonCmd.result = RS_OK;
             var contactData = JSON.stringify(contactJson);
-            jsonCmd.firstDatalength = contactData.length;
-            jsonCmd.secondDatalength = 0;
-            sendCallback(socket, jsonCmd, contactData, null);
+            sendCallback(socket, jsonCmd, contactData);
           }
-        }else{
+        } else {
           jsonCmd.result = RS_OK;
           var contactData = JSON.stringify(contactJson);
-          jsonCmd.firstDatalength = contactData.length;
-          jsonCmd.secondDatalength = 0;
-          sendCallback(socket, jsonCmd, contactData, null);
+          sendCallback(socket, jsonCmd, contactData);
         }
       }
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_GETCONTACT;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
+      sendCallback(socket, jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js getContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 }
 
-function getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvList) {
+function getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvData) {
   try {
-    var contactData = recvList.shift();
+    var contactData = recvData;
     var options = {
       filterBy: ['tel'],
-      filterOp: 'equals',
-      filterValue: contactData
+      filterOp: 'match',
+      filterValue: contactData.replace(/\s+/g, '')
     };
     var request = window.navigator.mozContacts.find(options);
     request.onsuccess = function(evt) {
       console.log('ContactHelper.js getContactByPhoneNumber e.target.result: ' + evt.target.result.length);
       if (evt.target.result.length == 0) {
         jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, null, null);
+        sendCallback(socket, jsonCmd, null);
       } else {
         var contact = evt.target.result[0];
         var contactJson = {
@@ -301,7 +268,7 @@ function getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvList) {
           honorificSuffix: contact.honorificSuffix,
           nickname: contact.nickname,
           email: contact.email,
-          url:contact.url,
+          url: contact.url,
           category: contact.category,
           adr: contact.adr,
           tel: contact.tel,
@@ -321,37 +288,29 @@ function getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvList) {
             contactJson.photo = e.target.result;
             jsonCmd.result = RS_OK;
             var contactData = JSON.stringify(contactJson);
-            jsonCmd.firstDatalength = contactData.length;
-            jsonCmd.secondDatalength = 0;
-            sendCallback(socket, jsonCmd, contactData, null);
+            sendCallback(socket, jsonCmd, contactData);
           }
-        }else{
+        } else {
           jsonCmd.result = RS_OK;
           var contactData = JSON.stringify(contactJson);
-          jsonCmd.firstDatalength = contactData.length;
-          jsonCmd.secondDatalength = 0;
-          sendCallback(socket, jsonCmd, contactData, null);
+          sendCallback(socket, jsonCmd, contactData);
         }
       }
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_GETCONTACT;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
+      sendCallback(socket, jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js getContactByPhoneNumber failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 }
 
-function removeContactById(socket, jsonCmd, sendCallback, recvList) {
+function removeContactById(socket, jsonCmd, sendCallback, recvData) {
   try {
-    var contactData = recvList.shift();
+    var contactData = recvData;
     var options = {
       filterBy: ['id'],
       filterOp: 'equals',
@@ -361,44 +320,34 @@ function removeContactById(socket, jsonCmd, sendCallback, recvList) {
     findRequest.onsuccess = function(e) {
       if (e.target.result.length == 0) {
         jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, null, null);
+        sendCallback(socket, jsonCmd, null);
       } else {
         var request = window.navigator.mozContacts.remove(e.target.result[0]);
         request.onsuccess = function(e) {
           jsonCmd.result = RS_OK;
-          jsonCmd.firstDatalength = 0;
-          jsonCmd.secondDatalength = 0;
-          sendCallback(socket, jsonCmd, null, null);
+          sendCallback(socket, jsonCmd, null);
         }
         request.onerror = function() {
           jsonCmd.result = RS_ERROR.CONTACT_REMOVECONTACT;
-          jsonCmd.firstDatalength = 0;
-          jsonCmd.secondDatalength = 0;
-          sendCallback(socket, jsonCmd, null, null);
+          sendCallback(socket, jsonCmd, null);
         };
       }
     };
     findRequest.onerror = function() {
       console.log('pcsync contact.js line108');
       jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
+      sendCallback(socket, jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js removeContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 }
 
-function updateContactById(socket, jsonCmd, sendCallback, recvList) {
+function updateContactById(socket, jsonCmd, sendCallback, recvData) {
   try {
-    var contactData = recvList.shift();
+    var contactData = recvData;
     var newContact = JSON.parse(contactData);
     var options = {
       filterBy: ['id'],
@@ -409,9 +358,7 @@ function updateContactById(socket, jsonCmd, sendCallback, recvList) {
     request.onsuccess = function(e) {
       if (e.target.result.length == 0) {
         jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, null, null);
+        sendCallback(socket, jsonCmd, null);
       } else {
         var updateContact = e.target.result[0];
         for (var uname in newContact) {
@@ -425,30 +372,22 @@ function updateContactById(socket, jsonCmd, sendCallback, recvList) {
         saveRequest.onsuccess = function() {
           jsonCmd.result = RS_OK;
           var savedContact = JSON.stringify(updateContact);
-          jsonCmd.firstDatalength = savedContact.length;
-          jsonCmd.secondDatalength = 0;
-          sendCallback(socket, jsonCmd, savedContact, null);
+          sendCallback(socket, jsonCmd, savedContact);
         };
         saveRequest.onerror = function() {
           jsonCmd.result = RS_ERROR.CONTACT_SAVECONTACT;
-          jsonCmd.firstDatalength = 0;
-          jsonCmd.secondDatalength = 0;
-          sendCallback(socket, jsonCmd, null, null);
+          sendCallback(socket, jsonCmd, null);
         };
       }
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
+      sendCallback(socket, jsonCmd, null);
     };
   } catch (e) {
     console.log('ContactHelper.js updateContactById failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 
 }

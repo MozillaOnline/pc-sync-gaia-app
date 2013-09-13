@@ -1,5 +1,68 @@
 'use strict';
 
+/*
+ * Determine the pixel dimensions of an image without actually
+ * decoding the image. Passes an object of metadata to the callback
+ * function on success or an error message to the error function on
+ * failure. The metadata object will include type, width and height
+ * properties. Supported image types are GIF, PNG and JPEG. JPEG
+ * metadata may also include information about an EXIF preview image.
+ *
+ * Because of shortcomings in the way Gecko handles images, the
+ * Gallery app will crash with an OOM error if it attempts to decode
+ * and display an image that is too big. Images require 4 bytes per
+ * pixel, so a 10 megapixel photograph requires 40 megabytes of image
+ * memory. This function gives the gallery app a way to reject images
+ * that are too large.
+ *
+ * Requires the BlobView class from shared/js/blobview.js and the
+ * parseJPEGMetadata() function from shared/js/media/jpeg_metadata_parser.js
+ */
+function getImageSize(blob, callback, error) {
+  BlobView.get(blob, 0, Math.min(1024, blob.size), function(data) {
+    // Make sure we are at least 8 bytes long before reading the first 8 bytes
+    if (data.byteLength <= 8) {
+      error('corrupt image file');
+      return;
+    }
+    var magic = data.getASCIIText(0, 8);
+    if (magic.substring(0, 4) === 'GIF8') {
+      try {
+        callback({
+          type: 'gif',
+          width: data.getUint16(6, true),
+          height: data.getUint16(8, true)
+        });
+      }
+      catch (e) {
+        error(e.toString());
+      }
+    }
+    else if (magic.substring(0, 8) === '\x89PNG\r\n\x1A\n') {
+      try {
+        callback({
+          type: 'png',
+          width: data.getUint32(16, false),
+          height: data.getUint32(20, false)
+        });
+      }
+      catch (e) {
+        error(e.toString());
+      }
+    }
+    else if (magic.substring(0, 2) === '\xFF\xD8') {
+      parseJPEGMetadata(blob,
+                        function(metadata) {
+                          metadata.type = 'jpeg';
+                          callback(metadata);
+                        },
+                        error);
+    }
+    else {
+      error('unknown image type');
+    }
+  });
+}
 //
 // This file defines a single metadataParsers object. The two
 // properties of this object are metadata parsing functions for image
@@ -7,20 +70,27 @@
 //
 // This file depends on JPEGMetadataParser.js and blobview.js
 //
-var metadataParsers = (function() {
-  // If we generate our own thumbnails, aim for this size
-  var THUMBNAIL_WIDTH = 120;
-  var THUMBNAIL_HEIGHT = 120;
+var metadataParser = (function() {
+  var DEVICE_RATIO = window.devicePixelRatio;
+  // If we generate our own thumbnails, aim for this size.
+  // Calculate needed size from longer side of the screen.
+  var THUMBNAIL_WIDTH = Math.round(
+                          Math.max(window.innerWidth, window.innerHeight) *
+                            DEVICE_RATIO / 4);
+  var THUMBNAIL_HEIGHT = THUMBNAIL_WIDTH;
 
-  // Don't try to decode image files bigger than this
-  var MAX_IMAGE_FILE_SIZE = 3 * 1024 * 1024;  // 3 megabytes
+  // Don't try to decode image files of unknown type if bigger than this
+  var MAX_UNKNOWN_IMAGE_FILE_SIZE = .5 * 1024 * 1024; // half a megabyte
 
   // Don't try to open images with more pixels than this
   var MAX_IMAGE_PIXEL_SIZE = 5 * 1024 * 1024; // 5 megapixels
 
-  // <img> and <video> elements for loading images and videos
+  // An <img> element for loading images
   var offscreenImage = new Image();
-  var offscreenVideo = document.createElement('video');
+
+  // The screen size. Preview images must be at least this big
+  var sw = window.innerWidth;
+  var sh = window.innerHeight;
 
   // Create a thumbnail size canvas, copy the <img> or <video> into it
   // cropping the edges as needed to make it fit, and then extract the
@@ -32,8 +102,8 @@ var metadataParsers = (function() {
     var context = canvas.getContext('2d');
     canvas.width = THUMBNAIL_WIDTH;
     canvas.height = THUMBNAIL_HEIGHT;
-    var eltwidth = video ? elt.videoWidth : elt.width;
-    var eltheight = video ? elt.videoHeight : elt.height;
+    var eltwidth = elt.width;
+    var eltheight = elt.height;
     var scalex = canvas.width / eltwidth;
     var scaley = canvas.height / eltheight;
 
@@ -106,106 +176,175 @@ var metadataParsers = (function() {
       context.fill();
     }
 
-    canvas.toBlob(function(blob) {
-      // This setTimeout is here in the hopes that it gives gecko a bit
-      // of time to release the memory that holds the decoded image before
-      // we start creating the next thumbnail.
-      setTimeout(function() {
-        callback(blob);
-      });
-    }, 'image/jpeg');
+    canvas.toBlob(callback, 'image/jpeg');
   }
 
-  function imageMetadataParser(file, metadataCallback, metadataError) {
-    if (file.type !== 'image/jpeg') {
-      // For any kind of image other than JPEG, we just have to get
-      // our metadata with an <img> tag
-      getImageSizeAndThumbnail(file, metadataCallback, metadataError);
+  var VIDEOFILE = /DCIM\/\d{3}MZLLA\/VID_\d{4}\.jpg/;
+
+  function metadataParser(file, metadataCallback, metadataError, bigFile) {
+    // If the file is a poster image for a video file, then we've want
+    // video metadata, not image metadata
+    if (VIDEOFILE.test(file.name)) {
+      videoMetadataParser(file, metadataCallback, metadataError);
       return;
     }
-    else { // This is the jpeg case
-      parseJPEGMetadata(file, function(metadata) {
 
-        // If the image is too big, reject it now so we don't have
-        // memory trouble later.
-        if (metadata.width * metadata.height > MAX_IMAGE_PIXEL_SIZE) {
-          metadataError('Ignoring high-resolution image ' + file.name);
-          return;
-        }
+    // Figure out how big the image is if we can. For JPEG files this
+    // calls the JPEG parser and returns the EXIF preview if there is one.
+    getImageSize(file, gotImageSize, gotImageSizeError);
 
-        // If the file included a preview image, use that to
-        // create a thumbnail. Otherwise, get the size and thumbnail
-        // from an offscreen image
-        if (metadata.preview) {
-          // Create a blob that is just the preview image
-          var previewblob = file.slice(metadata.preview.start,
-                                       metadata.preview.end,
-                                       'image/jpeg');
-          getImageSizeAndThumbnail(previewblob,
-                                   function(m) {
-                                     metadata.preview.width = m.width;
-                                     metadata.preview.height = m.height;
-                                     metadata.thumbnail = m.thumbnail;
-                                     metadataCallback(metadata);
-                                   },
-                                   function(errmsg) {
-                                     // If something went wrong with the
-                                     // preview blob, then fall back on
-                                     // the full-size image
-                                     console.warn('Error creating thumbnail' +
-                                                  ' from preview:', errmsg);
-                                     getImageSizeAndThumbnail(file,
-                                                              metadataCallback,
-                                                              metadataError);
-                                   });
+    function gotImageSizeError(errmsg) {
+      // The image is not a JPEG, PNG or GIF file. We may still be
+      // able to decode and display it but we don't know the image
+      // size, so we won't even try if the file is too big.
+      if (file.size > MAX_UNKNOWN_IMAGE_FILE_SIZE) {
+        metadataError('Ignoring large file ' + file.name);
+        return;
+      }
 
+      // If the file is too small to be an image, ignore it
+      if (file.size < 32) {
+        metadataError('Ignoring small file ' + file.name);
+        return;
+      }
+
+      // If the error message is anything other than unknown image type
+      // it means we've got a corrupt image file, or the image metdata parser
+      // can't handle the file for some reason. Log a warning but keep going
+      // in case the image is good and the metadata parser is buggy.
+      if (errmsg !== 'unknown image type') {
+        console.warn('getImageSize', errmsg, file.name);
+      }
+
+      // If it is not too big create a preview and thumbnail.
+      createThumbnailAndPreview(file,
+                                metadataCallback,
+                                metadataError,
+                                false,
+                                bigFile);
+    }
+
+    function gotImageSize(metadata) {
+      // If the image is too big, reject it now so we don't have
+      // memory trouble later.
+      if (metadata.width * metadata.height > MAX_IMAGE_PIXEL_SIZE) {
+        metadataError('Ignoring high-resolution image ' + file.name);
+        return;
+      }
+
+      // If the file included a preview image, see if it is big enough
+      if (metadata.preview) {
+        // Create a blob that is just the preview image
+        var previewblob = file.slice(metadata.preview.start,
+                                     metadata.preview.end,
+                                     'image/jpeg');
+
+        // Check to see if the preview is big enough to use in MediaFrame
+        parseJPEGMetadata(previewblob, previewsuccess, previewerror);
+      }
+      else {
+        // If there wasn't a preview image, then generate a preview and
+        // thumbnail from the full size image.
+        createThumbnailAndPreview(file,
+                                  metadataCallback,
+                                  metadataError,
+                                  false,
+                                  bigFile);
+      }
+
+      function previewerror(msg) {
+        // The preview isn't a valid jpeg file, so use the full image to
+        // create a preview and a thumbnail
+        createThumbnailAndPreview(file,
+                                  metadataCallback,
+                                  metadataError,
+                                  false,
+                                  bigFile);
+      }
+
+      function previewsuccess(previewmetadata) {
+        var pw = previewmetadata.width;      // size of the preview image
+        var ph = previewmetadata.height;
+
+        // If the preview is big enough, use it to create a thumbnail.
+        // A preview is big enough if at least one dimension is >= the
+        // screen size in both portait and landscape mode.
+        if ((pw >= sw || ph >= sh) && (pw >= sh || ph >= sw)) {
+          // The final argument true means don't actually create a preview
+          createThumbnailAndPreview(previewblob,
+                                    function(m) {
+                                      metadata.preview.width = m.width;
+                                      metadata.preview.height = m.height;
+                                      metadata.thumbnail = m.thumbnail;
+                                      metadataCallback(metadata);
+                                    },
+                                    function(errmsg) {
+                                      // If something went wrong with the
+                                      // preview blob, then fall back on
+                                      // the full-size image
+                                      console.warn('Error creating thumbnail' +
+                                                   ' from preview:', errmsg);
+                                      createThumbnailAndPreview(file,
+                                                               metadataCallback,
+                                                               metadataError,
+                                                               false,
+                                                               bigFile);
+                                    },
+                                    true,
+                                    bigFile);
         }
         else {
-          // If there wasn't a preview image, then generate one from
-          // the full size image.
-          getImageSizeAndThumbnail(file, metadataCallback, metadataError);
+          // Preview isn't big enough so get one the hard way
+          createThumbnailAndPreview(file,
+                                    metadataCallback,
+                                    metadataError,
+                                    false,
+                                    bigFile);
         }
-      }, function(errmsg) {
-        // If we couldn't parse the JPEG file, then try again with
-        // an <img> element. This will probably fail, too.
-        console.warn('In parseJPEGMetadata:', errmsg);
-        getImageSizeAndThumbnail(file, metadataCallback, metadataError);
-      });
+      }
     }
   }
 
   // Load an image from a file into an <img> tag, and then use that
   // to get its dimensions and create a thumbnail.  Store these values in
-  // an metadata object, and pass the object to the callback function.
+  // a metadata object, and pass the object to the callback function.
   // If anything goes wrong, pass an error message to the error function.
-  function getImageSizeAndThumbnail(file, callback, error) {
-    // If the file size is too big it might not actually be an image file
-    // or it might be too big for us to process without memory problems.
-    // So we're not even going to try.
-    if (file.size > MAX_IMAGE_FILE_SIZE) {
-      error('Ignoring large file ' + file.name);
-      return;
-    }
-
+  // If it is a large image, create and save a preview for it as well.
+  function createThumbnailAndPreview(file, callback, error, nopreview,
+                                     bigFile) {
     var metadata = {};
     var url = URL.createObjectURL(file);
     offscreenImage.src = url;
 
     offscreenImage.onerror = function() {
       URL.revokeObjectURL(url);
-      offscreenImage.removeAttribute('src');
-      error('getImageSizeAndThumbnail: Image failed to load');
+      offscreenImage.src = '';
+      error('createThumbnailAndPreview: Image failed to load');
     };
 
     offscreenImage.onload = function() {
       URL.revokeObjectURL(url);
-      metadata.width = offscreenImage.width;
-      metadata.height = offscreenImage.height;
+      var iw = metadata.width = offscreenImage.width;
+      var ih = metadata.height = offscreenImage.height;
+
+      // If this is a big image, then decoding it takes a lot of memory.
+      // We set this flag to prevent the user from zooming in on other
+      // images at the same time because that also takes a lot of memory
+      // and we don't want to crash with an OOM. If we find one big image
+      // we assume that there may be others, so the flag remains set until
+      // the current scan is complete.
+      //
+      // XXX: When bug 854795 is fixed, we'll be able to create previews
+      // for large images without using so much memory, and we can remove
+      // this flag then.
+      if (iw * ih > 2 * 1024 * 1024 && bigFile)
+        bigFile();
 
       // If the image was already thumbnail size, it is its own thumbnail
+      // and it does not need a preview
       if (metadata.width <= THUMBNAIL_WIDTH &&
           metadata.height <= THUMBNAIL_HEIGHT) {
-        offscreenImage.removeAttribute('src');
+        offscreenImage.src = '';
         //
         // XXX
         // Because of a gecko bug, we can't just store the image file itself
@@ -217,87 +356,139 @@ var metadataParsers = (function() {
         callback(metadata);
       }
       else {
-        createThumbnailFromElement(offscreenImage, false, 0,
-                                   function(thumbnail) {
-                                     metadata.thumbnail = thumbnail;
-                                     offscreenImage.removeAttribute('src');
-                                     callback(metadata);
-                                   });
+        createThumbnailFromElement(offscreenImage, false, 0, gotThumbnail);
       }
-    }
+
+      function gotThumbnail(thumbnail) {
+        metadata.thumbnail = thumbnail;
+        // If no preview was requested, or if if the image was less
+        // than half a megapixel then it does not need a preview
+        // image, and we can call the callback right away
+        if (nopreview || metadata.width * metadata.height < 512 * 1024) {
+          offscreenImage.src = '';
+          callback(metadata);
+        }
+        else {
+          // Otherwise, this was a big image and we need to create a
+          // preview for it so we can avoid decoding the full size
+          // image again when possible
+          createAndSavePreview();
+        }
+      }
+
+      function createAndSavePreview() {
+        // Figure out the preview size.
+        // Make sure the size is big enough for both landscape and portrait
+        var scale = Math.max(Math.min(sw / iw, sh / ih, 1),
+                             Math.min(sh / iw, sw / ih, 1));
+        var pw = iw * scale, ph = ih * scale; // preview width and height;
+
+        // Create the preview in a canvas
+        var canvas = document.createElement('canvas');
+        canvas.width = pw;
+        canvas.height = ph;
+        var context = canvas.getContext('2d');
+        context.drawImage(offscreenImage, 0, 0, iw, ih, 0, 0, pw, ph);
+        canvas.toBlob(function(blob) {
+          offscreenImage.src = '';
+          canvas.width = canvas.height = 0;
+          savePreview(blob);
+        }, 'image/jpeg');
+
+        function savePreview(previewblob) {
+          var storage = navigator.getDeviceStorage('pictures');
+          var filename;
+          if (file.name[0] === '/') {
+            // We expect file.name to be a fully qualified name (perhaps
+            // something like /sdcard/DCIM/100MZLLA/IMG_0001.jpg).
+            var slashIndex = file.name.indexOf('/', 1);
+            if (slashIndex < 0) {
+              error("savePreview: Bad filename: '" + file.name + "'");
+              return;
+            }
+            filename =
+              file.name.substring(0, slashIndex) + // storageName (i.e. /sdcard)
+              '/.gallery/previews' +
+              file.name.substring(slashIndex); // rest of path (i,e, /DCIM/...)
+          } else {
+            // On non-composite storage areas (e.g. desktop), file.name will be
+            // a relative path.
+            filename = '.gallery/previews/' + file.name;
+          }
+
+          // Delete any existing preview by this name
+          var delreq = storage.delete(filename);
+          delreq.onsuccess = delreq.onerror = save;
+
+          function save() {
+            var savereq = storage.addNamed(previewblob, filename);
+            savereq.onerror = function() {
+              console.error('Could not save preview image', filename);
+            };
+
+            // Don't actually wait for the save to complete. Go start
+            // scanning the next one.
+            metadata.preview = {
+              filename: filename,
+              width: pw,
+              height: ph
+            };
+            callback(metadata);
+          }
+        }
+      }
+    };
   }
 
   function videoMetadataParser(file, metadataCallback, errorCallback) {
-    try {
-      if (file.type && !offscreenVideo.canPlayType(file.type)) {
-        errorCallback("can't play video file type: " + file.type);
-        return;
-      }
+    var metadata = {};
+    var videofilename = file.name.replace('.jpg', '.3gp');
+    metadata.video = videofilename;
 
+    var getreq = videostorage.get(videofilename);
+    getreq.onerror = function() {
+      errorCallback('cannot get video file: ' + videofilename);
+    };
+    getreq.onsuccess = function() {
+      var videofile = getreq.result;
+      getVideoRotation(videofile, function(rotation) {
+        if (typeof rotation === 'number') {
+          metadata.rotation = rotation;
+          getVideoThumbnailAndSize();
+        }
+        else if (typeof rotation === 'string') {
+          errorCallback('Video rotation:', rotation);
+        }
+      });
+    };
+
+    function getVideoThumbnailAndSize() {
       var url = URL.createObjectURL(file);
+      offscreenImage.src = url;
 
-      offscreenVideo.preload = 'metadata';
-      offscreenVideo.style.width = THUMBNAIL_WIDTH + 'px';
-      offscreenVideo.style.height = THUMBNAIL_HEIGHT + 'px';
-      offscreenVideo.src = url;
-
-      offscreenVideo.onerror = function() {
+      offscreenImage.onerror = function() {
         URL.revokeObjectURL(url);
-        offscreenVideo.onerror = null;
-        offscreenVideo.src = null;
-        errorCallback('not a video file');
-      }
-
-      offscreenVideo.onloadedmetadata = function() {
-        var metadata = {};
-        metadata.video = true;
-        metadata.duration = offscreenVideo.duration;
-        metadata.width = offscreenVideo.videoWidth;
-        metadata.height = offscreenVideo.videoHeight;
-        metadata.rotation = 0;
-
-        // If this is a .3gp video file, look for its rotation matrix and
-        // then create the thumbnail. Otherwise set rotation to 0 and
-        // create the thumbnail.
-        // getVideoRotation is defined in shared/js/media/get_video_rotation.js
-        if (file.name.substring(file.name.lastIndexOf('.') + 1) === '3gp') {
-          getVideoRotation(file, function(rotation) {
-            if (typeof rotation === 'number')
-              metadata.rotation = rotation;
-            else if (typeof rotation === 'string')
-              console.warn('Video rotation:', rotation);
-            createThumbnail();
-          });
-        }
-        else {
-          createThumbnail();
-        }
-
-        function createThumbnail() {
-          offscreenVideo.currentTime = 1; // read 1 second into video
-          offscreenVideo.onseeked = function onseeked() {
-            createThumbnailFromElement(offscreenVideo, true, metadata.rotation,
-                                       function(thumbnail) {
-                                         URL.revokeObjectURL(url);
-                                         offscreenVideo.onerror = null;
-                                         offscreenVideo.onseeked = null;
-                                         offscreenVideo.removeAttribute('src');
-                                         offscreenVideo.load();
-                                         metadata.thumbnail = thumbnail;
-                                         metadataCallback(metadata);
-                                       });
-          };
-        }
+        offscreenImage.src = '';
+        errorCallback('getVideoThumanailAndSize: Image failed to load');
       };
-    }
-    catch (e) {
-      console.error('Exception in videoMetadataParser', e, e.stack);
-      errorCallback('Exception in videoMetadataParser');
+
+      offscreenImage.onload = function() {
+        URL.revokeObjectURL(url);
+
+        // We store the unrotated size of the poster image, which we
+        // require to have the same size and rotation as the video
+        metadata.width = offscreenImage.width;
+        metadata.height = offscreenImage.height;
+
+        createThumbnailFromElement(offscreenImage, true, metadata.rotation,
+                                   function(thumbnail) {
+                                     metadata.thumbnail = thumbnail;
+                                     offscreenImage.src = '';
+                                     metadataCallback(metadata);
+                                   });
+      };
     }
   }
 
-  return {
-    imageMetadataParser: imageMetadataParser,
-    videoMetadataParser: videoMetadataParser
-  };
+  return metadataParser;
 }());

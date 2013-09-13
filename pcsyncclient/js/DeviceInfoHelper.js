@@ -6,7 +6,7 @@
  *Description:
  *----------------------------------------------------------------------------------------------------------*/
 
-function deviceInfoHelper(socket, jsonCmd, sendCallback, recvList) {
+function deviceInfoHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
     switch (jsonCmd.command) {
     case DEVICEINFO_COMMAND.getStorage:
@@ -23,18 +23,14 @@ function deviceInfoHelper(socket, jsonCmd, sendCallback, recvList) {
       {
         console.log('DeviceInfoHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, null, null);
+        sendCallback(socket, jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     console.log('DeviceInfoHelper.js deviceInfoHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 }
 
@@ -58,9 +54,7 @@ function getStorage(socket, jsonCmd, sendCallback) {
           jsonCmd.result = RS_OK;
           var sendData = JSON.stringify(deviceInfo);
           console.log('deviceInfoHelper.js getStorage sendData: ' + sendData);
-          jsonCmd.firstDatalength = sendData.length;
-          jsonCmd.secondDatalength = 0;
-          sendCallback(socket, jsonCmd, sendData, null);
+          sendCallback(socket, jsonCmd, sendData);
         }
       } else {
         var request = storage.freeSpace();
@@ -81,9 +75,7 @@ function getStorage(socket, jsonCmd, sendCallback) {
               jsonCmd.result = RS_OK;
               var sendData = JSON.stringify(deviceInfo);
               console.log('deviceInfoHelper.js getStorage sendData: ' + sendData);
-              jsonCmd.firstDatalength = sendData.length;
-              jsonCmd.secondDatalength = 0;
-              sendCallback(socket, jsonCmd, sendData, null);
+              sendCallback(socket, jsonCmd, sendData);
             }
           };
           requestused.onerror = function(e) {
@@ -98,9 +90,7 @@ function getStorage(socket, jsonCmd, sendCallback) {
               jsonCmd.result = RS_OK;
               var sendData = JSON.stringify(deviceInfo);
               console.log('deviceInfoHelper.js getStorage sendData: ' + sendData);
-              jsonCmd.firstDatalength = sendData.length;
-              jsonCmd.secondDatalength = 0;
-              sendCallback(socket, jsonCmd, sendData, null);
+              sendCallback(socket, jsonCmd, sendData);
             }
           };
         }
@@ -116,18 +106,14 @@ function getStorage(socket, jsonCmd, sendCallback) {
             jsonCmd.result = RS_OK;
             var sendData = JSON.stringify(deviceInfo);
             console.log('deviceInfoHelper.js getStorage sendData: ' + sendData);
-            jsonCmd.firstDatalength = sendData.length;
-            jsonCmd.secondDatalength = 0;
-            sendCallback(socket, jsonCmd, sendData, null);
+            sendCallback(socket, jsonCmd, sendData);
           }
         };
       }
     });
   } catch (e) {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 }
 
@@ -140,20 +126,14 @@ function getSettings(socket, jsonCmd, sendCallback) {
       jsonCmd.result = RS_OK;
       var sendData = JSON.stringify(request.result);
       console.log('deviceInfoHelper.js getSettings sendData: ' + sendData.length);
-      jsonCmd.firstDatalength = sendData.length;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, sendData, null);
+      sendCallback(socket, jsonCmd, sendData);
     };
     request.onerror = function errorGetCurrentSound() {
       jsonCmd.result = RS_ERROR.UNKNOWEN;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
+      sendCallback(socket, jsonCmd, null);
     };
   } catch (e) {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 }

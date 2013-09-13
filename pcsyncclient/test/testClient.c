@@ -27,36 +27,41 @@
 #define FILE_NAME_MAX_SIZE 512
 
 int runOneTestCase(char * testCase, char * testData);
-
+int keepRun = 0;
 int main(int argc, char **argv)
 {
     system("adb forward tcp:10010 tcp:10010");
-    if ((argc != 2)&&(argc != 3)){
+    if ((argc < 2)){
         printf("Error: Please select .tc or .atc like \"./client ./unit/autoTest.atc\"\n");
         exit(1);
     }else{
+		char *pargv = argv[1];
+		if(!strcmp(argv[1],"-k")) {
+			keepRun = 1;
+			pargv = argv[2];
+		}
 		//判断参数是否合法
-		if(!argv[1]||!strcmp(argv[1],"")||(strlen(argv[1])<strlen("*.tc"))){
-			printf("Error: Please input available argv[1] name(*.tc/*.atc)\n");
+		if(!pargv||!strcmp(pargv,"")||(strlen(pargv)<strlen("*.tc"))){
+			printf("Error: Please input available pargv name(*.tc/*.atc)\n");
 			exit(1);
 		}
-		char *ptr = argv[1] + strlen(argv[1]) - strlen(".atc");
+		char *ptr = pargv + strlen(pargv) - strlen(".atc");
 		if(!strcmp(ptr,".atc")){
 			//读取autoTest文件内容
 			char buffer[BUFFER_SIZE];
 			bzero(buffer,BUFFER_SIZE);
-			FILE * fp = fopen(argv[1],"r");
+			FILE * fp = fopen(pargv,"r");
 			if(NULL == fp ){
-				printf("Error:\t%s Can Not Open To Read\n", argv[1]);
+				printf("Error:\t%s Can Not Open To Read\n", pargv);
 				exit(1);
 			}
 			fseek(fp,0,SEEK_END);
 			int length = (ftell(fp)> BUFFER_SIZE?BUFFER_SIZE:ftell(fp));
-			printf("%s File Length is:%d\n",argv[1], length);
+			printf("%s File Length is:%d\n",pargv, length);
 			fseek(fp,0,SEEK_SET);
 			int read_length = fread(buffer,sizeof(char),length,fp);
 			if (read_length<length){
-				printf("Error:\t%s Read Failed\n", argv[1]);
+				printf("Error:\t%s Read Failed\n", pargv);
 				exit(1);
 			}   
 			close(fp);
@@ -64,7 +69,7 @@ int main(int argc, char **argv)
 			//将文件内容转换为json，判断文件格式合法性
 			cJSON *json = cJSON_Parse(buffer);
 			if (!json) {
-				printf("Error： %s format failed before: [%s]\n",argv[1],cJSON_GetErrorPtr());
+				printf("Error： %s format failed before: [%s]\n",pargv,cJSON_GetErrorPtr());
 				exit(1);
 			}
 			int i=0;
@@ -73,7 +78,7 @@ int main(int argc, char **argv)
 			for(i=0; i<testCaseNum; i++){
 				cJSON *jsonItem = cJSON_GetArrayItem(json,i);
 				if (!jsonItem) {
-					printf("Error： %s format failed before: [%s]\n",argv[1], cJSON_GetErrorPtr());
+					printf("Error： %s format failed before: [%s]\n",pargv, cJSON_GetErrorPtr());
 					continue;
 				}
 				printf("testCase is %s\n",cJSON_GetObjectItem(jsonItem,"testCase")->valuestring);
@@ -84,7 +89,12 @@ int main(int argc, char **argv)
 			cJSON_Delete(json);
 		}
 		else{
-			runOneTestCase(argv[1], argv[2]);
+			if(argc == 2)
+				runOneTestCase(pargv, NULL);
+			else if(argc == 3)
+				runOneTestCase(pargv, argv[2]);
+			else if(argc == 4)
+				runOneTestCase(pargv, argv[3]);
 		}
 	} 
 	
@@ -249,39 +259,38 @@ int runOneTestCase(char * testCase, char * testData)
 		}
 		close(fp);
 	}
-	
 	//接收服务器返回
-	bzero(buffer,BUFFER_SIZE);
-	length = 0;
-	length = recv(client_socket,buffer,BUFFER_SIZE,0);
-	printf("Recv length is:\t%d \n", length);
-	printf("Recv data is:\t%s \n", buffer+24);
-	if(length > 0){
-		int id = bytes2int(buffer);
-		int type = bytes2int(buffer+4);
-		int command = bytes2int(buffer+8);
-		int result = bytes2int(buffer+12);
-		int recvdata1 = bytes2int(buffer+16);
-		int recvdata2 = bytes2int(buffer+20);
-		int recvExdataLength = recvdata1 + recvdata2;
-		printf("Recv id is:\t%d \n", id);
-		printf("Recv type is:\t%d \n", type);
-		printf("Recv command is:\t%d \n", command);
-		printf("Recv result is:\t%d \n", result);
-		
-		
-		recvExdataLength = recvExdataLength - length + 24;
-		printf("Recv datalen is:\t%d \n", recvExdataLength);
-		while(recvExdataLength > 0){
-			printf("Recv last datalen is:\t%d \n", recvExdataLength);
-			bzero(buffer,BUFFER_SIZE);
-			length = recv(client_socket,buffer,BUFFER_SIZE,0);
-			printf("Recv Exdata is:\t%s \n", buffer);
-			recvExdataLength -= length;
-			printf("Info： Recv exdata last is %d\n",recvExdataLength);
+	while(keepRun) {
+		bzero(buffer,BUFFER_SIZE);
+		length = 0;
+		printf("Recv wait data\n");
+		length = recv(client_socket,buffer,BUFFER_SIZE,0);
+		printf("Recv length is:\t%d \n", length);
+		printf("Recv data is:\t%s \n", buffer+24);
+		if(length > 0){
+			int id = bytes2int(buffer);
+			int type = bytes2int(buffer+4);
+			int command = bytes2int(buffer+8);
+			int result = bytes2int(buffer+12);
+			int recvdata1 = bytes2int(buffer+16);
+			int recvdata2 = bytes2int(buffer+20);
+			int recvExdataLength = recvdata1 + recvdata2;
+			printf("Recv id is:\t%d \n", id);
+			printf("Recv type is:\t%d \n", type);
+			printf("Recv command is:\t%d \n", command);
+			printf("Recv result is:\t%d \n", result);
+			recvExdataLength = recvExdataLength - length + 24;
+			printf("Recv datalen is:\t%d \n", recvExdataLength);
+			while(recvExdataLength > 0){
+				printf("Recv last datalen is:\t%d \n", recvExdataLength);
+				bzero(buffer,BUFFER_SIZE);
+				length = recv(client_socket,buffer,BUFFER_SIZE,0);
+				printf("Recv Exdata is:\t%s \n", buffer);
+				recvExdataLength -= length;
+				printf("Info： Recv exdata last is %d\n",recvExdataLength);
+			}
+			printf("Recieve Data From Server Finished\n");
 		}
-			
-		printf("Recieve Data From Server Finished\n");
 	}
 	//关闭socket
     close(client_socket);

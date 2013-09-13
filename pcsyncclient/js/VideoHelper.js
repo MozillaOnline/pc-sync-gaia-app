@@ -7,132 +7,220 @@
  *----------------------------------------------------------------------------------------------------------*/
 
 var videoDB = null;
-function videoHelper(socket, jsonCmd, sendCallback, recvList) {
+function videoHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
     switch (jsonCmd.command) {
-    case VIDEO_COMMAND.getAllVideosInfo:
+    case VIDEO_COMMAND.getOldVideosInfo:
       {
-        getAllVideosInfo(socket, jsonCmd, sendCallback);
+        getOldVideosInfo(socket, jsonCmd, sendCallback);
         break;
       }
-    case VIDEO_COMMAND.getVideoPosterByName:
+    case VIDEO_COMMAND.getChangedVideosInfo:
       {
-        getVideoPosterByName(socket, jsonCmd, sendCallback, recvList);
+        getChangedVideosInfo(socket, jsonCmd, sendCallback);
         break;
       }
     default:
       {
         console.log('VideoHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, null, null);
+        sendCallback(socket, jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     console.log('VideoHelper.js videoHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
 }
 
-function getAllVideosInfo(socket, jsonCmd, sendCallback) {
-  try {
-    videoDB = new MediaDB('videos', metaDataParser);
-    videoDB.onunavailable = function(event) {
-      //get all the reasons from event
-      console.log('VideoHelper.js videoDB is unavailable');
-      jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
+var count = 0;
+var index = 0;
+var selfsocket = null;
+var selfjsonCmd = null;
+var selfsendCallback = null;
+function getVideoList(socket, jsonCmd, sendCallback) {
+  selfsocket = socket;
+  selfjsonCmd = jsonCmd;
+  selfsendCallback = sendCallback;
+  videoDB.enumerate('date', null, 'prev', function(video) {
+    if (video) {
+      var isVideo = video.metadata.isVideo;
+      // If we know this is not a video, ignore it
+      if (isVideo === false) {
+        return;
+      }
+      // If we don't have metadata for this video yet, add it to the
+      // metadata queue to get processed. Once the metadata is
+      // available, it will be passed to addVideo()
+      if (isVideo === undefined) {
+        addToMetadataQueue(video);
+        return;
+      }
+      // If we've parsed the metadata and know this is a video, display it.
+      if (isVideo === true) {
+        addVideo(video);
+      }
+    } else {
+      if(count == index) {
+        done();
+      } else {
+        count = 0;
+      }
+    }
+  });
+  function done() {
+    var videoMessage = {
+      type: 'video',
+      callbackID: 'enumerate-done',
+      detail: null
     };
-    videoDB.onready = function() {
-      videoDB.scan();
-      console.log('VideoHelper.js videoDB is ready');
-    };
-    videoDB.onscanend = function() {
-      console.log('VideoHelper.js videoDB scan end');
-      videoDB.getAll(function(records) {
-        var videos = records;
-        var result = [];
-        console.log('VideoHelper.js videos.length: ' + videos.length);
-        for (var i = 0; i < videos.length; i++) {
-          if (!videos[i].metadata.isVideo) {
-            continue;
-          }
-          var fileInfo = {
-            'name': videos[i].name,
-            'type': videos[i].type,
-            'size': videos[i].size,
-            'date': videos[i].date,
-            'metadate': videos[i].metadata
-          };
-          result.push(fileInfo);
-        }
-        jsonCmd.result = RS_OK;
-        console.log('VideoHelper.js JSON.stringify(result): ' + JSON.stringify(result));
-        var videosData = JSON.stringify(result);
-        jsonCmd.firstDatalength = videosData.length;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, videosData, null);
-      });
-    };
-  } catch (e) {
-    console.log('VideoHelper.js videoDB failed: ' + e);
-    jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    jsonCmd.result = RS_OK;
+    var videoData = JSON.stringify(videoMessage);
+    sendCallback(socket, jsonCmd, videoData);
   }
 }
 
-function getVideoPosterByName(socket, jsonCmd, sendCallback, recvList) {
+function addVideo(video) {
+  var socket = selfsocket;
+  var jsonCmd = selfjsonCmd;
+  var sendCallback = selfsendCallback;
+  console.log('VideoHelper.js addVideo video: ' + JSON.stringify(video.metadata));
+  count++;
+  var fileInfo = {
+    'name': video.name,
+    'type': video.type,
+    'size': video.size,
+    'date': video.date,
+    'metadata': video.metadata
+  };
+  var videoMessage = {
+    type: 'video',
+    callbackID: 'enumerate',
+    detail: fileInfo
+  };
+  var imageblob = video.metadata.bookmark || video.metadata.poster;
+  if (imageblob != null) {
+    var fileReader = new FileReader();
+    fileReader.readAsDataURL(imageblob);
+    fileReader.onload = function(e) {
+      videoMessage.detail.metadata.poster = e.target.result;
+      jsonCmd.result = RS_MIDDLE;
+      var videoData = JSON.stringify(videoMessage);
+      sendCallback(socket, jsonCmd, videoData);
+      index++;
+      if(count == 0) {
+        done();
+      }
+    }
+  } else {
+    jsonCmd.result = RS_MIDDLE;
+    var videoData = JSON.stringify(videoMessage);
+    sendCallback(socket, jsonCmd, videoData);
+    index++;
+  }
+}
+
+function getOldVideosInfo(socket, jsonCmd, sendCallback) {
   try {
-    var fileName = recvList.shift();
-    if(videoDB && fileName) {
-      videoDB.getAll(function(records) {
-        var videos = records;
-        console.log('VideoHelper.js videos.length: ' + videos.length);
-        for (var i = 0; i < videos.length; i++) {
-          if (!videos[i].metadata.isVideo) {
-            continue;
-          }
-          if(videos[i].name == fileName) {
-            var imageblob = videos[i].metadata.bookmark || videos[i].metadata.poster;
-            if (imageblob != null) {
-              var fileReader = new FileReader();
-              fileReader.readAsDataURL(imageblob);
-              fileReader.onload = function(e) {
-                console.log('VideoHelper.js e.target.result: ' + e.target.result);
-                jsonCmd.result = RS_OK;
-                jsonCmd.firstDatalength = e.target.result.length;
-                jsonCmd.secondDatalength = 0;
-                sendCallback(socket, jsonCmd, e.target.result, null);
-              }
-            } else {
-              jsonCmd.result = RS_OK;
-              jsonCmd.firstDatalength = 0;
-              jsonCmd.secondDatalength = 0;
-              sendCallback(socket, jsonCmd, null, null);
-            }
-            return;
-          }
-        }
-        jsonCmd.result = RS_ERROR.FILE_GET;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, null, null);
-      });
+    var selfSocket = socket;
+    var selfJsonCmd = jsonCmd;
+    var selfSendCallback = sendCallback;
+    if(videoDB == null) {
+      videoDB = new MediaDB('videos');
+      videoDB.onunavailable = function(event) {
+        var videoMessage = {
+          type: 'video',
+          callbackID: 'onunavailable',
+          detail: event.detail
+        };
+        selfJsonCmd.result = RS_OK;
+        var sendData = JSON.stringify(videoMessage);
+        selfSendCallback(selfSocket, selfJsonCmd, sendData);
+      };
+      videoDB.oncardremoved = function oncardremoved() {
+        var videoMessage = {
+          type: 'video',
+          callbackID: 'oncardremoved',
+          detail: null
+        };
+        selfJsonCmd.result = RS_OK;
+        var sendData = JSON.stringify(videoMessage);
+        selfSendCallback(selfSocket, selfJsonCmd, sendData);
+      };
+      videoDB.onready = function() {
+        getVideoList(selfSocket, selfJsonCmd, selfSendCallback);
+      };
+    } else {
+      getVideoList(selfSocket, selfJsonCmd, selfSendCallback);
     }
   } catch (e) {
     console.log('VideoHelper.js videoDB failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket, jsonCmd, null, null);
+    sendCallback(socket, jsonCmd, null);
   }
+}
+
+function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
+  if(!videoDB) {
+    jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
+    sendCallback(socket, jsonCmd, null);
+    return;
+  }
+  var selfSocket = socket;
+  var selfJsonCmd = jsonCmd;
+  var selfSendCallback = sendCallback;
+  videoDB.oncreated = function(event) {
+    event.detail.forEach( function (video) {
+      var fileInfo = {
+        'name': video.name,
+        'type': video.type,
+        'size': video.size,
+        'date': video.date,
+        'metadata': video.metadata
+      };
+      var videoMessage = {
+        type: 'video',
+        callbackID: 'oncreated',
+        detail: fileInfo
+      };
+      var imageblob = video.metadata.bookmark || video.metadata.poster;
+      if (imageblob != null) {
+        var fileReader = new FileReader();
+        fileReader.readAsDataURL(imageblob);
+        fileReader.onload = function(e) {
+          videoMessage.detail.metadata.poster = e.target.result;
+          selfJsonCmd.result = RS_MIDDLE;
+          var sendData = JSON.stringify(videoMessage);
+          selfSendCallback(selfSocket, selfJsonCmd, sendData);
+        }
+      } else {
+        selfJsonCmd.result = RS_MIDDLE;
+        var sendData = JSON.stringify(videoMessage);
+        selfSendCallback(selfSocket, selfJsonCmd, sendData);
+      }
+    });
+  };
+  videoDB.ondeleted = function(event) {
+    var videoMessage = {
+      type: 'video',
+      callbackID: 'ondeleted',
+      detail: event.detail
+    };
+    selfJsonCmd.result = RS_MIDDLE;
+    var sendData = JSON.stringify(videoMessage);
+    selfSendCallback(selfSocket, selfJsonCmd, sendData);
+  };
+  videoDB.onscanend = function onscanend() {
+    var videoMessage = {
+      type: 'video',
+      callbackID: 'onscanend',
+      detail: null
+    };
+    selfJsonCmd.result = RS_OK;
+    var sendData = JSON.stringify(videoMessage);
+    selfSendCallback(selfSocket, selfJsonCmd, sendData);
+  };
+  videoDB.scan();
 }

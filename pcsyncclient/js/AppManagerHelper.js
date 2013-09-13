@@ -6,7 +6,7 @@
  *Description:
  *----------------------------------------------------------------------------------------------------------*/
 
-function appManagerHelper(socket, jsonCmd, sendCallback, recvList) {
+function appManagerHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
     switch (jsonCmd.command) {
     case APP_COMMAND.getAllApps:
@@ -21,25 +21,21 @@ function appManagerHelper(socket, jsonCmd, sendCallback, recvList) {
       }
     case APP_COMMAND.uninstallAppByName:
       {
-        uninstallAppByName(socket,jsonCmd, sendCallback, recvList);
+        uninstallAppByName(socket,jsonCmd, sendCallback, recvData);
         break;
       }
     default:
       {
         console.log('AppManagerHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket, jsonCmd, null, null);
+        sendCallback(socket, jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     console.log('AppsManagerHelper.js appsManagerHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket,jsonCmd, null,null);
+    sendCallback(socket,jsonCmd, null);
   }
 }
 
@@ -50,9 +46,7 @@ function getAllApps(socket, jsonCmd, sendCallback) {
     request.onerror = function(e) {
       console.log("Error calling getAll: " + request.error.name);
       jsonCmd.result = RS_ERROR.APPSMANAGER_GETALLAPPS;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket, jsonCmd, null, null);
+      sendCallback(socket, jsonCmd, null);
     };
     request.onsuccess = function(e) {
       console.log("Success, number of apps: " + request.result.length);
@@ -69,15 +63,11 @@ function getAllApps(socket, jsonCmd, sendCallback) {
       }
       jsonCmd.result = RS_OK;
       var appsData = JSON.stringify(appsInfo);
-      jsonCmd.firstDatalength = appsData.length;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket,jsonCmd, appsData,null);
+      sendCallback(socket,jsonCmd, appsData);
     };
   } catch (e) {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket,jsonCmd, null,null);
+    sendCallback(socket,jsonCmd, null);
     console.log('AppsManagerHelper.js getAllApps failed: ' + e);
   }
 }
@@ -89,9 +79,7 @@ function getInstalledApps(socket,jsonCmd, sendCallback) {
     request.onerror = function(e) {
       console.log("Error calling getInstalled: " + request.error.name);
       jsonCmd.result = RS_ERROR.APPSMANAGER_GETINSTALLEDAPPS;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket,jsonCmd, null,null);
+      sendCallback(socket,jsonCmd, null);
     };
     request.onsuccess = function(e) {
       console.log("Success, number of apps: " + request.result.length);
@@ -108,36 +96,30 @@ function getInstalledApps(socket,jsonCmd, sendCallback) {
       }
       jsonCmd.result = RS_OK;
       var appsData = JSON.stringify(appsInfo);
-      jsonCmd.firstDatalength = appsData.length;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket,jsonCmd, appsData,null);
+      sendCallback(socket,jsonCmd, appsData);
     };
   } catch (e) {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket,jsonCmd, null,null);
+    sendCallback(socket,jsonCmd, null);
     console.log('AppsManagerHelper.js getInstalledApps failed: ' + e);
   }
 }
 
-function uninstallAppByName(socket,jsonCmd, sendCallback, recvList) {
+function uninstallAppByName(socket,jsonCmd, sendCallback, recvData) {
   try {
-    var appName = recvList.shift();
+    var appName = recvData;
     var request = window.navigator.mozApps.mgmt.getAll();
     request.onerror = function(e) {
       console.log("Error calling getAll: " + request.error.name);
       jsonCmd.result = RS_ERROR.APPSMANAGER_GETINSTALLEDAPPS;
-      jsonCmd.firstDatalength = 0;
-      jsonCmd.secondDatalength = 0;
-      sendCallback(socket,jsonCmd, null,null);
+      sendCallback(socket,jsonCmd, null);
     };
     request.onsuccess = function(e) {
       console.log("Success, number of apps: " + request.result.length);
       for (var i = 0; i < request.result.length; i++) {
         //console.log("Success, name of app: " + request.result[i].manifest.name);
         if (request.result[i].manifest.name == appName) {
-          var uninstallRequest;
+          let uninstallRequest;
           if (request.result[i].isBookmark) {
             uninstallRequest = request.result[i].uninstall();
           } else {
@@ -146,32 +128,24 @@ function uninstallAppByName(socket,jsonCmd, sendCallback, recvList) {
           uninstallRequest.onerror = function(e) {
             console.log("Error calling uninstall: " + request.error.name);
             jsonCmd.result = RS_ERROR.APPSMANAGER_UNSTALLAPP;
-            jsonCmd.firstDatalength = 0;
-            jsonCmd.secondDatalength = 0;
-            sendCallback(socket,jsonCmd, null,null);
+            sendCallback(socket,jsonCmd, null);
           };
           uninstallRequest.onsuccess = function(e) {
             console.log("onsuccess calling uninstall");
             jsonCmd.result = RS_OK;
-            jsonCmd.firstDatalength = 0;
-            jsonCmd.secondDatalength = 0;
-            sendCallback(socket,jsonCmd, null,null);
+            sendCallback(socket,jsonCmd, null);
           };
           break;
         }
       }
       if (i >= request.result.length) {
         jsonCmd.result = RS_ERROR.APPSMANAGER_NOTFOUNDAPP;
-        jsonCmd.firstDatalength = 0;
-        jsonCmd.secondDatalength = 0;
-        sendCallback(socket,jsonCmd, null,null);
+        sendCallback(socket,jsonCmd, null);
       }
     };
   } catch (e) {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    jsonCmd.firstDatalength = 0;
-    jsonCmd.secondDatalength = 0;
-    sendCallback(socket,jsonCmd, null,null);
+    sendCallback(socket,jsonCmd, null);
     console.log('AppsManagerHelper.js uninstallAppByName failed: ' + e);
   }
 }
