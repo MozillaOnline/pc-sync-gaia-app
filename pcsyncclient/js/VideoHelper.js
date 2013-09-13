@@ -55,7 +55,7 @@ function getVideoList(socket, jsonCmd, sendCallback) {
       // metadata queue to get processed. Once the metadata is
       // available, it will be passed to addVideo()
       if (isVideo === undefined) {
-        addToMetadataQueue(video);
+        addToMetadataQueue(video, true);
         return;
       }
       // If we've parsed the metadata and know this is a video, display it.
@@ -172,44 +172,52 @@ function getOldVideosInfo(socket, jsonCmd, sendCallback) {
   }
 }
 
+function createVideo(video) {
+  var socket = selfsocket;
+  var jsonCmd = selfjsonCmd;
+  var sendCallback = selfsendCallback;
+  
+  var fileInfo = {
+    'name': video.name,
+    'type': video.type,
+    'size': video.size,
+    'date': video.date,
+    'metadata': video.metadata
+  };
+  var videoMessage = {
+    type: 'video',
+    callbackID: 'oncreated',
+    detail: fileInfo
+  };
+  var imageblob = video.metadata.bookmark || video.metadata.poster;
+  if (imageblob != null) {
+    var fileReader = new FileReader();
+    fileReader.readAsDataURL(imageblob);
+    fileReader.onload = function(e) {
+      videoMessage.detail.metadata.poster = e.target.result;
+      jsonCmd.result = RS_MIDDLE;
+      var sendData = JSON.stringify(videoMessage);
+      sendCallback(socket, jsonCmd, sendData);
+    }
+  } else {
+    jsonCmd.result = RS_MIDDLE;
+    var sendData = JSON.stringify(videoMessage);
+    sendCallback(socket, jsonCmd, sendData);
+  }
+}
+
 function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
+  selfsocket = socket;
+  selfjsonCmd = jsonCmd;
+  selfsendCallback = sendCallback;
   if(!videoDB) {
     jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
     sendCallback(socket, jsonCmd, null);
     return;
   }
-  var selfSocket = socket;
-  var selfJsonCmd = jsonCmd;
-  var selfSendCallback = sendCallback;
   videoDB.oncreated = function(event) {
     event.detail.forEach( function (video) {
-      var fileInfo = {
-        'name': video.name,
-        'type': video.type,
-        'size': video.size,
-        'date': video.date,
-        'metadata': video.metadata
-      };
-      var videoMessage = {
-        type: 'video',
-        callbackID: 'oncreated',
-        detail: fileInfo
-      };
-      var imageblob = video.metadata.bookmark || video.metadata.poster;
-      if (imageblob != null) {
-        var fileReader = new FileReader();
-        fileReader.readAsDataURL(imageblob);
-        fileReader.onload = function(e) {
-          videoMessage.detail.metadata.poster = e.target.result;
-          selfJsonCmd.result = RS_MIDDLE;
-          var sendData = JSON.stringify(videoMessage);
-          selfSendCallback(selfSocket, selfJsonCmd, sendData);
-        }
-      } else {
-        selfJsonCmd.result = RS_MIDDLE;
-        var sendData = JSON.stringify(videoMessage);
-        selfSendCallback(selfSocket, selfJsonCmd, sendData);
-      }
+      addToMetadataQueue(video, false);
     });
   };
   videoDB.ondeleted = function(event) {
@@ -218,9 +226,9 @@ function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
       callbackID: 'ondeleted',
       detail: event.detail
     };
-    selfJsonCmd.result = RS_MIDDLE;
+    selfjsonCmd.result = RS_MIDDLE;
     var sendData = JSON.stringify(videoMessage);
-    selfSendCallback(selfSocket, selfJsonCmd, sendData);
+    selfsendCallback(selfsocket, selfjsonCmd, sendData);
   };
   videoDB.onscanend = function onscanend() {
     var videoMessage = {
@@ -228,9 +236,9 @@ function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
       callbackID: 'onscanend',
       detail: null
     };
-    selfJsonCmd.result = RS_OK;
+    selfjsonCmd.result = RS_OK;
     var sendData = JSON.stringify(videoMessage);
-    selfSendCallback(selfSocket, selfJsonCmd, sendData);
+    selfsendCallback(selfsocket, selfjsonCmd, sendData);
   };
   videoDB.scan();
 }

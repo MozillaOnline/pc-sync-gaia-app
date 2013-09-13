@@ -32,11 +32,12 @@
 var metadataQueue = [];
 var processingQueue = false;
 var stopParsingMetadataCallback = null;
-
+var isEnumerate = true;
 // This function queues a fileinfo object with no metadata. When the app is
 // able it will obtain metadata for the video and pass the updated fileinfo
 // to addVideo() so that it becomes visible to the user.
-function addToMetadataQueue(fileinfo) {
+function addToMetadataQueue(fileinfo, isEnum) {
+  isEnumerate = isEnum;
   metadataQueue.push(fileinfo);
   startParsingMetadata();
 }
@@ -110,8 +111,13 @@ function processFirstQueuedItem() {
       videoDB.updateMetadata(fileinfo.name, metadata);
 
       // Create and insert a thumbnail for the video
-      if (metadata.isVideo)
-        addVideo(fileinfo);
+      if (metadata.isVideo) {
+        if(isEnumerate)
+          addVideo(fileinfo);
+        else{
+          createVideo(fileinfo);
+        }
+      }
 
       // And process the next video in the queue
       setTimeout(processFirstQueuedItem);
