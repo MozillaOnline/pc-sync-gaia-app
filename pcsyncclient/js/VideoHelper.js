@@ -77,7 +77,8 @@ function getVideoList(socket, jsonCmd, sendCallback) {
       detail: null
     };
     jsonCmd.result = RS_OK;
-    sendCallback(socket, jsonCmd, null);
+    var videoData = JSON.stringify(videoMessage);
+    sendCallback(socket, jsonCmd, videoData);
   }
 }
 
@@ -110,13 +111,7 @@ function addVideo(video) {
       sendCallback(socket, jsonCmd, videoData);
       index++;
       if(count == 0) {
-        var videoMessage = {
-          type: 'video',
-          callbackID: 'enumerate-done',
-          detail: null
-        };
-        jsonCmd.result = RS_OK;
-        sendCallback(socket, jsonCmd, null);
+        done();
       }
     }
   } else {
@@ -124,6 +119,16 @@ function addVideo(video) {
     var videoData = JSON.stringify(videoMessage);
     sendCallback(socket, jsonCmd, videoData);
     index++;
+  }
+  function done() {
+    var videoMessage = {
+      type: 'video',
+      callbackID: 'enumerate-done',
+      detail: null
+    };
+    jsonCmd.result = RS_OK;
+    var videoData = JSON.stringify(videoMessage);
+    sendCallback(socket, jsonCmd, videoData);
   }
 }
 
