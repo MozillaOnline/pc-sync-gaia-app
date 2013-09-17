@@ -86,7 +86,7 @@ function addVideo(video) {
   var socket = selfsocket;
   var jsonCmd = selfjsonCmd;
   var sendCallback = selfsendCallback;
-  console.log('VideoHelper.js addVideo video: ' + JSON.stringify(video.metadata));
+  console.log('VideoHelper.js addVideo video: ' + typeof(video.metadata.poster));
   count++;
   var fileInfo = {
     'name': video.name,
@@ -102,16 +102,24 @@ function addVideo(video) {
   };
   var imageblob = video.metadata.bookmark || video.metadata.poster;
   if (imageblob != null) {
-    var fileReader = new FileReader();
-    fileReader.readAsDataURL(imageblob);
-    fileReader.onload = function(e) {
-      videoMessage.detail.metadata.poster = e.target.result;
+    if (typeof(imageblob) == 'string') {
+      videoMessage.detail.metadata.poster = imageblob;
       jsonCmd.result = RS_MIDDLE;
       var videoData = JSON.stringify(videoMessage);
       sendCallback(socket, jsonCmd, videoData);
       index++;
-      if(count == 0) {
-        done();
+    } else {
+      var fileReader = new FileReader();
+      fileReader.readAsDataURL(imageblob);
+      fileReader.onload = function(e) {
+        videoMessage.detail.metadata.poster = e.target.result;
+        jsonCmd.result = RS_MIDDLE;
+        var videoData = JSON.stringify(videoMessage);
+        sendCallback(socket, jsonCmd, videoData);
+        index++;
+        if(count == 0) {
+          done();
+        }
       }
     }
   } else {
