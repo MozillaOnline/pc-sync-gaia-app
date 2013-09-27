@@ -55,20 +55,9 @@ function getMusicsList(socket, jsonCmd, sendCallback) {
       var musicData = JSON.stringify(musicMessage);
       sendCallback(socket, jsonCmd, musicData);
     } else {
-      done();
+      multiReplyFinish(socket, 'music', jsonCmd, sendCallback);
     }
   });
-
-  function done() {
-    var musicMessage = {
-      type: 'music',
-      callbackID: 'enumerate-done',
-      detail: null
-    };
-    jsonCmd.result = RS_OK;
-    var musicData = JSON.stringify(musicMessage);
-    sendCallback(socket, jsonCmd, musicData);
-  }
 }
 
 function getOldMusicsInfo(socket, jsonCmd, sendCallback) {

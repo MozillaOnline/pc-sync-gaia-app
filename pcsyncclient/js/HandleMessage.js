@@ -68,3 +68,15 @@ function handleMessage(socket, jsonCmd, sendCallback, recvData) {
     sendCallback(socket, jsonCmd, null);
   }
 }
+
+function multiReplyFinish(socket, type, jsonCmd, sendCallback) {
+  var finishMessage = {
+    type: type,
+    callbackID: 'enumerate-done',
+    detail: null
+  };
+  console.log('HandleMessage.js multiReplyFinish enumerate-done!!!!!!!!!!!!!!!!!');
+  jsonCmd.result = RS_OK;
+  var finishData = JSON.stringify(finishMessage);
+  sendCallback(socket, jsonCmd, finishData);
+}

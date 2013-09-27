@@ -68,7 +68,7 @@ function getPicturesList(socket, jsonCmd, sendCallback) {
           sendCallback(socket, jsonCmd, pictureData);
           index++;
           if (count == 0) {
-            done();
+            multiReplyFinish(socket, 'picture', jsonCmd, sendCallback);
           }
         }
       } else {
@@ -79,24 +79,12 @@ function getPicturesList(socket, jsonCmd, sendCallback) {
       }
     } else {
       if (count == index) {
-        done();
+        multiReplyFinish(socket, 'picture', jsonCmd, sendCallback);
       } else {
         count = 0;
       }
     }
   });
-
-  function done() {
-    var pictureMessage = {
-      type: 'picture',
-      callbackID: 'enumerate-done',
-      detail: null
-    };
-    console.log('PictureHelper.js pictureHelper enumerate-done!!!!!!!!!!!!!!!!!');
-    jsonCmd.result = RS_OK;
-    var pictureData = JSON.stringify(pictureMessage);
-    sendCallback(socket, jsonCmd, pictureData);
-  }
 }
 
 function getOldPicturesInfo(socket, jsonCmd, sendCallback) {

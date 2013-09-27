@@ -40,6 +40,7 @@ var index = 0;
 var selfsocket = null;
 var selfjsonCmd = null;
 var selfsendCallback = null;
+
 function getVideoList(socket, jsonCmd, sendCallback) {
   selfsocket = socket;
   selfjsonCmd = jsonCmd;
@@ -64,22 +65,12 @@ function getVideoList(socket, jsonCmd, sendCallback) {
       }
     } else {
       if(count == index) {
-        done();
+        multiReplyFinish(socket, 'video', jsonCmd, sendCallback);
       } else {
         count = 0;
       }
     }
   });
-  function done() {
-    var videoMessage = {
-      type: 'video',
-      callbackID: 'enumerate-done',
-      detail: null
-    };
-    jsonCmd.result = RS_OK;
-    var videoData = JSON.stringify(videoMessage);
-    sendCallback(socket, jsonCmd, videoData);
-  }
 }
 
 function addVideo(video) {
@@ -118,7 +109,7 @@ function addVideo(video) {
         sendCallback(socket, jsonCmd, videoData);
         index++;
         if(count == 0) {
-          done();
+          multiReplyFinish(socket, 'video', jsonCmd, sendCallback);
         }
       }
     }
@@ -127,16 +118,6 @@ function addVideo(video) {
     var videoData = JSON.stringify(videoMessage);
     sendCallback(socket, jsonCmd, videoData);
     index++;
-  }
-  function done() {
-    var videoMessage = {
-      type: 'video',
-      callbackID: 'enumerate-done',
-      detail: null
-    };
-    jsonCmd.result = RS_OK;
-    var videoData = JSON.stringify(videoMessage);
-    sendCallback(socket, jsonCmd, videoData);
   }
 }
 
