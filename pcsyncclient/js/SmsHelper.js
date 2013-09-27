@@ -89,13 +89,8 @@ function deleteMessageById(socket, jsonCmd, sendCallback, recvData) {
     var _mozMobileMessage = navigator.mozMobileMessage || window.DesktopMockNavigatormozMobileMessage;
     var request = _mozMobileMessage.delete(deleteId);
     request.onsuccess = function(event) {
-      if (event.target.result) {
-        jsonCmd.result = RS_OK;
-        sendCallback(socket, jsonCmd, null);
-      } else {
-        jsonCmd.result = RS_ERROR.SMS_MESSAGE_NOTFOUND;
-        sendCallback(socket, jsonCmd, null);
-      }
+      jsonCmd.result = RS_OK;
+      sendCallback(socket, jsonCmd, null);
     };
     request.onerror = function(event) {
       jsonCmd.result = RS_ERROR.SMS_DELETEMESSAGE;
@@ -353,7 +348,7 @@ function getSMSById(socket, jsonCmd, sendCallback, recvData) {
         var sendData = JSON.stringify(smsMessage);
         sendCallback(socket, jsonCmd, sendData);
       } else {
-        jsonCmd.result = RS_ERROR.SMS_GETMESSAGE;
+        jsonCmd.result = RS_OK;
         sendCallback(socket, jsonCmd, null);
       }
     };
@@ -410,7 +405,7 @@ function getMMSById(socket, jsonCmd, sendCallback, recvData) {
           }
         }
       } else {
-        jsonCmd.result = RS_ERROR.SMS_GETMESSAGE;
+        jsonCmd.result = RS_OK;
         sendCallback(socket, jsonCmd, null);
       }
     };

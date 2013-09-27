@@ -186,7 +186,7 @@ function getContactById(socket, jsonCmd, sendCallback, recvData) {
     request.onsuccess = function(evt) {
       console.log('ContactHelper.js getContactById e.target.result: ' + evt.target.result.length);
       if (evt.target.result.length == 0) {
-        jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
+        jsonCmd.result = RS_OK;
         sendCallback(socket, jsonCmd, null);
       } else {
         var contact = evt.target.result[0];
@@ -253,7 +253,7 @@ function getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvData) {
     request.onsuccess = function(evt) {
       console.log('ContactHelper.js getContactByPhoneNumber e.target.result: ' + evt.target.result.length);
       if (evt.target.result.length == 0) {
-        jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
+        jsonCmd.result = RS_OK;
         sendCallback(socket, jsonCmd, null);
       } else {
         var contact = evt.target.result[0];
@@ -319,7 +319,7 @@ function removeContactById(socket, jsonCmd, sendCallback, recvData) {
     var findRequest = window.navigator.mozContacts.find(options);
     findRequest.onsuccess = function(e) {
       if (e.target.result.length == 0) {
-        jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
+        jsonCmd.result = RS_OK;
         sendCallback(socket, jsonCmd, null);
       } else {
         var request = window.navigator.mozContacts.remove(e.target.result[0]);
@@ -357,7 +357,7 @@ function updateContactById(socket, jsonCmd, sendCallback, recvData) {
     var request = window.navigator.mozContacts.find(options);
     request.onsuccess = function(e) {
       if (e.target.result.length == 0) {
-        jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
+        jsonCmd.result = RS_OK;
         sendCallback(socket, jsonCmd, null);
       } else {
         var updateContact = e.target.result[0];

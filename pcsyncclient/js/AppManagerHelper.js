@@ -139,7 +139,7 @@ function uninstallAppByName(socket, jsonCmd, sendCallback, recvData) {
         }
       }
       if (i >= request.result.length) {
-        jsonCmd.result = RS_ERROR.APPSMANAGER_NOTFOUNDAPP;
+        jsonCmd.result = RS_OK;
         sendCallback(socket, jsonCmd, null);
       }
     };
