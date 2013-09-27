@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------------------------------------------*/
 
 var videoDB = null;
+
 function videoHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
     switch (jsonCmd.command) {
@@ -64,7 +65,7 @@ function getVideoList(socket, jsonCmd, sendCallback) {
         addVideo(video);
       }
     } else {
-      if(count == index) {
+      if (count == index) {
         multiReplyFinish(socket, 'video', jsonCmd, sendCallback);
       } else {
         count = 0;
@@ -108,7 +109,7 @@ function addVideo(video) {
         var videoData = JSON.stringify(videoMessage);
         sendCallback(socket, jsonCmd, videoData);
         index++;
-        if(count == 0) {
+        if (count == 0) {
           multiReplyFinish(socket, 'video', jsonCmd, sendCallback);
         }
       }
@@ -126,7 +127,7 @@ function getOldVideosInfo(socket, jsonCmd, sendCallback) {
     var selfSocket = socket;
     var selfJsonCmd = jsonCmd;
     var selfSendCallback = sendCallback;
-    if(videoDB == null) {
+    if (videoDB == null) {
       videoDB = new MediaDB('videos');
       videoDB.onunavailable = function(event) {
         var videoMessage = {
@@ -165,7 +166,7 @@ function createVideo(video) {
   var socket = selfsocket;
   var jsonCmd = selfjsonCmd;
   var sendCallback = selfsendCallback;
-  
+
   var fileInfo = {
     'name': video.name,
     'type': video.type,
@@ -199,13 +200,13 @@ function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
   selfsocket = socket;
   selfjsonCmd = jsonCmd;
   selfsendCallback = sendCallback;
-  if(!videoDB) {
+  if (!videoDB) {
     jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
     sendCallback(socket, jsonCmd, null);
     return;
   }
   videoDB.oncreated = function(event) {
-    event.detail.forEach( function (video) {
+    event.detail.forEach(function(video) {
       addToMetadataQueue(video, false);
     });
   };

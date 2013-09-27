@@ -16,7 +16,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
       if (message.messageClass === 'class-0') {
         return;
       }
-      if(message.type == 'sms') {
+      if (message.type == 'sms') {
         var smsMessage = {
           'type': message.type,
           'id': message.id,
@@ -49,7 +49,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
           'expiryDate': message.expiryDate,
           'attachments': []
         };
-        for (var i=0; i<message.attachments.length; i++){
+        for (var i = 0; i < message.attachments.length; i++) {
           let attachment = {
             'id': message.attachments[i].id,
             'location': message.attachments[i].location,
@@ -60,7 +60,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
           fileReader.onload = function(e) {
             attachment.content = e.target.result;
             mmsMessage.attachments.push(attachment);
-            if(mmsMessage.attachments.length == message.attachments.length) {
+            if (mmsMessage.attachments.length == message.attachments.length) {
               jsonCmd.result = RS_OK;
               let sendData = JSON.stringify(mmsMessage);
               sendCallback(socket, jsonCmd, sendData);
@@ -75,7 +75,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
       if (message.messageClass === 'class-0') {
         return;
       }
-      if(message.type == 'sms') {
+      if (message.type == 'sms') {
         var smsMessage = {
           'type': message.type,
           'id': message.id,
@@ -108,7 +108,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
           'expiryDate': message.expiryDate,
           'attachments': []
         };
-        for (var i=0; i<message.attachments.length; i++){
+        for (var i = 0; i < message.attachments.length; i++) {
           let attachment = {
             'id': message.attachments[i].id,
             'location': message.attachments[i].location,
@@ -119,7 +119,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
           fileReader.onload = function(e) {
             attachment.content = e.target.result;
             mmsMessage.attachments.push(attachment);
-            if(mmsMessage.attachments.length == message.attachments.length) {
+            if (mmsMessage.attachments.length == message.attachments.length) {
               jsonCmd.result = RS_OK;
               let sendData = JSON.stringify(mmsMessage);
               sendCallback(socket, jsonCmd, sendData);
@@ -134,7 +134,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
       if (message.messageClass === 'class-0') {
         return;
       }
-      if(message.type == 'sms') {
+      if (message.type == 'sms') {
         var smsMessage = {
           'type': message.type,
           'id': message.id,
@@ -167,7 +167,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
           'expiryDate': message.expiryDate,
           'attachments': []
         };
-        for (var i=0; i<message.attachments.length; i++){
+        for (var i = 0; i < message.attachments.length; i++) {
           let attachment = {
             'id': message.attachments[i].id,
             'location': message.attachments[i].location,
@@ -178,7 +178,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
           fileReader.onload = function(e) {
             attachment.content = e.target.result;
             mmsMessage.attachments.push(attachment);
-            if(mmsMessage.attachments.length == message.attachments.length) {
+            if (mmsMessage.attachments.length == message.attachments.length) {
               jsonCmd.result = RS_OK;
               let sendData = JSON.stringify(mmsMessage);
               sendCallback(socket, jsonCmd, sendData);

@@ -75,16 +75,17 @@ function smsHelper(socket, jsonCmd, sendCallback, recvData) {
 }
 // mozMobileMessage.delete() has been modified per bug 771458.
 // Now deleteMessage() can take an id or an array of id.
+
 function deleteMessageById(socket, jsonCmd, sendCallback, recvData) {
   try {
     //var smsId = recvData;
-	var deleteId;
+    var deleteId;
     var smsId = JSON.parse(recvData);
     if (!Array.isArray(smsId.id)) {
       deleteId = parseInt(smsId.id);
     } else {
-	  deleteId = smsId.id.concat();
-	}
+      deleteId = smsId.id.concat();
+    }
     var _mozMobileMessage = navigator.mozMobileMessage || window.DesktopMockNavigatormozMobileMessage;
     var request = _mozMobileMessage.delete(deleteId);
     request.onsuccess = function(event) {
@@ -157,16 +158,11 @@ function getThreadMessagesById(socket, jsonCmd, sendCallback, recvData) {
     filter.threadId = messageId;
     var cursor = _mozMobileMessage.getMessages(filter, false);
     cursor.onsuccess = function(event) {
-      /*for(var uname in this.result)
-      for(var uname in this.result.attachments[0])
-        console.log('SmsHelper.js deleteMessageById event: ' + uname + ' value: ' + this.result.attachments[0][uname]);
-      for(var uname in this.result.attachments[1])
-        console.log('SmsHelper.js deleteMessageById event: ' + uname + ' value: ' + this.result.attachments[1][uname]);
-      */
+
       if (!this.done) {
         count++;
         var result = this.result;
-        if(result.type == 'sms') {
+        if (result.type == 'sms') {
           var smsMessage = {
             'type': result.type,
             'id': result.id,
@@ -197,7 +193,7 @@ function getThreadMessagesById(socket, jsonCmd, sendCallback, recvData) {
             'expiryDate': result.expiryDate,
             'attachments': []
           };
-          for (var i=0; i<result.attachments.length; i++){
+          for (var i = 0; i < result.attachments.length; i++) {
             let attachment = {
               'id': result.attachments[i].id,
               'location': result.attachments[i].location,
@@ -207,11 +203,11 @@ function getThreadMessagesById(socket, jsonCmd, sendCallback, recvData) {
             fileReader.readAsDataURL(result.attachments[i].content);
             fileReader.onload = function(e) {
               attachment.content = e.target.result;
-              console.log('SmsHelper.js attachment: ' + i + '!!!' +JSON.stringify(attachment));
+              console.log('SmsHelper.js attachment: ' + i + '!!!' + JSON.stringify(attachment));
               mmsMessage.attachments.push(attachment);
-              if(mmsMessage.attachments.length == result.attachments.length) {
+              if (mmsMessage.attachments.length == result.attachments.length) {
                 messages.push(mmsMessage);
-                if(count == 0) {
+                if (count == 0) {
                   jsonCmd.result = RS_OK;
                   let smsData = JSON.stringify(messages);
                   sendCallback(socket, jsonCmd, smsData);
@@ -223,7 +219,7 @@ function getThreadMessagesById(socket, jsonCmd, sendCallback, recvData) {
         this.
         continue ();
       } else {
-        if(messages.length == count) {
+        if (messages.length == count) {
           jsonCmd.result = RS_OK;
           var smsData = JSON.stringify(messages);
           sendCallback(socket, jsonCmd, smsData);
@@ -256,7 +252,7 @@ function getAllMessages(socket, jsonCmd, sendCallback) {
       if (!this.done) {
         count++;
         var result = this.result;
-        if(result.type == 'sms') {
+        if (result.type == 'sms') {
           var smsMessage = {
             'type': result.type,
             'id': result.id,
@@ -287,7 +283,7 @@ function getAllMessages(socket, jsonCmd, sendCallback) {
             'expiryDate': result.expiryDate,
             'attachments': []
           };
-          for (var i=0; i<result.attachments.length; i++){
+          for (var i = 0; i < result.attachments.length; i++) {
             let attachment = {
               'id': result.attachments[i].id,
               'location': result.attachments[i].location,
@@ -298,9 +294,9 @@ function getAllMessages(socket, jsonCmd, sendCallback) {
             fileReader.onload = function(e) {
               attachment.content = e.target.result;
               mmsMessage.attachments.push(attachment);
-              if(mmsMessage.attachments.length == result.attachments.length) {
+              if (mmsMessage.attachments.length == result.attachments.length) {
                 messages.push(mmsMessage);
-                if(count == 0) {
+                if (count == 0) {
                   jsonCmd.result = RS_OK;
                   let smsData = JSON.stringify(messages);
                   sendCallback(socket, jsonCmd, smsData);
@@ -312,7 +308,7 @@ function getAllMessages(socket, jsonCmd, sendCallback) {
         this.
         continue ();
       } else {
-        if(messages.length == count) {
+        if (messages.length == count) {
           jsonCmd.result = RS_OK;
           var smsData = JSON.stringify(messages);
           sendCallback(socket, jsonCmd, smsData);
@@ -339,7 +335,7 @@ function getSMSById(socket, jsonCmd, sendCallback, recvData) {
     var _mozMobileMessage = navigator.mozMobileMessage || window.DesktopMockNavigatormozMobileMessage;
     var request = _mozMobileMessage.getMessage(messageId);
     request.onsuccess = function(event) {
-      if(this.result.type == 'sms') {
+      if (this.result.type == 'sms') {
         var smsMessage = {
           'type': this.result.type,
           'id': this.result.id,
@@ -395,7 +391,7 @@ function getMMSById(socket, jsonCmd, sendCallback, recvData) {
           'expiryDate': result.expiryDate,
           'attachments': []
         };
-        for (var i=0; i<result.attachments.length; i++){
+        for (var i = 0; i < result.attachments.length; i++) {
           let attachment = {
             'id': result.attachments[i].id,
             'location': result.attachments[i].location,
@@ -406,7 +402,7 @@ function getMMSById(socket, jsonCmd, sendCallback, recvData) {
           fileReader.onload = function(e) {
             attachment.content = e.target.result;
             mmsMessage.attachments.push(attachment);
-            if(mmsMessage.attachments.length == result.attachments.length) {
+            if (mmsMessage.attachments.length == result.attachments.length) {
               jsonCmd.result = RS_OK;
               let smsData = JSON.stringify(mmsMessage);
               sendCallback(socket, jsonCmd, smsData);
@@ -455,14 +451,30 @@ function sendSMS(socket, jsonCmd, sendCallback, recvData) {
     var requests;
     var message = JSON.parse(recvData);
     if (!Array.isArray(message.number)) {
-	  console.log('SmsHelper.js smsHelper sendSMS isArray: '+ message.number);
+      console.log('SmsHelper.js smsHelper sendSMS isArray: ' + message.number);
       message.number = [message.number];
     }
-	console.log('SmsHelper.js smsHelper sendSMS: ' + typeof(message.number) + '_' +  message.number);
+    console.log('SmsHelper.js smsHelper sendSMS: ' + typeof(message.number) + '_' + message.number);
     var _mozMobileMessage = navigator.mozMobileMessage || window.DesktopMockNavigatormozMobileMessage;
+    var i = 0;
     var requests = _mozMobileMessage.send(message.number, message.message);
-    jsonCmd.result = RS_OK;
-    sendCallback(socket, jsonCmd, null);
+    var numberOfRequests = requests.length;
+    requests.forEach(function(request, idx) {
+      request.onsuccess = function onSuccess(event) {
+        if (i === numberOfRequests - 1) {
+          jsonCmd.result = RS_OK;
+          sendCallback(socket, jsonCmd, null);
+        }
+        i++;
+      };
+      request.onerror = function onError(event) {
+        if (i === numberOfRequests - 1) {
+          jsonCmd.result = RS_OK;
+          sendCallback(socket, jsonCmd, null);
+        }
+        i++;
+      };
+    });
   } catch (e) {
     console.log('SmsHelper.js sendSMS failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
@@ -487,8 +499,15 @@ function sendMMS(socket, jsonCmd, sendCallback, recvData) {
       smil: messageContent.smil,
       attachments: messageContent.attachments
     });
-    jsonCmd.result = RS_OK;
-    sendCallback(socket, jsonCmd, null);
+    request.onsuccess = function onSuccess(event) {
+      jsonCmd.result = RS_OK;
+      sendCallback(socket, jsonCmd, null);
+    };
+
+    request.onerror = function onError(event) {
+      jsonCmd.result = RS_ERROR.UNKNOWEN;
+      sendCallback(socket, jsonCmd, null);
+    };
   } catch (e) {
     console.log('SmsHelper.js sendMMS failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
@@ -504,7 +523,7 @@ function resendMessage(socket, jsonCmd, sendCallback, recvData) {
     request = _mozMobileMessage.send(message.number, message.body);
   }
   if (message.type === 'mms') {
-    for (var i=0;i<message.attachments.length;i++) {
+    for (var i = 0; i < message.attachments.length; i++) {
       message.attachments[i].content = dataUri2Blob(message.attachments[i].content);
     }
     request = this._mozMobileMessage.sendMMS({
