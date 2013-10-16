@@ -364,7 +364,7 @@ function updateContactById(socket, jsonCmd, sendCallback, recvData) {
         for (var uname in newContact) {
           if (uname == 'photo' && newContact.photo.length > 0) {
             updateContact.photo = [dataUri2Blob(newContact.photo)];
-          } else {
+          } else if (uname in updateContact){
             updateContact[uname] = newContact[uname];
           }
         }
