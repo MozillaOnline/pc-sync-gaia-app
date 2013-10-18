@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------------------------------------------*/
 
 var photoDB = null;
+var videostorage;
 
 function pictureHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
@@ -99,6 +100,7 @@ function getOldPicturesInfo(socket, jsonCmd, sendCallback) {
         batchHoldTime: 50,
         batchSize: 15
       });
+      videostorage = navigator.getDeviceStorage('videos');
       photoDB.onunavailable = function(event) {
         //get all the reasons from event
         console.log('ListenHelper.js photoDB is unavailable');
@@ -136,6 +138,7 @@ function getOldPicturesInfo(socket, jsonCmd, sendCallback) {
 }
 
 function getChangedPicturesInfo(socket, jsonCmd, sendCallback) {
+  console.log('PictureHelper.js getChangedPicturesInfo');
   if (!photoDB) {
     jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
     sendCallback(socket, jsonCmd, null);
@@ -145,6 +148,7 @@ function getChangedPicturesInfo(socket, jsonCmd, sendCallback) {
   var selfJsonCmd = jsonCmd;
   var selfSendCallback = sendCallback;
   photoDB.oncreated = function(event) {
+    console.log('PictureHelper.js getChangedPicturesInfo oncreated');
     event.detail.forEach(function(photo) {
       var imageblob = photo.metadata.thumbnail;
       if (imageblob != null) {
@@ -188,6 +192,7 @@ function getChangedPicturesInfo(socket, jsonCmd, sendCallback) {
     });
   };
   photoDB.ondeleted = function(event) {
+    console.log('PictureHelper.js getChangedPicturesInfo ondeleted');
     var pictureMessage = {
       type: 'picture',
       callbackID: 'ondeleted',
@@ -198,6 +203,7 @@ function getChangedPicturesInfo(socket, jsonCmd, sendCallback) {
     selfSendCallback(selfSocket, selfJsonCmd, sendData);
   };
   photoDB.onscanend = function onscanend() {
+    console.log('PictureHelper.js getChangedPicturesInfo onscanend');
     var pictureMessage = {
       type: 'picture',
       callbackID: 'onscanend',

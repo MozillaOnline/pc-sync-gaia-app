@@ -128,7 +128,8 @@ function getOldVideosInfo(socket, jsonCmd, sendCallback) {
     var selfJsonCmd = jsonCmd;
     var selfSendCallback = sendCallback;
     if (videoDB == null) {
-      videoDB = new MediaDB('videos');
+      videoDB = new MediaDB('videos', null,
+                        {excludeFilter: /DCIM\/\d{3}MZLLA\/\.VID_\d{4}\.3gp$/});
       videoDB.onunavailable = function(event) {
         var videoMessage = {
           type: 'video',
