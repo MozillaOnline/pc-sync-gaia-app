@@ -7,6 +7,12 @@
  *----------------------------------------------------------------------------------------------------------*/
 
 var photoDB = null;
+var curPictureSocket = null;
+var curPictureJsonCmd = null;
+var curPictureSendCallback = null;
+var pictureCount = 0;
+var pictureIndex = 0;
+var isPictureCmdEnd = false; 
 var videostorage;
 
 function pictureHelper(socket, jsonCmd, sendCallback, recvData) {
@@ -37,158 +43,63 @@ function pictureHelper(socket, jsonCmd, sendCallback, recvData) {
   }
 }
 
-function getPicturesList(socket, jsonCmd, sendCallback) {
-  var count = 0;
-  var index = 0;
-  photoDB.enumerate('date', null, 'prev', function(photo) {
-    if (photo) {
-      if (photo.metadata.video) {
-        return;
-      }
-      count++;
-      var fileInfo = {
-        'name': photo.name,
-        'type': photo.type,
-        'size': photo.size,
-        'date': photo.date,
-        'metadata': photo.metadata,
-      };
+function getOldPicturesInfo(socket, jsonCmd, sendCallback) {
+  curPictureSocket = socket;
+  curPictureJsonCmd = jsonCmd;
+  curPictureSendCallback = sendCallback;
+  if (photoDB == null) {
+    photoDB = new MediaDB('pictures', metadataParser, {
+      version: 2,
+      autoscan: false,
+      batchHoldTime: 50,
+      batchSize: 15
+    });
+    videostorage = navigator.getDeviceStorage('videos');
+    photoDB.onunavailable = function(event) {
+      //get all the reasons from event
+      console.log('ListenHelper.js photoDB is unavailable');
       var pictureMessage = {
         type: 'picture',
-        callbackID: 'enumerate',
-        detail: fileInfo
+        callbackID: 'onunavailable',
+        detail: event.detail
       };
-      var imageblob = photo.metadata.thumbnail;
-      if (imageblob != null) {
-        var fileReader = new FileReader();
-        fileReader.readAsDataURL(imageblob);
-        fileReader.onload = function(e) {
-          pictureMessage.detail.metadata.thumbnail = e.target.result;
-          jsonCmd.result = RS_MIDDLE;
-          var pictureData = JSON.stringify(pictureMessage);
-          sendCallback(socket, jsonCmd, pictureData);
-          index++;
-          if (count == 0) {
-            multiReplyFinish(socket, 'picture', jsonCmd, sendCallback);
-          }
-        }
-      } else {
-        jsonCmd.result = RS_MIDDLE;
-        var pictureData = JSON.stringify(pictureMessage);
-        sendCallback(socket, jsonCmd, pictureData);
-        index++;
-      }
-    } else {
-      if (count == index) {
-        multiReplyFinish(socket, 'picture', jsonCmd, sendCallback);
-      } else {
-        count = 0;
-      }
-    }
-  });
-}
-
-function getOldPicturesInfo(socket, jsonCmd, sendCallback) {
-  try {
-    var selfSocket = socket;
-    var selfJsonCmd = jsonCmd;
-    var selfSendCallback = sendCallback;
-    if (photoDB == null) {
-      photoDB = new MediaDB('pictures', metadataParser, {
-        version: 2,
-        autoscan: false,
-        batchHoldTime: 50,
-        batchSize: 15
-      });
-      videostorage = navigator.getDeviceStorage('videos');
-      photoDB.onunavailable = function(event) {
-        //get all the reasons from event
-        console.log('ListenHelper.js photoDB is unavailable');
-        var pictureMessage = {
-          type: 'picture',
-          callbackID: 'onunavailable',
-          detail: event.detail
-        };
-        selfJsonCmd.result = RS_OK;
-        var sendData = JSON.stringify(pictureMessage);
-        selfSendCallback(selfSocket, selfJsonCmd, sendData);
+      curPictureJsonCmd.result = RS_OK;
+      curPictureSendCallback(curPictureSocket, curPictureJsonCmd, JSON.stringify(pictureMessage));
+    };
+    photoDB.oncardremoved = function oncardremoved() {
+      var pictureMessage = {
+        type: 'picture',
+        callbackID: 'oncardremoved',
+        detail: null
       };
-      photoDB.oncardremoved = function oncardremoved() {
-        var pictureMessage = {
-          type: 'picture',
-          callbackID: 'oncardremoved',
-          detail: null
-        };
-        selfJsonCmd.result = RS_OK;
-        var sendData = JSON.stringify(pictureMessage);
-        selfSendCallback(selfSocket, selfJsonCmd, sendData);
-      };
-      photoDB.onready = function() {
-        getPicturesList(selfSocket, selfJsonCmd, selfSendCallback);
-      };
-    } else {
-      getPicturesList(selfSocket, selfJsonCmd, selfSendCallback);
-    }
-
-  } catch (e) {
-    console.log('PictureHelper.js photoDB failed: ' + e);
-    jsonCmd.result = RS_ERROR.UNKNOWEN;
-    sendCallback(socket, jsonCmd, null);
+      curPictureJsonCmd.result = RS_OK;
+      curPictureSendCallback(curPictureSocket, curPictureJsonCmd, JSON.stringify(pictureMessage));
+    };
+    photoDB.onready = function() {
+      getPicturesList();
+    };
+  } else {
+    getPicturesList();
   }
 }
 
 function getChangedPicturesInfo(socket, jsonCmd, sendCallback) {
+  curPictureSocket = socket;
+  curPictureJsonCmd = jsonCmd;
+  curPictureSendCallback = sendCallback;
+  pictureCount = 0;
+  pictureIndex = 0;
+  isPictureCmdEnd = false; 
   console.log('PictureHelper.js getChangedPicturesInfo');
   if (!photoDB) {
-    jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
-    sendCallback(socket, jsonCmd, null);
+    curPictureJsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
+    curPictureSendCallback(curPictureSocket, curPictureJsonCmd, null);
     return;
   }
-  var selfSocket = socket;
-  var selfJsonCmd = jsonCmd;
-  var selfSendCallback = sendCallback;
   photoDB.oncreated = function(event) {
-    console.log('PictureHelper.js getChangedPicturesInfo oncreated');
+    pictureCount += event.detail.length;
     event.detail.forEach(function(photo) {
-      var imageblob = photo.metadata.thumbnail;
-      if (imageblob != null) {
-        var fileReader = new FileReader();
-        fileReader.readAsDataURL(imageblob);
-        fileReader.onload = function(e) {
-          var fileInfo = {
-            'name': photo.name,
-            'type': photo.type,
-            'size': photo.size,
-            'date': photo.date,
-            'metadata': photo.metadata
-          };
-          var pictureMessage = {
-            type: 'picture',
-            callbackID: 'oncreated',
-            detail: fileInfo
-          };
-          pictureMessage.detail.metadata.thumbnail = e.target.result;
-          selfJsonCmd.result = RS_MIDDLE;
-          var sendData = JSON.stringify(pictureMessage);
-          selfSendCallback(selfSocket, selfJsonCmd, sendData);
-        }
-      } else {
-        var fileInfo = {
-          'name': photo.name,
-          'type': photo.type,
-          'size': photo.size,
-          'date': photo.date,
-          'metadata': photo.metadata
-        };
-        var pictureMessage = {
-          type: 'picture',
-          callbackID: 'oncreated',
-          detail: fileInfo
-        };
-        selfJsonCmd.result = RS_MIDDLE;
-        var sendData = JSON.stringify(pictureMessage);
-        selfSendCallback(selfSocket, selfJsonCmd, sendData);
-      }
+      addPicture(photo);
     });
   };
   photoDB.ondeleted = function(event) {
@@ -198,23 +109,76 @@ function getChangedPicturesInfo(socket, jsonCmd, sendCallback) {
       callbackID: 'ondeleted',
       detail: event.detail
     };
-    selfJsonCmd.result = RS_MIDDLE;
-    var sendData = JSON.stringify(pictureMessage);
-    selfSendCallback(selfSocket, selfJsonCmd, sendData);
+    curPictureJsonCmd.result = RS_MIDDLE;
+    curPictureSendCallback(curPictureSocket, curPictureJsonCmd, JSON.stringify(pictureMessage));
   };
   photoDB.onscanend = function onscanend() {
-    console.log('PictureHelper.js getChangedPicturesInfo onscanend');
-    var pictureMessage = {
-      type: 'picture',
-      callbackID: 'onscanend',
-      detail: null
-    };
-    selfJsonCmd.result = RS_OK;
-    var pictureData = JSON.stringify(pictureMessage);
-    selfSendCallback(selfSocket, selfJsonCmd, pictureData);
+    isPictureCmdEnd = true;
+    if (pictureCount == pictureIndex) {
+      multiReplyFinish(curPictureSocket, 'picture', curPictureJsonCmd, curPictureSendCallback);
+    }
   };
   // Now that we've enumerated all the photos and videos we already know
   // about go start looking for new photos and videos.
   photoDB.scan();
+}
 
+function getPicturesList() {
+  pictureCount = 0;
+  pictureIndex = 0;
+  isPictureCmdEnd = false; 
+  photoDB.enumerate('date', null, 'prev', function(photo) {
+    if (!photo) {
+      isPictureCmdEnd = true;
+      if (pictureCount == pictureIndex) {
+        multiReplyFinish(curPictureSocket, 'picture', curPictureJsonCmd, curPictureSendCallback);
+      }
+      return;
+    }
+    pictureCount ++;
+    addPicture(photo);
+  });
+}
+
+function addPicture(photo) {
+  if (photo.metadata.video) {
+    pictureIndex ++;
+    if (isPictureCmdEnd && pictureCount == pictureIndex) {
+      multiReplyFinish(curPictureSocket, 'picture', curPictureJsonCmd, curPictureSendCallback);
+    }
+    return;
+  }
+  var fileInfo = {
+    'name': photo.name,
+    'type': photo.type,
+    'size': photo.size,
+    'date': photo.date,
+    'metadata': photo.metadata,
+  };
+  var pictureMessage = {
+    type: 'picture',
+    callbackID: 'enumerate',
+    detail: fileInfo
+  };
+  var imageblob = photo.metadata.thumbnail;
+  if (imageblob != null) {
+    var fileReader = new FileReader();
+    fileReader.readAsDataURL(imageblob);
+    fileReader.onload = function(e) {
+      pictureMessage.detail.metadata.thumbnail = e.target.result;
+      curPictureJsonCmd.result = RS_MIDDLE;
+      curPictureSendCallback(curPictureSocket, curPictureJsonCmd, JSON.stringify(pictureMessage));
+      pictureIndex++;
+      if (isPictureCmdEnd && pictureCount == pictureIndex) {
+        multiReplyFinish(curPictureSocket, 'picture', curPictureJsonCmd, curPictureSendCallback);
+      }
+    }
+  } else {
+    pictureIndex ++;
+    curPictureJsonCmd.result = RS_MIDDLE;
+    curPictureSendCallback(curPictureSocket, curPictureJsonCmd, JSON.stringify(pictureMessage));
+    if (isPictureCmdEnd && pictureCount == pictureIndex) {
+      multiReplyFinish(curPictureSocket, 'picture', curPictureJsonCmd, curPictureSendCallback);
+    }
+  }
 }

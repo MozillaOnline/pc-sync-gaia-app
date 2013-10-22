@@ -5,28 +5,15 @@
   "name": "PCSyncClient",
   "launch_path": "/index.html",
   "permissions": {
-    "device-storage:sdcard": {
-      "access": "readwrite"
-    },
-    "device-storage:apps": {
-      "access": "readwrite"
-    },
-    "storage": {},
     "bluetooth": {},
     "telephony": {},
     "webapps-manage": {},
     "tcp-socket": {},
-    "device-storage:pictures": {
-      "access": "readwrite"
-    },
     "wifi-manage": {},
     "contacts": {
       "access": "readwrite"
     },
     "sms": {},
-    "device-storage:music": {
-      "access": "readwrite"
-    },
     "permissions": {},
     "desktop-notification": {},
     "power": {},
@@ -37,9 +24,24 @@
     "settings": {
       "access": "readwrite"
     },
+    "storage": {},
+    "device-storage:pictures": {
+      "access": "readwrite"
+    },
+    "device-storage:music": {
+      "access": "readwrite"
+    },
     "device-storage:videos": {
       "access": "readwrite"
     },
+    "device-storage:sdcard": {
+      "access": "readwrite"
+    },
+    "device-storage:apps": {
+      "access": "readwrite"
+    },
+    "deprecated-hwvideo":{},
+    "audio-channel-content":{},
     "time": {},
     "alarms": {}
   },

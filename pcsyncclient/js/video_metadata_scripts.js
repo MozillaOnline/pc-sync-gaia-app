@@ -32,12 +32,11 @@
 var metadataQueue = [];
 var processingQueue = false;
 var stopParsingMetadataCallback = null;
-var isEnumerate = true;
+
 // This function queues a fileinfo object with no metadata. When the app is
 // able it will obtain metadata for the video and pass the updated fileinfo
 // to addVideo() so that it becomes visible to the user.
-function addToMetadataQueue(fileinfo, isEnum) {
-  isEnumerate = isEnum;
+function addToMetadataQueue(fileinfo) {
   metadataQueue.push(fileinfo);
   startParsingMetadata();
 }
@@ -111,18 +110,13 @@ function processFirstQueuedItem() {
       videoDB.updateMetadata(fileinfo.name, metadata);
 
       // Create and insert a thumbnail for the video
-      if (metadata.isVideo) {
-        if(isEnumerate)
-          addVideo(fileinfo);
-        else{
-          createVideo(fileinfo);
-        }
-      }
+      addVideo(fileinfo);
 
       // And process the next video in the queue
       setTimeout(processFirstQueuedItem);
     });
   }, function(err) {
+    addVideo(null);
     console.error('getFile error: ', fileinfo.name, err);
     processFirstQueuedItem();
   });
@@ -149,7 +143,6 @@ function getMetadata(videofile, callback) {
 
   // Load the video into an offscreen <video> element.
   offscreenVideo.preload = 'metadata';
-  offscreenVideo.src = url;
 
   offscreenVideo.onerror = function(e) {
     // Something went wrong. Maybe the file was corrupt?
@@ -202,6 +195,7 @@ function getMetadata(videofile, callback) {
     }
   };
 
+  offscreenVideo.src = url;
   // The text case of key in metadata is not always lower or upper cases. That
   // depends on the creation tools. This function helps to read keys in lower
   // cases and returns the value of corresponding key.
@@ -225,7 +219,6 @@ function getMetadata(videofile, callback) {
     // and may not fire an error event, so if we aren't able to seek
     // after a certain amount of time, we'll abort and assume that the
     // video is invalid.
-    offscreenVideo.currentTime = Math.min(5, offscreenVideo.duration / 10);
 
     var failed = false;                      // Did seeking fail?
     var timeout = setTimeout(fail, 10000);   // Fail after 10 seconds
@@ -259,6 +252,7 @@ function getMetadata(videofile, callback) {
         }
       });
     };
+    offscreenVideo.currentTime = Math.min(5, offscreenVideo.duration / 10);
   }
 
   // Free the resources being used by the offscreen video element

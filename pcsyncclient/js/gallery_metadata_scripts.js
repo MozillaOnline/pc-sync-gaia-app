@@ -8,6 +8,8 @@
 // specified callback function. If it fails, it passes an error message
 // to the specified error function instead.
 //
+
+var CONFIG_MAX_IMAGE_PIXEL_SIZE = 5000000;
 // This function is capable of parsing and returning EXIF data for a
 // JPEG file, but for speed, it ignores all EXIF data except the embedded
 // preview image and the image orientation.

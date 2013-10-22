@@ -7,6 +7,9 @@
  *----------------------------------------------------------------------------------------------------------*/
 
 var musicDB = null;
+var curMusicSocket = null;
+var curMusicJsonCmd = null;
+var curMusicSendCallback = null;
 
 function musicHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
@@ -36,102 +39,56 @@ function musicHelper(socket, jsonCmd, sendCallback, recvData) {
   }
 }
 
-function getMusicsList(socket, jsonCmd, sendCallback) {
-  musicDB.enumerate('metadata.title', function(music) {
-    if (music) {
-      var fileInfo = {
-        'name': music.name,
-        'type': music.type,
-        'size': music.size,
-        'date': music.date,
-        'metadata': music.metadata
-      };
+function getOldMusicsInfo(socket, jsonCmd, sendCallback) {
+  curMusicSocket = socket;
+  curMusicJsonCmd = jsonCmd;
+  curMusicSendCallback = sendCallback;
+  if (musicDB == null) {
+    musicDB = new MediaDB('music', parseAudioMetadata, {
+      indexes: ['metadata.album', 'metadata.artist', 'metadata.title', 'metadata.rated', 'metadata.played', 'date'],
+      batchSize: 1,
+      autoscan: false,
+      version: 2
+    });
+    musicDB.onunavailable = function(event) {
+      //get all the reasons from event
       var musicMessage = {
         type: 'music',
-        callbackID: 'enumerate',
-        detail: fileInfo
+        callbackID: 'onunavailable',
+        detail: event.detail
       };
-      jsonCmd.result = RS_MIDDLE;
-      var musicData = JSON.stringify(musicMessage);
-      sendCallback(socket, jsonCmd, musicData);
-    } else {
-      multiReplyFinish(socket, 'music', jsonCmd, sendCallback);
-    }
-  });
-}
-
-function getOldMusicsInfo(socket, jsonCmd, sendCallback) {
-  try {
-    var selfSocket = socket;
-    var selfJsonCmd = jsonCmd;
-    var selfSendCallback = sendCallback;
-    if (musicDB == null) {
-      musicDB = new MediaDB('music', parseAudioMetadata, {
-        indexes: ['metadata.album', 'metadata.artist', 'metadata.title', 'metadata.rated', 'metadata.played', 'date'],
-        batchSize: 1,
-        autoscan: false,
-        version: 2
-      });
-      musicDB.onunavailable = function(event) {
-        //get all the reasons from event
-        var musicMessage = {
-          type: 'music',
-          callbackID: 'onunavailable',
-          detail: event.detail
-        };
-        selfJsonCmd.result = RS_OK;
-        var sendData = JSON.stringify(musicMessage);
-        selfSendCallback(selfSocket, selfJsonCmd, sendData);
+      curMusicJsonCmd.result = RS_OK;
+      curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
+    };
+    musicDB.oncardremoved = function oncardremoved() {
+      var musicMessage = {
+        type: 'music',
+        callbackID: 'oncardremoved',
+        detail: null
       };
-      musicDB.oncardremoved = function oncardremoved() {
-        var musicMessage = {
-          type: 'music',
-          callbackID: 'oncardremoved',
-          detail: null
-        };
-        selfJsonCmd.result = RS_OK;
-        var sendData = JSON.stringify(musicMessage);
-        selfSendCallback(selfSocket, selfJsonCmd, sendData);
-      };
-      musicDB.onready = function() {
-        getMusicsList(selfSocket, selfJsonCmd, selfSendCallback);
-      };
-    } else {
-      getMusicsList(selfSocket, selfJsonCmd, selfSendCallback);
-    }
-  } catch (e) {
-    console.log('MusicHelper.js initDB failed: ' + e);
-    jsonCmd.result = RS_ERROR.UNKNOWEN;
-    sendCallback(socket, jsonCmd, null);
+      curMusicJsonCmd.result = RS_OK;
+      curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
+    };
+    musicDB.onready = function() {
+      getMusicsList();
+    };
+  } else {
+    getMusicsList();
   }
 }
 
 function getChangedMusicsInfo(socket, jsonCmd, sendCallback) {
+  curMusicSocket = socket;
+  curMusicJsonCmd = jsonCmd;
+  curMusicSendCallback = sendCallback;
   if (!musicDB) {
-    jsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
-    sendCallback(socket, jsonCmd, null);
+    curMusicJsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
+    curMusicSendCallback(curMusicSocket, curMusicJsonCmd, null);
     return;
   }
-  var selfSocket = socket;
-  var selfJsonCmd = jsonCmd;
-  var selfSendCallback = sendCallback;
   musicDB.oncreated = function(event) {
     event.detail.forEach(function(music) {
-      var fileInfo = {
-        'name': music.name,
-        'type': music.type,
-        'size': music.size,
-        'date': music.date,
-        'metadata': music.metadata
-      };
-      var musicMessage = {
-        type: 'music',
-        callbackID: 'oncreated',
-        detail: fileInfo
-      };
-      selfJsonCmd.result = RS_MIDDLE;
-      var sendData = JSON.stringify(musicMessage);
-      selfSendCallback(selfSocket, selfJsonCmd, sendData);
+      addMusic(music);
     });
   };
   musicDB.ondeleted = function(event) {
@@ -140,19 +97,38 @@ function getChangedMusicsInfo(socket, jsonCmd, sendCallback) {
       callbackID: 'ondeleted',
       detail: event.detail
     };
-    selfJsonCmd.result = RS_MIDDLE;
-    var sendData = JSON.stringify(musicMessage);
-    selfSendCallback(selfSocket, selfJsonCmd, sendData);
+    curMusicJsonCmd.result = RS_MIDDLE;
+    curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
   };
   musicDB.onscanend = function onscanend() {
-    var musicMessage = {
-      type: 'music',
-      callbackID: 'onscanend',
-      detail: null
-    };
-    selfJsonCmd.result = RS_OK;
-    var sendData = JSON.stringify(musicMessage);
-    selfSendCallback(selfSocket, selfJsonCmd, sendData);
+    multiReplyFinish(curMusicSocket, 'music', curMusicJsonCmd, curMusicSendCallback);
   };
   musicDB.scan();
+}
+
+function getMusicsList() {
+  musicDB.enumerate('metadata.title', function(music) {
+    if (music) {
+      addMusic(music);
+    } else {
+      multiReplyFinish(curMusicSocket, 'music', curMusicJsonCmd, curMusicSendCallback);
+    }
+  });
+}
+
+function addMusic(music) {
+  var fileInfo = {
+    'name': music.name,
+    'type': music.type,
+    'size': music.size,
+    'date': music.date,
+    'metadata': music.metadata
+  };
+  var musicMessage = {
+    type: 'music',
+    callbackID: 'enumerate',
+    detail: fileInfo
+  };
+  curMusicJsonCmd.result = RS_MIDDLE;
+  curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
 }
