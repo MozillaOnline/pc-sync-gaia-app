@@ -12,7 +12,7 @@ var curPictureJsonCmd = null;
 var curPictureSendCallback = null;
 var pictureCount = 0;
 var pictureIndex = 0;
-var isPictureCmdEnd = false; 
+var isPictureCmdEnd = false;
 var videostorage;
 
 function pictureHelper(socket, jsonCmd, sendCallback, recvData) {
@@ -89,7 +89,7 @@ function getChangedPicturesInfo(socket, jsonCmd, sendCallback) {
   curPictureSendCallback = sendCallback;
   pictureCount = 0;
   pictureIndex = 0;
-  isPictureCmdEnd = false; 
+  isPictureCmdEnd = false;
   console.log('PictureHelper.js getChangedPicturesInfo');
   if (!photoDB) {
     curPictureJsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
@@ -126,7 +126,7 @@ function getChangedPicturesInfo(socket, jsonCmd, sendCallback) {
 function getPicturesList() {
   pictureCount = 0;
   pictureIndex = 0;
-  isPictureCmdEnd = false; 
+  isPictureCmdEnd = false;
   photoDB.enumerate('date', null, 'prev', function(photo) {
     if (!photo) {
       isPictureCmdEnd = true;
@@ -135,14 +135,14 @@ function getPicturesList() {
       }
       return;
     }
-    pictureCount ++;
+    pictureCount++;
     addPicture(photo);
   });
 }
 
 function addPicture(photo) {
   if (photo.metadata.video) {
-    pictureIndex ++;
+    pictureIndex++;
     if (isPictureCmdEnd && pictureCount == pictureIndex) {
       multiReplyFinish(curPictureSocket, 'picture', curPictureJsonCmd, curPictureSendCallback);
     }
@@ -174,7 +174,7 @@ function addPicture(photo) {
       }
     }
   } else {
-    pictureIndex ++;
+    pictureIndex++;
     curPictureJsonCmd.result = RS_MIDDLE;
     curPictureSendCallback(curPictureSocket, curPictureJsonCmd, JSON.stringify(pictureMessage));
     if (isPictureCmdEnd && pictureCount == pictureIndex) {

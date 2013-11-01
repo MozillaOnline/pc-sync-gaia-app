@@ -38,7 +38,7 @@ function getStorage(socket, jsonCmd, sendCallback) {
   try {
     var mediaTypes = ['pictures', 'music', 'videos', 'sdcard', 'apps'];
     var remainingMediaTypes = mediaTypes.length;
-    var deviceInfo = [];
+    var deviceInfo = {};
     mediaTypes.forEach(function(aType) {
       console.log('DeviceInfoHelper.js aType: ' + aType);
       var storage = window.navigator.getDeviceStorage(aType);
@@ -48,7 +48,7 @@ function getStorage(socket, jsonCmd, sendCallback) {
           'usedSpace': 'undefined',
           'freeSpace': 'undefined'
         };
-        deviceInfo.push(storageData);
+        deviceInfo[aType] = storageData;
         remainingMediaTypes--;
         if (remainingMediaTypes == 0) {
           jsonCmd.result = RS_OK;
@@ -69,7 +69,7 @@ function getStorage(socket, jsonCmd, sendCallback) {
               'freeSpace': freeSpace
             };
             console.log('deviceInfoHelper.js getStorage storageData: ' + JSON.stringify(storageData));
-            deviceInfo.push(storageData);
+            deviceInfo[aType] = storageData;
             remainingMediaTypes--;
             if (remainingMediaTypes == 0) {
               jsonCmd.result = RS_OK;
@@ -84,7 +84,7 @@ function getStorage(socket, jsonCmd, sendCallback) {
               'usedSpace': 'undefined',
               'freeSpace': freeSpace
             };
-            deviceInfo.push(storageData);
+            deviceInfo[aType] = storageData;
             remainingMediaTypes--;
             if (remainingMediaTypes == 0) {
               jsonCmd.result = RS_OK;
@@ -100,7 +100,7 @@ function getStorage(socket, jsonCmd, sendCallback) {
             'usedSpace': 'undefined',
             'freeSpace': 'undefined'
           };
-          deviceInfo.push(storageData);
+          deviceInfo[name] = storageData;
           remainingMediaTypes--;
           if (remainingMediaTypes == 0) {
             jsonCmd.result = RS_OK;

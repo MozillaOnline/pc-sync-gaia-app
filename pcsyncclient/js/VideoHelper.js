@@ -9,7 +9,7 @@
 var videoDB = null;
 var videoCount = 0;
 var videoIndex = 0;
-var isVideoCmdEnd = false; 
+var isVideoCmdEnd = false;
 var curVideoSocket = null;
 var curVideoJsonCmd = null;
 var curVideoSendCallback = null;
@@ -48,7 +48,7 @@ function getOldVideosInfo(socket, jsonCmd, sendCallback) {
     curVideoJsonCmd = jsonCmd;
     curVideoSendCallback = sendCallback;
     if (videoDB == null) {
-      videoDB = new MediaDB('videos', null,{
+      videoDB = new MediaDB('videos', null, {
         autoscan: false,
         excludeFilter: /DCIM\/\d{3}MZLLA\/\.VID_\d{4}\.3gp$/
       });
@@ -110,8 +110,7 @@ function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
   };
   videoDB.onscanend = function onscanend() {
     isVideoCmdEnd = true;
-    if( videoIndex == videoCount)
-      multiReplyFinish(curVideoSocket, 'video', curVideoJsonCmd, curVideoSendCallback);
+    if (videoIndex == videoCount) multiReplyFinish(curVideoSocket, 'video', curVideoJsonCmd, curVideoSendCallback);
   };
   //can not do it(xds)
   videoCount = 0;
@@ -141,13 +140,13 @@ function getVideoList() {
     // metadata queue to get processed. Once the metadata is
     // available, it will be passed to addVideo()
     if (isVideo === undefined) {
-      videoCount ++;
+      videoCount++;
       addToMetadataQueue(video, true);
       return;
     }
     // If we've parsed the metadata and know this is a video, display it.
     if (isVideo === true) {
-      videoCount ++;
+      videoCount++;
       addVideo(video);
     }
   });
@@ -155,7 +154,7 @@ function getVideoList() {
 
 function addVideo(video) {
   if (!video || !video.metadata.isVideo) {
-    videoIndex ++;
+    videoIndex++;
     if (isVideoCmdEnd == true && videoCount == videoIndex) {
       multiReplyFinish(curVideoSocket, 'video', curVideoJsonCmd, curVideoSendCallback);
     }

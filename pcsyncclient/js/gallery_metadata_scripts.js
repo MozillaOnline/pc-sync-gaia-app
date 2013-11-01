@@ -8,7 +8,6 @@
 // specified callback function. If it fails, it passes an error message
 // to the specified error function instead.
 //
-
 var CONFIG_MAX_IMAGE_PIXEL_SIZE = 5000000;
 // This function is capable of parsing and returning EXIF data for a
 // JPEG file, but for speed, it ignores all EXIF data except the embedded
@@ -16,6 +15,8 @@ var CONFIG_MAX_IMAGE_PIXEL_SIZE = 5000000;
 //
 // This function requires the BlobView utility class
 //
+
+
 function parseJPEGMetadata(file, metadataCallback, metadataError) {
   // This is the object we'll pass to metadataCallback
   var metadata = {};
@@ -24,9 +25,7 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
   // Hopefully, this will be all we need and everything else will
   // be synchronous
   BlobView.get(file, 0, Math.min(16 * 1024, file.size), function(data) {
-    if (data.byteLength < 2 ||
-        data.getUint8(0) !== 0xFF ||
-        data.getUint8(1) !== 0xD8) {
+    if (data.byteLength < 2 || data.getUint8(0) !== 0xFF || data.getUint8(1) !== 0xD8) {
       metadataError('Not a JPEG file');
       return;
     }
@@ -42,6 +41,8 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
   // We assume that data has enough data in it that we can
   // can determine the size of the segment, and we guarantee that
   // we read extra bytes so the next call works
+
+
   function getSegment(data, offset, callback) {
     try {
       var header = data.getUint8(offset);
@@ -60,22 +61,23 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
       var isLast = (start + size >= file.size);
       var length = isLast ? size : size + 4;
 
-      data.getMore(start, length,
-                   function(data) {
-                     callback(type, size, data, isLast);
-                   });
-    }
-    catch (e) {
+      data.getMore(start, length, function(data) {
+        callback(type, size, data, isLast);
+      });
+    } catch (e) {
       metadataError(e.toString() + '\n' + e.stack);
     }
   }
 
   // This is a callback function for getNextSegment that handles the
   // various types of segments we expect to see in a jpeg file
+
+
   function segmentHandler(type, size, data, isLastSegment) {
     try {
       switch (type) {
-      case 0xC0:  // Some actual image data, including image dimensions
+      case 0xC0:
+        // Some actual image data, including image dimensions
       case 0xC1:
       case 0xC2:
       case 0xC3:
@@ -88,9 +90,9 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
         metadataCallback(metadata);
         break;
 
-      case 0xE1:  // APP1 segment. Probably holds EXIF metadata
-        parseAPP1(data);
-        /* fallthrough */
+      case 0xE1:
+        // APP1 segment. Probably holds EXIF metadata
+        parseAPP1(data); /* fallthrough */
 
       default:
         // A segment we don't care about, so just go on and read the next one
@@ -100,8 +102,7 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
         }
         getSegment(data, size, segmentHandler);
       }
-    }
-    catch (e) {
+    } catch (e) {
       metadataError(e.toString() + '\n' + e.stack);
     }
   }
@@ -120,54 +121,56 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
 
       // map exif orientation flags for easy transforms
       switch (exif.ORIENTATION) {
-        case undefined:
-        case 1:
-          metadata.rotation = 0;
-          metadata.mirrored = false;
-          break;
-        case 2:
-          metadata.rotation = 0;
-          metadata.mirrored = true;
-          break;
-        case 3:
-          metadata.rotation = 180;
-          metadata.mirrored = false;
-          break;
-        case 4:
-          metadata.rotation = 180;
-          metadata.mirrored = true;
-          break;
-        case 5:
-          metadata.rotation = 90;
-          metadata.mirrored = true;
-          break;
-        case 6:
-          metadata.rotation = 90;
-          metadata.mirrored = false;
-          break;
-        case 7:
-          metadata.rotation = 270;
-          metadata.mirrored = true;
-          break;
-        case 8:
-          metadata.rotation = 270;
-          metadata.mirrored = false;
-          break;
-        default:
-          throw Error('Unknown Exif code for orientation');
+      case undefined:
+      case 1:
+        metadata.rotation = 0;
+        metadata.mirrored = false;
+        break;
+      case 2:
+        metadata.rotation = 0;
+        metadata.mirrored = true;
+        break;
+      case 3:
+        metadata.rotation = 180;
+        metadata.mirrored = false;
+        break;
+      case 4:
+        metadata.rotation = 180;
+        metadata.mirrored = true;
+        break;
+      case 5:
+        metadata.rotation = 90;
+        metadata.mirrored = true;
+        break;
+      case 6:
+        metadata.rotation = 90;
+        metadata.mirrored = false;
+        break;
+      case 7:
+        metadata.rotation = 270;
+        metadata.mirrored = true;
+        break;
+      case 8:
+        metadata.rotation = 270;
+        metadata.mirrored = false;
+        break;
+      default:
+        throw Error('Unknown Exif code for orientation');
       }
     }
   }
 
   // Parse an EXIF segment from a JPEG file and return an object
   // of metadata attributes. The argument must be a DataView object
+
+
   function parseEXIFData(data) {
     var exif = {};
 
     var byteorder = data.getUint8(10);
-    if (byteorder === 0x4D) {  // big endian
+    if (byteorder === 0x4D) { // big endian
       byteorder = false;
-    } else if (byteorder === 0x49) {  // little endian
+    } else if (byteorder === 0x49) { // little endian
       byteorder = true;
     } else {
       throw Error('invalid byteorder in EXIF segment');
@@ -179,8 +182,8 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
 
     var offset = data.getUint32(14, byteorder);
 
-     // This is how we would parse all EXIF metadata more generally.
-     // Especially need for iamge orientation
+    // This is how we would parse all EXIF metadata more generally.
+    // Especially need for iamge orientation
     parseIFD(data, offset + 10, byteorder, exif, true);
 
     // I'm leaving this code in as a comment in case we need other EXIF
@@ -189,20 +192,17 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
     //   parseIFD(data, exif.EXIFIFD + 10, byteorder, exif);
     //   delete exif.EXIFIFD;
     // }
-
     // if (exif.GPSIFD) {
     //   parseIFD(data, exif.GPSIFD + 10, byteorder, exif);
     //   delete exif.GPSIFD;
     // }
-
     // Instead of a general purpose EXIF parse, we're going to drill
     // down directly to the thumbnail image.
     // We're in IFD0 here. We want the offset of IFD1
     var ifd0entries = data.getUint16(offset + 10, byteorder);
     var ifd1 = data.getUint32(offset + 12 + 12 * ifd0entries, byteorder);
     // If there is an offset for IFD1, parse that
-    if (ifd1 !== 0)
-      parseIFD(data, ifd1 + 10, byteorder, exif, true);
+    if (ifd1 !== 0) parseIFD(data, ifd1 + 10, byteorder, exif, true);
 
     return exif;
   }
@@ -213,8 +213,7 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
       parseEntry(data, offset + 2 + 12 * i, byteorder, exif);
     }
 
-    if (onlyParseOne)
-      return;
+    if (onlyParseOne) return;
 
     var next = data.getUint32(offset + 2 + 12 * numentries, byteorder);
     if (next !== 0 && next < file.size) {
@@ -224,26 +223,26 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
 
   // size, in bytes, of each TIFF data type
   var typesize = [
-    0,   // Unused
-    1,   // BYTE
-    1,   // ASCII
-    2,   // SHORT
-    4,   // LONG
-    8,   // RATIONAL
-    1,   // SBYTE
-    1,   // UNDEFINED
-    2,   // SSHORT
-    4,   // SLONG
-    8,   // SRATIONAL
-    4,   // FLOAT
-    8    // DOUBLE
+  0, // Unused
+  1, // BYTE
+  1, // ASCII
+  2, // SHORT
+  4, // LONG
+  8, // RATIONAL
+  1, // SBYTE
+  1, // UNDEFINED
+  2, // SSHORT
+  4, // SLONG
+  8, // SRATIONAL
+  4, // FLOAT
+  8 // DOUBLE
   ];
 
   // This object maps EXIF tag numbers to their names.
   // Only list the ones we want to bother parsing and returning.
   // All others will be ignored.
   var tagnames = {
-    /*
+/*
      * We don't currently use any of these EXIF tags for anything.
      *
      *
@@ -278,9 +277,10 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
      '34665': 'EXIFIFD',         // Offset of EXIF data
      '34853': 'GPSIFD',          // Offset of GPS data
     */
-    '274' : 'ORIENTATION',
-    '513': 'THUMBNAIL',         // Offset of thumbnail
-    '514': 'THUMBNAILLENGTH'    // Length of thumbnail
+    '274': 'ORIENTATION',
+    '513': 'THUMBNAIL',
+    // Offset of thumbnail
+    '514': 'THUMBNAILLENGTH' // Length of thumbnail
   };
 
   function parseEntry(data, offset, byteorder, exif) {
@@ -288,15 +288,13 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
     var tagname = tagnames[tag];
 
     // If we don't know about this tag type or already processed it, skip it
-    if (!tagname || exif[tagname])
-      return;
+    if (!tagname || exif[tagname]) return;
 
     var type = data.getUint16(offset + 2, byteorder);
     var count = data.getUint32(offset + 4, byteorder);
 
     var total = count * typesize[type];
-    var valueOffset = total <= 4 ? offset + 8 :
-      data.getUint32(offset + 8, byteorder);
+    var valueOffset = total <= 4 ? offset + 8 : data.getUint32(offset + 8, byteorder);
     exif[tagname] = parseValue(data, valueOffset, type, count, byteorder);
   }
 
@@ -323,31 +321,41 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
 
   function parseOneValue(data, offset, type, byteorder) {
     switch (type) {
-    case 1: // BYTE
-    case 7: // UNDEFINED
+    case 1:
+      // BYTE
+    case 7:
+      // UNDEFINED
       return data.getUint8(offset);
-    case 2: // ASCII
+    case 2:
+      // ASCII
       // This case is handed in parseValue
       return null;
-    case 3: // SHORT
+    case 3:
+      // SHORT
       return data.getUint16(offset, byteorder);
-    case 4: // LONG
+    case 4:
+      // LONG
       return data.getUint32(offset, byteorder);
-    case 5: // RATIONAL
-      return data.getUint32(offset, byteorder) /
-        data.getUint32(offset + 4, byteorder);
-    case 6: // SBYTE
+    case 5:
+      // RATIONAL
+      return data.getUint32(offset, byteorder) / data.getUint32(offset + 4, byteorder);
+    case 6:
+      // SBYTE
       return data.getInt8(offset);
-    case 8: // SSHORT
+    case 8:
+      // SSHORT
       return data.getInt16(offset, byteorder);
-    case 9: // SLONG
+    case 9:
+      // SLONG
       return data.getInt32(offset, byteorder);
-    case 10: // SRATIONAL
-      return data.getInt32(offset, byteorder) /
-        data.getInt32(offset + 4, byteorder);
-    case 11: // FLOAT
+    case 10:
+      // SRATIONAL
+      return data.getInt32(offset, byteorder) / data.getInt32(offset + 4, byteorder);
+    case 11:
+      // FLOAT
       return data.getFloat32(offset, byteorder);
-    case 12: // DOUBLE
+    case 12:
+      // DOUBLE
       return data.getFloat64(offset, byteorder);
     }
     return null;
@@ -367,9 +375,13 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
 // http://androidxref.com/4.0.4/xref/frameworks/base/media/libstagefright/MPEG4Writer.cpp
 // https://developer.apple.com/library/mac/#documentation/QuickTime/QTFF/QTFFChap2/qtff2.html
 //
+
+
 function getVideoRotation(blob, rotationCallback) {
 
   // A utility for traversing the tree of atoms in an MP4 file
+
+
   function MP4Parser(blob, handlers) {
     // Start off with a 1024 chunk from the start of the blob.
     BlobView.get(blob, 0, Math.min(1024, blob.size), function(data, error) {
@@ -383,17 +395,17 @@ function getVideoRotation(blob, rotationCallback) {
 
     // Call this with a BlobView object that includes the first 16 bytes of
     // an atom. It doesn't matter whether the body of the atom is included.
+
+
     function parseAtom(data) {
       var offset = data.sliceOffset + data.viewOffset; // atom position in blob
-      var size = data.readUnsignedInt();               // atom length
-      var type = data.readASCIIText(4);                // atom type
-      var contentOffset = 8;                           // position of content
-
+      var size = data.readUnsignedInt(); // atom length
+      var type = data.readASCIIText(4); // atom type
+      var contentOffset = 8; // position of content
       if (size === 0) {
         // Zero size means the rest of the file
         size = blob.size - offset;
-      }
-      else if (size === 1) {
+      } else if (size === 1) {
         // A size of 1 means the size is in bytes 8-15
         size = data.readUnsignedInt() * 4294967296 + data.readUnsignedInt();
         contentOffset = 16;
@@ -419,19 +431,16 @@ function getVideoRotation(blob, rotationCallback) {
             parseAtomAt(data, offset + size);
           }
         });
-      }
-      else if (handler === 'children') {
+      } else if (handler === 'children') {
         // If the handler is this string, then assume that the atom is
         // a container atom and do its next child atom next
         var skip = (type === 'meta') ? 4 : 0; // special case for meta atoms
         parseAtomAt(data, offset + contentOffset + skip);
-      }
-      else if (handler === 'skip' || !handler) {
+      } else if (handler === 'skip' || !handler) {
         // Skip the atom entirely and go on to the next one.
         // If there is no next one, call the eofHandler or just return
         parseAtomAt(data, offset + size);
-      }
-      else if (handler === 'done') {
+      } else if (handler === 'done') {
         // Stop parsing
         return;
       }
@@ -439,11 +448,9 @@ function getVideoRotation(blob, rotationCallback) {
 
     function parseAtomAt(data, offset) {
       if (offset >= blob.size) {
-        if (handlers.eofHandler)
-          handlers.eofHandler();
+        if (handlers.eofHandler) handlers.eofHandler();
         return;
-      }
-      else {
+      } else {
         data.getMore(offset, 16, parseAtom);
       }
     }
@@ -458,12 +465,19 @@ function getVideoRotation(blob, rotationCallback) {
   // the same rotation, so we'll only look at the first 'trak' atom that
   // we find.
   MP4Parser(blob, {
-    errorHandler: function(msg) { rotationCallback(msg); },
-    eofHandler: function() { rotationCallback(null); },
-    defaultHandler: 'skip',  // Skip all atoms other than those listed below
-    moov: 'children',        // Enumerate children of the moov atom
-    trak: 'children',        // Enumerate children of the trak atom
-    tkhd: function(data) {   // Pass the tkhd atom to this function
+    errorHandler: function(msg) {
+      rotationCallback(msg);
+    },
+    eofHandler: function() {
+      rotationCallback(null);
+    },
+    defaultHandler: 'skip',
+    // Skip all atoms other than those listed below
+    moov: 'children',
+    // Enumerate children of the moov atom
+    trak: 'children',
+    // Enumerate children of the trak atom
+    tkhd: function(data) { // Pass the tkhd atom to this function
       // The matrix begins at byte 48
       data.advance(48);
 
@@ -474,22 +488,16 @@ function getVideoRotation(blob, rotationCallback) {
       var d = data.readUnsignedInt();
 
       if (a === 0 && d === 0) { // 90 or 270 degrees
-        if (b === 0x00010000 && c === 0xFFFF0000)
-          rotationCallback(90);
-        else if (b === 0xFFFF0000 && c === 0x00010000)
-          rotationCallback(270);
+        if (b === 0x00010000 && c === 0xFFFF0000) rotationCallback(90);
+        else if (b === 0xFFFF0000 && c === 0x00010000) rotationCallback(270);
         else
-          rotationCallback('unexpected rotation matrix');
-      }
-      else if (b === 0 && c === 0) { // 0 or 180 degrees
-        if (a === 0x00010000 && d === 0x00010000)
-          rotationCallback(0);
-        else if (a === 0xFFFF0000 && d === 0xFFFF0000)
-          rotationCallback(180);
+        rotationCallback('unexpected rotation matrix');
+      } else if (b === 0 && c === 0) { // 0 or 180 degrees
+        if (a === 0x00010000 && d === 0x00010000) rotationCallback(0);
+        else if (a === 0xFFFF0000 && d === 0xFFFF0000) rotationCallback(180);
         else
-          rotationCallback('unexpected rotation matrix');
-      }
-      else {
+        rotationCallback('unexpected rotation matrix');
+      } else {
         rotationCallback('unexpected rotation matrix');
       }
       return 'done';
@@ -514,6 +522,7 @@ function getVideoRotation(blob, rotationCallback) {
  * Requires the BlobView class from shared/js/blobview.js and the
  * parseJPEGMetadata() function from shared/js/media/jpeg_metadata_parser.js
  */
+
 function getImageSize(blob, callback, error) {
   BlobView.get(blob, 0, Math.min(1024, blob.size), function(data) {
     // Make sure we are at least 8 bytes long before reading the first 8 bytes
@@ -529,32 +538,25 @@ function getImageSize(blob, callback, error) {
           width: data.getUint16(6, true),
           height: data.getUint16(8, true)
         });
-      }
-      catch (e) {
+      } catch (e) {
         error(e.toString());
       }
-    }
-    else if (magic.substring(0, 8) === '\x89PNG\r\n\x1A\n') {
+    } else if (magic.substring(0, 8) === '\x89PNG\r\n\x1A\n') {
       try {
         callback({
           type: 'png',
           width: data.getUint32(16, false),
           height: data.getUint32(20, false)
         });
-      }
-      catch (e) {
+      } catch (e) {
         error(e.toString());
       }
-    }
-    else if (magic.substring(0, 2) === '\xFF\xD8') {
-      parseJPEGMetadata(blob,
-                        function(metadata) {
-                          metadata.type = 'jpeg';
-                          callback(metadata);
-                        },
-                        error);
-    }
-    else {
+    } else if (magic.substring(0, 2) === '\xFF\xD8') {
+      parseJPEGMetadata(blob, function(metadata) {
+        metadata.type = 'jpeg';
+        callback(metadata);
+      }, error);
+    } else {
       error('unknown image type');
     }
   });
@@ -573,13 +575,11 @@ var metadataParser = (function() {
   // If we generate our own thumbnails, aim for this size.
   // Calculate needed size from longer side of the screen.
   var THUMBNAIL_WIDTH = Math.round(
-                          Math.max(window.innerWidth, window.innerHeight) *
-                            DEVICE_RATIO / 4);
+  Math.max(window.innerWidth, window.innerHeight) * DEVICE_RATIO / 4);
   var THUMBNAIL_HEIGHT = THUMBNAIL_WIDTH;
 
   // Don't try to decode image files of unknown type if bigger than this
   var MAX_UNKNOWN_IMAGE_FILE_SIZE = .5 * 1024 * 1024; // half a megabyte
-
 
   // An <img> element for loading images
   var offscreenImage = new Image();
@@ -592,9 +592,9 @@ var metadataParser = (function() {
   // cropping the edges as needed to make it fit, and then extract the
   // thumbnail image as a blob and pass it to the callback.
   // This utility function is used by both the image and video metadata parsers
-  function createThumbnailFromElement(elt, video, rotation, 
-                                      mirrored, callback) 
-  {
+
+
+  function createThumbnailFromElement(elt, video, rotation, mirrored, callback) {
     // Create a thumbnail image
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');
@@ -647,8 +647,7 @@ var metadataParser = (function() {
     }
 
     // Draw that region of the image into the canvas, scaling it down
-    context.drawImage(elt, x, y, w, h,
-                      0, 0, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+    context.drawImage(elt, x, y, w, h, 0, 0, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
 
     // Restore the default rotation so the play arrow comes out correctly
     if (rotation || mirrored) {
@@ -661,8 +660,7 @@ var metadataParser = (function() {
       // First draw a transparent gray circle
       context.fillStyle = 'rgba(0, 0, 0, .2)';
       context.beginPath();
-      context.arc(THUMBNAIL_WIDTH / 2, THUMBNAIL_HEIGHT / 2,
-                  THUMBNAIL_HEIGHT / 5, 0, 2 * Math.PI, false);
+      context.arc(THUMBNAIL_WIDTH / 2, THUMBNAIL_HEIGHT / 2, THUMBNAIL_HEIGHT / 5, 0, 2 * Math.PI, false);
       context.fill();
 
       // Now outline the circle in white
@@ -676,12 +674,9 @@ var metadataParser = (function() {
       // The height of an equilateral triangle is sqrt(3)/2 times the side
       var side = THUMBNAIL_HEIGHT / 5;
       var triangle_height = side * Math.sqrt(3) / 2;
-      context.moveTo(THUMBNAIL_WIDTH / 2 + triangle_height * 2 / 3,
-                     THUMBNAIL_HEIGHT / 2);
-      context.lineTo(THUMBNAIL_WIDTH / 2 - triangle_height / 3,
-                     THUMBNAIL_HEIGHT / 2 - side / 2);
-      context.lineTo(THUMBNAIL_WIDTH / 2 - triangle_height / 3,
-                     THUMBNAIL_HEIGHT / 2 + side / 2);
+      context.moveTo(THUMBNAIL_WIDTH / 2 + triangle_height * 2 / 3, THUMBNAIL_HEIGHT / 2);
+      context.lineTo(THUMBNAIL_WIDTH / 2 - triangle_height / 3, THUMBNAIL_HEIGHT / 2 - side / 2);
+      context.lineTo(THUMBNAIL_WIDTH / 2 - triangle_height / 3, THUMBNAIL_HEIGHT / 2 + side / 2);
       context.closePath();
       context.fill();
     }
@@ -727,12 +722,7 @@ var metadataParser = (function() {
       }
 
       // If it is not too big create a preview and thumbnail.
-      createThumbnailAndPreview(file,
-                                metadataCallback,
-                                metadataError,
-                                false,
-                                bigFile,
-                                {});
+      createThumbnailAndPreview(file, metadataCallback, metadataError, false, bigFile, {});
     }
 
     function gotImageSize(metadata) {
@@ -750,14 +740,11 @@ var metadataParser = (function() {
       // If the file included a preview image, see if it is big enough
       if (metadata.preview) {
         // Create a blob that is just the preview image
-        var previewblob = file.slice(metadata.preview.start,
-                                     metadata.preview.end,
-                                     'image/jpeg');
+        var previewblob = file.slice(metadata.preview.start, metadata.preview.end, 'image/jpeg');
 
         // Check to see if the preview is big enough to use in MediaFrame
         parseJPEGMetadata(previewblob, previewsuccess, previewerror);
-      }
-      else {
+      } else {
         // If there wasn't a preview image, then generate a preview and
         // thumbnail from the full size image.
         useFullsizeImage();
@@ -773,16 +760,11 @@ var metadataParser = (function() {
       function useFullsizeImage() {
         // Since a number of different cases use the same fallback method
         // define it in one place for easier code flow.
-        createThumbnailAndPreview(file,
-                                  metadataCallback,
-                                  metadataError,
-                                  false,
-                                  bigFile,
-                                  metadata);
+        createThumbnailAndPreview(file, metadataCallback, metadataError, false, bigFile, metadata);
       }
 
       function previewsuccess(previewmetadata) {
-        var pw = previewmetadata.width;      // size of the preview image
+        var pw = previewmetadata.width; // size of the preview image
         var ph = previewmetadata.height;
 
         // If the preview is big enough, use it to create a thumbnail.
@@ -792,12 +774,7 @@ var metadataParser = (function() {
           metadata.preview.width = pw;
           metadata.preview.height = ph;
           // The 4th argument true means don't actually create a preview
-          createThumbnailAndPreview(previewblob,
-                                    metadataCallback,
-                                    previewerror,
-                                    true,
-                                    bigFile,
-                                    metadata);
+          createThumbnailAndPreview(previewblob, metadataCallback, previewerror, true, bigFile, metadata);
         } else {
           // Preview isn't big enough so get one the hard way
           useFullsizeImage();
@@ -811,8 +788,9 @@ var metadataParser = (function() {
   // a metadata object, and pass the object to the callback function.
   // If anything goes wrong, pass an error message to the error function.
   // If it is a large image, create and save a preview for it as well.
-  function createThumbnailAndPreview(file, callback, error, nopreview,
-                                     bigFile, metadata) {
+
+
+  function createThumbnailAndPreview(file, callback, error, nopreview, bigFile, metadata) {
     var url = URL.createObjectURL(file);
     offscreenImage.src = url;
 
@@ -844,24 +822,17 @@ var metadataParser = (function() {
       // XXX: When bug 854795 is fixed, we'll be able to create previews
       // for large images without using so much memory, and we can remove
       // this flag then.
-      if (iw * ih > 2 * 1024 * 1024 && bigFile)
-        bigFile();
+      if (iw * ih > 2 * 1024 * 1024 && bigFile) bigFile();
 
       // If the image was already thumbnail size, it is its own thumbnail
       // and it does not need a preview
-      if (metadata.width <= THUMBNAIL_WIDTH &&
-          metadata.height <= THUMBNAIL_HEIGHT) {
+      if (metadata.width <= THUMBNAIL_WIDTH && metadata.height <= THUMBNAIL_HEIGHT) {
         offscreenImage.src = '';
         metadata.thumbnail = file;
         callback(metadata);
-      }
-      else {
+      } else {
         createThumbnailFromElement(
-          offscreenImage,
-          false,
-          metadata.rotation || 0,
-          metadata.mirrored || false,
-          gotThumbnail);
+        offscreenImage, false, metadata.rotation || 0, metadata.mirrored || false, gotThumbnail);
       }
 
       function gotThumbnail(thumbnail) {
@@ -872,8 +843,7 @@ var metadataParser = (function() {
         if (nopreview || metadata.width * metadata.height < 512 * 1024) {
           offscreenImage.src = '';
           callback(metadata);
-        }
-        else {
+        } else {
           // Otherwise, this was a big image and we need to create a
           // preview for it so we can avoid decoding the full size
           // image again when possible
@@ -884,10 +854,9 @@ var metadataParser = (function() {
       function createAndSavePreview() {
         // Figure out the preview size.
         // Make sure the size is big enough for both landscape and portrait
-        var scale = Math.max(Math.min(sw / iw, sh / ih, 1),
-                             Math.min(sh / iw, sw / ih, 1));
-        var pw = iw * scale, ph = ih * scale; // preview width and height;
-
+        var scale = Math.max(Math.min(sw / iw, sh / ih, 1), Math.min(sh / iw, sw / ih, 1));
+        var pw = iw * scale,
+            ph = ih * scale; // preview width and height;
         // Create the preview in a canvas
         var canvas = document.createElement('canvas');
         canvas.width = pw;
@@ -912,9 +881,8 @@ var metadataParser = (function() {
               return;
             }
             filename =
-              file.name.substring(0, slashIndex) + // storageName (i.e. /sdcard)
-              '/.gallery/previews' +
-              file.name.substring(slashIndex); // rest of path (i,e, /DCIM/...)
+            file.name.substring(0, slashIndex) + // storageName (i.e. /sdcard)
+            '/.gallery/previews' + file.name.substring(slashIndex); // rest of path (i,e, /DCIM/...)
           } else {
             // On non-composite storage areas (e.g. desktop), file.name will be
             // a relative path.
@@ -960,8 +928,7 @@ var metadataParser = (function() {
         if (typeof rotation === 'number') {
           metadata.rotation = rotation;
           getVideoThumbnailAndSize();
-        }
-        else if (typeof rotation === 'string') {
+        } else if (typeof rotation === 'string') {
           errorCallback('Video rotation:', rotation);
         }
       });
@@ -985,15 +952,11 @@ var metadataParser = (function() {
         metadata.width = offscreenImage.width;
         metadata.height = offscreenImage.height;
 
-        createThumbnailFromElement(offscreenImage,
-                                   true,
-                                   metadata.rotation,
-                                   false,
-                                   function(thumbnail) {
-                                     metadata.thumbnail = thumbnail;
-                                     offscreenImage.src = '';
-                                     metadataCallback(metadata);
-                                   });
+        createThumbnailFromElement(offscreenImage, true, metadata.rotation, false, function(thumbnail) {
+          metadata.thumbnail = thumbnail;
+          offscreenImage.src = '';
+          metadataCallback(metadata);
+        });
       };
     }
   }
