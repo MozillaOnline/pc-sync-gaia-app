@@ -26,14 +26,14 @@ function musicHelper(socket, jsonCmd, sendCallback, recvData) {
       }
     default:
       {
-        console.log('MusicHelper.js undefined command :' + jsonCmd.command);
+        debug('MusicHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
         sendCallback(socket, jsonCmd, null);
         break;
       }
     }
   } catch (e) {
-    console.log('MusicHelper.js musicHelper failed: ' + e);
+    debug('MusicHelper.js musicHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     sendCallback(socket, jsonCmd, null);
   }
@@ -43,38 +43,38 @@ function getOldMusicsInfo(socket, jsonCmd, sendCallback) {
   curMusicSocket = socket;
   curMusicJsonCmd = jsonCmd;
   curMusicSendCallback = sendCallback;
-  if (musicDB == null) {
-    musicDB = new MediaDB('music', parseAudioMetadata, {
-      indexes: ['metadata.album', 'metadata.artist', 'metadata.title', 'metadata.rated', 'metadata.played', 'date'],
-      batchSize: 1,
-      autoscan: false,
-      version: 2
-    });
-    musicDB.onunavailable = function(event) {
-      //get all the reasons from event
-      var musicMessage = {
-        type: 'music',
-        callbackID: 'onunavailable',
-        detail: event.detail
-      };
-      curMusicJsonCmd.result = RS_OK;
-      curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
-    };
-    musicDB.oncardremoved = function oncardremoved() {
-      var musicMessage = {
-        type: 'music',
-        callbackID: 'oncardremoved',
-        detail: null
-      };
-      curMusicJsonCmd.result = RS_OK;
-      curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
-    };
-    musicDB.onready = function() {
-      getMusicsList();
-    };
-  } else {
+  if (musicDB != null) {
     getMusicsList();
+    return;
   }
+  musicDB = new MediaDB('music', parseAudioMetadata, {
+    indexes: ['metadata.album', 'metadata.artist', 'metadata.title', 'metadata.rated', 'metadata.played', 'date'],
+    batchSize: 1,
+    autoscan: false,
+    version: 2
+  });
+  musicDB.onunavailable = function(event) {
+    //get all the reasons from event
+    var musicMessage = {
+      type: 'music',
+      callbackID: 'onunavailable',
+      detail: event.detail
+    };
+    curMusicJsonCmd.result = RS_OK;
+    curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
+  };
+  musicDB.oncardremoved = function oncardremoved() {
+    var musicMessage = {
+      type: 'music',
+      callbackID: 'oncardremoved',
+      detail: null
+    };
+    curMusicJsonCmd.result = RS_OK;
+    curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
+  };
+  musicDB.onready = function() {
+    getMusicsList();
+  };
 }
 
 function getChangedMusicsInfo(socket, jsonCmd, sendCallback) {

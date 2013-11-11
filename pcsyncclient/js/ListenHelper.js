@@ -8,11 +8,11 @@
 
 function listenHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
-    console.log('listenHelper.js start');
+    debug('listenHelper.js start');
     var _mozMobileMessage = navigator.mozMobileMessage || window.DesktopMockNavigatormozMobileMessage;
     _mozMobileMessage.addEventListener('received', function onMessageReceived(e) {
       var message = e.message;
-      console.log('SmsHelper.js listenMessage message: ' + message);
+      debug('SmsHelper.js listenMessage message: ' + message);
       if (message.messageClass === 'class-0') {
         return;
       }
@@ -71,7 +71,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
     });
     _mozMobileMessage.addEventListener('sent', function onMessageReceived(e) {
       var message = e.message;
-      console.log('SmsHelper.js listenMessage message: ' + message);
+      debug('SmsHelper.js listenMessage message: ' + message);
       if (message.messageClass === 'class-0') {
         return;
       }
@@ -130,7 +130,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
     });
     _mozMobileMessage.addEventListener('failed', function onMessageFailed(e) {
       var message = e.message;
-      console.log('SmsHelper.js listenMessage message: ' + message);
+      debug('SmsHelper.js listenMessage message: ' + message);
       if (message.messageClass === 'class-0') {
         return;
       }
@@ -192,7 +192,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
     document.addEventListener('mozvisibilitychange',
                               this.onVisibilityChange.bind(this));*/
     navigator.mozContacts.oncontactchange = function oncontactchange(event) {
-      console.log('listenHelper.js oncontactchange');
+      debug('listenHelper.js oncontactchange');
       var contactMessage = {
         type: 'contact',
         contactID: event.contactID,
@@ -203,7 +203,7 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
       sendCallback(socket, jsonCmd, sendData);
     };
   } catch (e) {
-    console.log('listenHelper.js listen failed: ' + e);
+    debug('listenHelper.js listen failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     sendCallback(socket, jsonCmd, null);
   }

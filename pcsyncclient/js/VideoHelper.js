@@ -29,58 +29,52 @@ function videoHelper(socket, jsonCmd, sendCallback, recvData) {
       }
     default:
       {
-        console.log('VideoHelper.js undefined command :' + jsonCmd.command);
+        debug('VideoHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
         sendCallback(socket, jsonCmd, null);
         break;
       }
     }
   } catch (e) {
-    console.log('VideoHelper.js videoHelper failed: ' + e);
+    debug('VideoHelper.js videoHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     sendCallback(socket, jsonCmd, null);
   }
 }
 
 function getOldVideosInfo(socket, jsonCmd, sendCallback) {
-  try {
-    curVideoSocket = socket;
-    curVideoJsonCmd = jsonCmd;
-    curVideoSendCallback = sendCallback;
-    if (videoDB == null) {
-      videoDB = new MediaDB('videos', null, {
-        autoscan: false,
-        excludeFilter: /DCIM\/\d{3}MZLLA\/\.VID_\d{4}\.3gp$/
-      });
-      videoDB.onunavailable = function(event) {
-        var videoMessage = {
-          type: 'video',
-          callbackID: 'onunavailable',
-          detail: event.detail
-        };
-        curVideoJsonCmd.result = RS_OK;
-        curVideoSendCallback(curVideoSocket, curVideoJsonCmd, JSON.stringify(videoMessage));
-      };
-      videoDB.oncardremoved = function oncardremoved() {
-        var videoMessage = {
-          type: 'video',
-          callbackID: 'oncardremoved',
-          detail: null
-        };
-        curVideoJsonCmd.result = RS_OK;
-        curVideoSendCallback(curVideoSocket, curVideoJsonCmd, JSON.stringify(videoMessage));
-      };
-      videoDB.onready = function() {
-        getVideoList();
-      };
-    } else {
-      getVideoList();
-    }
-  } catch (e) {
-    console.log('VideoHelper.js videoDB failed: ' + e);
-    curVideoJsonCmd.result = RS_ERROR.UNKNOWEN;
-    curVideoSendCallback(curVideoSocket, curVideoJsonCmd, null);
+  curVideoSocket = socket;
+  curVideoJsonCmd = jsonCmd;
+  curVideoSendCallback = sendCallback;
+  if (videoDB != null) {
+    getVideoList();
+    return;
   }
+  videoDB = new MediaDB('videos', null, {
+    autoscan: false,
+    excludeFilter: /DCIM\/\d{3}MZLLA\/\.VID_\d{4}\.3gp$/
+  });
+  videoDB.onunavailable = function(event) {
+    var videoMessage = {
+      type: 'video',
+      callbackID: 'onunavailable',
+      detail: event.detail
+    };
+    curVideoJsonCmd.result = RS_OK;
+    curVideoSendCallback(curVideoSocket, curVideoJsonCmd, JSON.stringify(videoMessage));
+  };
+  videoDB.oncardremoved = function oncardremoved() {
+    var videoMessage = {
+      type: 'video',
+      callbackID: 'oncardremoved',
+      detail: null
+    };
+    curVideoJsonCmd.result = RS_OK;
+    curVideoSendCallback(curVideoSocket, curVideoJsonCmd, JSON.stringify(videoMessage));
+  };
+  videoDB.onready = function() {
+    getVideoList();
+  };
 }
 
 function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
@@ -93,7 +87,7 @@ function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
     return;
   }
   videoDB.oncreated = function(event) {
-    console.log('VideoHelper.js oncreated event.detail: ' + event.detail.length);
+    debug('VideoHelper.js oncreated event.detail: ' + event.detail.length);
     videoCount += event.detail.length;
     event.detail.forEach(function(video) {
       addToMetadataQueue(video, false);
@@ -160,7 +154,7 @@ function addVideo(video) {
     }
     return;
   }
-  console.log('VideoHelper.js addVideo video: ' + typeof(video.metadata.poster));
+  debug('VideoHelper.js addVideo video: ' + typeof(video.metadata.poster));
   var fileInfo = {
     'name': video.name,
     'type': video.type,
@@ -174,9 +168,30 @@ function addVideo(video) {
     detail: fileInfo
   };
   var imageblob = video.metadata.bookmark || video.metadata.poster;
-  if (imageblob != null) {
-    if (typeof(imageblob) == 'string') {
-      videoMessage.detail.metadata.poster = imageblob;
+  if (imageblob == null) {
+    curVideoJsonCmd.result = RS_MIDDLE;
+    var videoData = JSON.stringify(videoMessage);
+    curVideoSendCallback(curVideoSocket, curVideoJsonCmd, videoData);
+    videoIndex++;
+    if (isVideoCmdEnd == true && videoCount == videoIndex) {
+      multiReplyFinish(curVideoSocket, 'video', curVideoJsonCmd, curVideoSendCallback);
+    }
+    return;
+  }
+  if (typeof(imageblob) == 'string') {
+    videoMessage.detail.metadata.poster = imageblob;
+    curVideoJsonCmd.result = RS_MIDDLE;
+    var videoData = JSON.stringify(videoMessage);
+    curVideoSendCallback(curVideoSocket, curVideoJsonCmd, videoData);
+    videoIndex++;
+    if (isVideoCmdEnd == true && videoCount == videoIndex) {
+      multiReplyFinish(curVideoSocket, 'video', curVideoJsonCmd, curVideoSendCallback);
+    }
+  } else {
+    var fileReader = new FileReader();
+    fileReader.readAsDataURL(imageblob);
+    fileReader.onload = function(e) {
+      videoMessage.detail.metadata.poster = e.target.result;
       curVideoJsonCmd.result = RS_MIDDLE;
       var videoData = JSON.stringify(videoMessage);
       curVideoSendCallback(curVideoSocket, curVideoJsonCmd, videoData);
@@ -184,27 +199,6 @@ function addVideo(video) {
       if (isVideoCmdEnd == true && videoCount == videoIndex) {
         multiReplyFinish(curVideoSocket, 'video', curVideoJsonCmd, curVideoSendCallback);
       }
-    } else {
-      var fileReader = new FileReader();
-      fileReader.readAsDataURL(imageblob);
-      fileReader.onload = function(e) {
-        videoMessage.detail.metadata.poster = e.target.result;
-        curVideoJsonCmd.result = RS_MIDDLE;
-        var videoData = JSON.stringify(videoMessage);
-        curVideoSendCallback(curVideoSocket, curVideoJsonCmd, videoData);
-        videoIndex++;
-        if (isVideoCmdEnd == true && videoCount == videoIndex) {
-          multiReplyFinish(curVideoSocket, 'video', curVideoJsonCmd, curVideoSendCallback);
-        }
-      }
-    }
-  } else {
-    curVideoJsonCmd.result = RS_MIDDLE;
-    var videoData = JSON.stringify(videoMessage);
-    curVideoSendCallback(curVideoSocket, curVideoJsonCmd, videoData);
-    videoIndex++;
-    if (isVideoCmdEnd == true && videoCount == videoIndex) {
-      multiReplyFinish(curVideoSocket, 'video', curVideoJsonCmd, curVideoSendCallback);
     }
   }
 }
