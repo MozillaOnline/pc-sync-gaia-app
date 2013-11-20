@@ -9,6 +9,9 @@ var videostorage;
 var photoDB = null;
 var musicDB = null;
 var videoDB = null;
+var isReadyPhotoDB = false;
+var isReadyMusicDB = false;
+var isReadyVideoDB = false;
 var curSocket = null;
 var curJsonCmd = null;
 var curSendCallback = null;
@@ -241,33 +244,13 @@ function listenPicture() {
   });
   videostorage = navigator.getDeviceStorage('videos');
   photoDB.onunavailable = function(event) {
-    //get all the reasons from event
-    debug('ListenHelper.js photoDB is unavailable');
-    var pictureMessage = {
-      type: 'picture',
-      callbackID: 'onunavailable',
-      detail: event.detail
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(pictureMessage));
+    isReadyPhotoDB = false;
   };
   photoDB.oncardremoved = function oncardremoved() {
-    var pictureMessage = {
-      type: 'picture',
-      callbackID: 'oncardremoved',
-      detail: null
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(pictureMessage));
+    isReadyPhotoDB = false;
   };
   photoDB.onready = function() {
-    var pictureMessage = {
-      type: 'picture',
-      callbackID: 'onready',
-      detail: null
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(pictureMessage));
+    isReadyPhotoDB = true;
   };
   photoDB.oncreated = function(event) {
     event.detail.forEach(function(photo) {
@@ -286,15 +269,6 @@ function listenPicture() {
     curJsonCmd.result = RS_OK;
     curSendCallback(curSocket, curJsonCmd, JSON.stringify(pictureMessage));
   };
-  photoDB.onscanend = function onscanend() {
-    var pictureMessage = {
-      type: 'picture',
-      callbackID: 'onscanend',
-      detail: null
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(pictureMessage));
-  };
 }
 
 function listenMusic() {
@@ -308,32 +282,13 @@ function listenMusic() {
     version: 2
   });
   musicDB.onunavailable = function(event) {
-    //get all the reasons from event
-    var musicMessage = {
-      type: 'music',
-      callbackID: 'onunavailable',
-      detail: event.detail
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(musicMessage));
+  isReadyMusicDB = false;
   };
   musicDB.oncardremoved = function oncardremoved() {
-    var musicMessage = {
-      type: 'music',
-      callbackID: 'oncardremoved',
-      detail: null
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(musicMessage));
+    isReadyMusicDB = false;
   };
   musicDB.onready = function() {
-    var musicMessage = {
-      type: 'music',
-      callbackID: 'onready',
-      detail: null
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(musicMessage));
+    isReadyMusicDB = true;
   };
   musicDB.oncreated = function(event) {
     event.detail.forEach(function(music) {
@@ -344,15 +299,6 @@ function listenMusic() {
     var musicMessage = {
       type: 'music',
       callbackID: 'ondeleted',
-      detail: event.detail
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(musicMessage));
-  };
-  musicDB.onscanend = function onscanend() {
-    var musicMessage = {
-      type: 'music',
-      callbackID: 'onscanend',
       detail: event.detail
     };
     curJsonCmd.result = RS_OK;
@@ -369,31 +315,13 @@ function listenVideo() {
     excludeFilter: /DCIM\/\d{3}MZLLA\/\.VID_\d{4}\.3gp$/
   });
   videoDB.onunavailable = function(event) {
-    var videoMessage = {
-      type: 'video',
-      callbackID: 'onunavailable',
-      detail: event.detail
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(videoMessage));
+    isReadyVideoDB = false;
   };
   videoDB.oncardremoved = function oncardremoved() {
-    var videoMessage = {
-      type: 'video',
-      callbackID: 'oncardremoved',
-      detail: null
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(videoMessage));
+    isReadyVideoDB = false;
   };
   videoDB.onready = function() {
-    var videoMessage = {
-      type: 'video',
-      callbackID: 'onready',
-      detail: null
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(videoMessage));
+    isReadyVideoDB = true;
   };
   videoDB.oncreated = function(event) {
     videoCount += event.detail.length;
@@ -405,15 +333,6 @@ function listenVideo() {
     var videoMessage = {
       type: 'video',
       callbackID: 'ondeleted',
-      detail: event.detail
-    };
-    curJsonCmd.result = RS_OK;
-    curSendCallback(curSocket, curJsonCmd, JSON.stringify(videoMessage));
-  };
-  videoDB.onscanend = function onscanend() {
-    var videoMessage = {
-      type: 'video',
-      callbackID: 'onscanend',
       detail: event.detail
     };
     curJsonCmd.result = RS_OK;

@@ -40,7 +40,7 @@ function musicHelper(socket, jsonCmd, sendCallback, recvData) {
 }
 
 function getOldMusicsInfo(socket, jsonCmd, sendCallback) {
-  if (!musicDB) {
+  if (!musicDB || !isReadyMusicDB) {
     jsonCmd.result = RS_ERROR.MUSIC_INIT;
     sendCallback(socket, jsonCmd, null);
     return;
@@ -75,7 +75,7 @@ function sendMusic(socket, jsonCmd, sendCallback, music) {
 }
 
 function getChangedMusicsInfo(socket, jsonCmd, sendCallback) {
-  if (!musicDB) {
+  if (!musicDB || !isReadyMusicDB) {
     jsonCmd.result = RS_ERROR.MUSIC_INIT;
     sendCallback(socket, jsonCmd, null);
     return;
@@ -86,6 +86,11 @@ function getChangedMusicsInfo(socket, jsonCmd, sendCallback) {
 }
 
 function deleteMusic(socket, jsonCmd, sendCallback, recvData) {
+  if (!isReadyMusicDB) {
+    jsonCmd.result = RS_ERROR.MUSIC_INIT;
+    sendCallback(socket, jsonCmd, null);
+    return;
+  }
   var fileName = recvData;
   musicDB.deleteFile(fileName);
   jsonCmd.result = RS_OK;

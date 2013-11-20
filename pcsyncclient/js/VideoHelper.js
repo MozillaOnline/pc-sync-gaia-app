@@ -40,7 +40,7 @@ function videoHelper(socket, jsonCmd, sendCallback, recvData) {
 }
 
 function getOldVideosInfo(socket, jsonCmd, sendCallback) {
-  if (!videoDB) {
+  if (!videoDB || !isReadyVideoDB) {
     jsonCmd.result = RS_ERROR.VIDEO_INIT;
     sendCallback(socket, jsonCmd, null);
     return;
@@ -73,7 +73,7 @@ function getOldVideosInfo(socket, jsonCmd, sendCallback) {
 }
 
 function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
-  if (!videoDB) {
+  if (!videoDB || !isReadyVideoDB) {
     jsonCmd.result = RS_ERROR.VIDEO_INIT;
     sendCallback(socket, jsonCmd, null);
     return;
@@ -122,6 +122,11 @@ function sendVideo(socket, jsonCmd, sendCallback, video) {
 }
 
 function deleteVideo(socket, jsonCmd, sendCallback, recvData) {
+  if (!isReadyVideoDB) {
+    jsonCmd.result = RS_ERROR.VIDEO_INIT;
+    sendCallback(socket, jsonCmd, null);
+    return;
+  }
   var fileInfo = recvData;
   onlyDeletePicture = true;
   videoDB.deleteFile(fileInfo.fileName);

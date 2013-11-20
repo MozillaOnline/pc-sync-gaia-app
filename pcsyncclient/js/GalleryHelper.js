@@ -40,7 +40,7 @@ function pictureHelper(socket, jsonCmd, sendCallback, recvData) {
 }
 
 function getOldPicturesInfo(socket, jsonCmd, sendCallback) {
-  if (!photoDB) {
+  if (!photoDB || !isReadyPhotoDB) {
     jsonCmd.result = RS_ERROR.PICTURE_INIT;
     sendCallback(socket, jsonCmd, null);
     return;
@@ -90,7 +90,7 @@ function sendPicture(socket, jsonCmd, sendCallback, photo) {
 }
 
 function getChangedPicturesInfo(socket, jsonCmd, sendCallback) {
-  if (!photoDB) {
+  if (!photoDB || !isReadyPhotoDB) {
     jsonCmd.result = RS_ERROR.PICTURE_INIT;
     sendCallback(socket, jsonCmd, null);
     return;
@@ -101,6 +101,11 @@ function getChangedPicturesInfo(socket, jsonCmd, sendCallback) {
 }
 
 function deletePicture(socket, jsonCmd, sendCallback, recvData) {
+  if (!isReadyPhotoDB) {
+    jsonCmd.result = RS_ERROR.PICTURE_INIT;
+    sendCallback(socket, jsonCmd, null);
+    return;
+  }
   var fileName = recvData;
   photoDB.deleteFile(fileName);
   jsonCmd.result = RS_OK;
