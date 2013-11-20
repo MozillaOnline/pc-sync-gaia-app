@@ -48,8 +48,13 @@ function getOldVideosInfo(socket, jsonCmd, sendCallback) {
   var videoCount = 0;
   videoDB.enumerate('date', null, 'prev', function(video) {
     if (video === null) {
+      var videoMessage = {
+        type: 'video',
+        callbackID: 'enumerate-done',
+        detail: videoCount
+      };
       jsonCmd.result = RS_OK;
-      sendCallback(socket, jsonCmd, videoCount);
+      sendCallback(socket, jsonCmd, JSON.stringify(videoMessage));
       return;
     }
     var isVideo = video.metadata.isVideo;

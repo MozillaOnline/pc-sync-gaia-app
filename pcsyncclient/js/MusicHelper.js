@@ -48,8 +48,13 @@ function getOldMusicsInfo(socket, jsonCmd, sendCallback) {
   var musicCount = 0;
   musicDB.enumerate('metadata.title', function(music) {
     if (!music) {
+      var musicMessage = {
+        type: 'music',
+        callbackID: 'enumerate-done',
+        detail: musicCount
+      };
       jsonCmd.result = RS_OK;
-      sendCallback(socket, jsonCmd, musicCount);
+      sendCallback(socket, jsonCmd, JSON.stringify(musicMessage));
       return;
     }
     musicCount++;

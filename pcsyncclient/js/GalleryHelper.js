@@ -49,8 +49,13 @@ function getOldPicturesInfo(socket, jsonCmd, sendCallback) {
   var pictureCount = 0;
   photoDB.enumerate('date', null, 'prev', function(photo) {
     if (!photo) {
+      var pictureMessage = {
+        type: 'picture',
+        callbackID: 'enumerate-done',
+        detail: pictureCount
+      };
       jsonCmd.result = RS_OK;
-      sendCallback(socket, jsonCmd, pictureCount);
+      sendCallback(socket, jsonCmd, JSON.stringify(pictureMessage));
       return;
     }
     if (photo.metadata.video) {
