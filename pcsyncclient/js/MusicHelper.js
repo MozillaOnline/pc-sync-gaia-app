@@ -6,11 +6,6 @@
  *Description: Format code
  *----------------------------------------------------------------------------------------------------------*/
 
-var musicDB = null;
-var curMusicSocket = null;
-var curMusicJsonCmd = null;
-var curMusicSendCallback = null;
-
 function musicHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
     switch (jsonCmd.command) {
@@ -22,6 +17,11 @@ function musicHelper(socket, jsonCmd, sendCallback, recvData) {
     case MUSIC_COMMAND.getChangedMusicsInfo:
       {
         getChangedMusicsInfo(socket, jsonCmd, sendCallback);
+        break;
+      }
+    case MUSIC_COMMAND.deleteMusic:
+      {
+        deleteMusic(socket, jsonCmd, sendCallback, recvData);
         break;
       }
     default:
@@ -40,83 +40,24 @@ function musicHelper(socket, jsonCmd, sendCallback, recvData) {
 }
 
 function getOldMusicsInfo(socket, jsonCmd, sendCallback) {
-  curMusicSocket = socket;
-  curMusicJsonCmd = jsonCmd;
-  curMusicSendCallback = sendCallback;
-  if (musicDB != null) {
-    getMusicsList();
-    return;
-  }
-  musicDB = new MediaDB('music', parseAudioMetadata, {
-    indexes: ['metadata.album', 'metadata.artist', 'metadata.title', 'metadata.rated', 'metadata.played', 'date'],
-    batchSize: 1,
-    autoscan: false,
-    version: 2
-  });
-  musicDB.onunavailable = function(event) {
-    //get all the reasons from event
-    var musicMessage = {
-      type: 'music',
-      callbackID: 'onunavailable',
-      detail: event.detail
-    };
-    curMusicJsonCmd.result = RS_OK;
-    curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
-  };
-  musicDB.oncardremoved = function oncardremoved() {
-    var musicMessage = {
-      type: 'music',
-      callbackID: 'oncardremoved',
-      detail: null
-    };
-    curMusicJsonCmd.result = RS_OK;
-    curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
-  };
-  musicDB.onready = function() {
-    getMusicsList();
-  };
-}
-
-function getChangedMusicsInfo(socket, jsonCmd, sendCallback) {
-  curMusicSocket = socket;
-  curMusicJsonCmd = jsonCmd;
-  curMusicSendCallback = sendCallback;
   if (!musicDB) {
-    curMusicJsonCmd.result = RS_ERROR.DEVICESTORAGE_UNAVAILABLE;
-    curMusicSendCallback(curMusicSocket, curMusicJsonCmd, null);
+    jsonCmd.result = RS_ERROR.MUSIC_INIT;
+    sendCallback(socket, jsonCmd, null);
     return;
   }
-  musicDB.oncreated = function(event) {
-    event.detail.forEach(function(music) {
-      addMusic(music);
-    });
-  };
-  musicDB.ondeleted = function(event) {
-    var musicMessage = {
-      type: 'music',
-      callbackID: 'ondeleted',
-      detail: event.detail
-    };
-    curMusicJsonCmd.result = RS_MIDDLE;
-    curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
-  };
-  musicDB.onscanend = function onscanend() {
-    multiReplyFinish(curMusicSocket, 'music', curMusicJsonCmd, curMusicSendCallback);
-  };
-  musicDB.scan();
-}
-
-function getMusicsList() {
+  var musicCount = 0;
   musicDB.enumerate('metadata.title', function(music) {
-    if (music) {
-      addMusic(music);
-    } else {
-      multiReplyFinish(curMusicSocket, 'music', curMusicJsonCmd, curMusicSendCallback);
+    if (!music) {
+      jsonCmd.result = RS_OK;
+      sendCallback(socket, jsonCmd, musicCount);
+      return;
     }
+    musicCount++;
+    sendMusic(socket, jsonCmd, sendCallback, music);
   });
 }
 
-function addMusic(music) {
+function sendMusic(socket, jsonCmd, sendCallback, music) {
   var fileInfo = {
     'name': music.name,
     'type': music.type,
@@ -129,6 +70,24 @@ function addMusic(music) {
     callbackID: 'enumerate',
     detail: fileInfo
   };
-  curMusicJsonCmd.result = RS_MIDDLE;
-  curMusicSendCallback(curMusicSocket, curMusicJsonCmd, JSON.stringify(musicMessage));
+  jsonCmd.result = RS_MIDDLE;
+  sendCallback(socket, jsonCmd, JSON.stringify(musicMessage));
+}
+
+function getChangedMusicsInfo(socket, jsonCmd, sendCallback) {
+  if (!musicDB) {
+    jsonCmd.result = RS_ERROR.MUSIC_INIT;
+    sendCallback(socket, jsonCmd, null);
+    return;
+  }
+  musicDB.scan();
+  jsonCmd.result = RS_OK;
+  sendCallback(socket, jsonCmd, null);
+}
+
+function deleteMusic(socket, jsonCmd, sendCallback, recvData) {
+  var fileName = recvData;
+  musicDB.deleteFile(fileName);
+  jsonCmd.result = RS_OK;
+  sendCallback(socket, jsonCmd, null);
 }
