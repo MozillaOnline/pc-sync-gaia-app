@@ -45,19 +45,20 @@ function getOldMusicsInfo(socket, jsonCmd, sendCallback) {
     sendCallback(socket, jsonCmd, null);
     return;
   }
-  var musicCount = 0;
+  var musicsCount = 0;
   musicDB.enumerate('metadata.title', function(music) {
     if (!music) {
       var musicMessage = {
         type: 'music',
         callbackID: 'enumerate-done',
-        detail: musicCount
+        detail: musicsCount
       };
       jsonCmd.result = RS_OK;
       sendCallback(socket, jsonCmd, JSON.stringify(musicMessage));
       return;
     }
-    musicCount++;
+    musicsCount++;
+    jsonCmd.result = RS_MIDDLE;
     sendMusic(socket, jsonCmd, sendCallback, music);
   });
 }
@@ -75,7 +76,6 @@ function sendMusic(socket, jsonCmd, sendCallback, music) {
     callbackID: 'enumerate',
     detail: fileInfo
   };
-  jsonCmd.result = RS_MIDDLE;
   sendCallback(socket, jsonCmd, JSON.stringify(musicMessage));
 }
 

@@ -63,7 +63,7 @@ function addContact(socket, jsonCmd, sendCallback, recvData) {
   var contactData = recvData;
   var newContact = new mozContact();
   debug('ContactHelper.js addContact contactData is: ' + contactData);
-  var jsonContact = JSON.parse(contactData)
+  var jsonContact = JSON.parse(contactData);
   newContact.init(jsonContact);
   if (jsonContact.photo.length > 0) {
     newContact.photo = [dataUri2Blob(jsonContact.photo)];

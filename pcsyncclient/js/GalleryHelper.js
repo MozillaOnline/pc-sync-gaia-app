@@ -5,7 +5,8 @@
  *Modified By: dxue@mozilla.com
  *Description: Format code
  *----------------------------------------------------------------------------------------------------------*/
-
+var picturesIndex = 0;
+var picturesEnumerateDone = false;
 function pictureHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
     switch (jsonCmd.command) {
@@ -45,28 +46,37 @@ function getOldPicturesInfo(socket, jsonCmd, sendCallback) {
     sendCallback(socket, jsonCmd, null);
     return;
   }
-
-  var pictureCount = 0;
+  var picturesCount = 0;
+  picturesEnumerateDone = false;
+  picturesIndex = 0;
   photoDB.enumerate('date', null, 'prev', function(photo) {
     if (!photo) {
       var pictureMessage = {
         type: 'picture',
         callbackID: 'enumerate-done',
-        detail: pictureCount
+        detail: picturesCount
       };
-      jsonCmd.result = RS_OK;
+      picturesEnumerateDone = true;
+      if (picturesCount == picturesIndex) {
+        jsonCmd.result = RS_OK;
+      } else {
+        jsonCmd.result = RS_MIDDLE;
+      }
+      debug('PictureHelper.js pictureHelper picturesCount detail: ' + picturesCount);
       sendCallback(socket, jsonCmd, JSON.stringify(pictureMessage));
       return;
     }
     if (photo.metadata.video) {
       return;
     }
-    pictureCount++;
-    sendPicture(socket, jsonCmd, sendCallback, photo);
+    picturesCount++;
+    debug('PictureHelper.js pictureHelper picturesCount: ' + picturesCount);
+    jsonCmd.result = RS_MIDDLE;
+    sendPicture(socket, jsonCmd, sendCallback, photo, picturesCount);
   });
 }
 
-function sendPicture(socket, jsonCmd, sendCallback, photo) {
+function sendPicture(socket, jsonCmd, sendCallback, photo, count) {
   var fileInfo = {
     'name': photo.name,
     'type': photo.type,
@@ -81,7 +91,12 @@ function sendPicture(socket, jsonCmd, sendCallback, photo) {
   };
   var imageblob = photo.metadata.thumbnail;
   if (imageblob == null) {
-    jsonCmd.result = RS_MIDDLE;
+    picturesIndex++;
+    if (count && !picturesEnumerateDone) {
+      jsonCmd.result = RS_MIDDLE;
+    } else {
+      jsonCmd.result = RS_OK;
+    }
     sendCallback(socket, jsonCmd, JSON.stringify(pictureMessage));
     return;
   }
@@ -89,7 +104,12 @@ function sendPicture(socket, jsonCmd, sendCallback, photo) {
   fileReader.readAsDataURL(imageblob);
   fileReader.onload = function(e) {
     pictureMessage.detail.metadata.thumbnail = e.target.result;
-    jsonCmd.result = RS_MIDDLE;
+    picturesIndex++;
+    if (count && !picturesEnumerateDone) {
+      jsonCmd.result = RS_MIDDLE;
+    } else {
+      jsonCmd.result = RS_OK;
+    }
     sendCallback(socket, jsonCmd, JSON.stringify(pictureMessage));
   }
 }

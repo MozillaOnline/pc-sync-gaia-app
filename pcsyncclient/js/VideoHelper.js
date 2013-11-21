@@ -5,7 +5,8 @@
  *Modified By: dxue@mozilla.com
  *Description: Format code
  *----------------------------------------------------------------------------------------------------------*/
-
+var videosIndex = 0;
+var videosEnumerateDone = false;
 function videoHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
     switch (jsonCmd.command) {
@@ -45,15 +46,22 @@ function getOldVideosInfo(socket, jsonCmd, sendCallback) {
     sendCallback(socket, jsonCmd, null);
     return;
   }
-  var videoCount = 0;
+  var videosCount = 0;
+  videosEnumerateDone = false;
+  videosIndex = 0;
   videoDB.enumerate('date', null, 'prev', function(video) {
     if (video === null) {
       var videoMessage = {
         type: 'video',
         callbackID: 'enumerate-done',
-        detail: videoCount
+        detail: videosCount
       };
-      jsonCmd.result = RS_OK;
+      videosEnumerateDone = true;
+      if (videosCount == videosIndex) {
+        jsonCmd.result = RS_OK;
+      } else {
+        jsonCmd.result = RS_MIDDLE;
+      }
       sendCallback(socket, jsonCmd, JSON.stringify(videoMessage));
       return;
     }
@@ -71,8 +79,9 @@ function getOldVideosInfo(socket, jsonCmd, sendCallback) {
     }
     // If we've parsed the metadata and know this is a video, display it.
     if (isVideo === true) {
-      videoCount++;
-      sendVideo(socket, jsonCmd, sendCallback, video);
+      videosCount++;
+      jsonCmd.result = RS_MIDDLE;
+      sendVideo(socket, jsonCmd, sendCallback, video, videosCount);
     }
   });
 }
@@ -88,8 +97,7 @@ function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
   sendCallback(socket, jsonCmd, null);
 }
 
-function sendVideo(socket, jsonCmd, sendCallback, video) {
-{
+function sendVideo(socket, jsonCmd, sendCallback, video, count) {
   var fileInfo = {
     'name': video.name,
     'type': video.type,
@@ -104,14 +112,24 @@ function sendVideo(socket, jsonCmd, sendCallback, video) {
   };
   var imageblob = video.metadata.bookmark || video.metadata.poster;
   if (imageblob == null) {
-    jsonCmd.result = RS_MIDDLE;
+    videosIndex++;
+    if (count && !videosEnumerateDone) {
+      jsonCmd.result = RS_MIDDLE;
+    } else {
+      jsonCmd.result = RS_OK;
+    }
     var videoData = JSON.stringify(videoMessage);
     sendCallback(socket, jsonCmd, videoData);
     return;
   }
   if (typeof(imageblob) == 'string') {
     videoMessage.detail.metadata.poster = imageblob;
-    jsonCmd.result = RS_MIDDLE;
+    videosIndex++;
+    if (count && !videosEnumerateDone) {
+      jsonCmd.result = RS_MIDDLE;
+    } else {
+      jsonCmd.result = RS_OK;
+    }
     var videoData = JSON.stringify(videoMessage);
     sendCallback(socket, jsonCmd, videoData);
   } else {
@@ -119,10 +137,15 @@ function sendVideo(socket, jsonCmd, sendCallback, video) {
     fileReader.readAsDataURL(imageblob);
     fileReader.onload = function(e) {
       videoMessage.detail.metadata.poster = e.target.result;
-      jsonCmd.result = RS_MIDDLE;
+      videosIndex++;
+      if (count && !videosEnumerateDone) {
+        jsonCmd.result = RS_MIDDLE;
+      } else {
+        jsonCmd.result = RS_OK;
+      }
       var videoData = JSON.stringify(videoMessage);
       sendCallback(socket, jsonCmd, videoData);
-    }
+    };
   }
 }
 
@@ -132,8 +155,9 @@ function deleteVideo(socket, jsonCmd, sendCallback, recvData) {
     sendCallback(socket, jsonCmd, null);
     return;
   }
-  var fileInfo = recvData;
-  onlyDeletePicture = true;
+  var fileInfo = JSON.parse(recvData);
+  debug(fileInfo);
+  debug(fileInfo.fileName);
   videoDB.deleteFile(fileInfo.fileName);
   if (!!fileInfo.previewName) {
     // We use raw device storage here instead of MediaDB because that is

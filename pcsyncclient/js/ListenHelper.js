@@ -257,6 +257,7 @@ function listenPicture() {
       if (photo.metadata.video) {
         return;
       }
+      curJsonCmd.result = RS_OK;
       sendPicture(curSocket, curJsonCmd, curSendCallback, photo);
     });
   };
@@ -292,6 +293,7 @@ function listenMusic() {
   };
   musicDB.oncreated = function(event) {
     event.detail.forEach(function(music) {
+      curJsonCmd.result = RS_OK;
       sendMusic(curSocket, curJsonCmd, curSendCallback, music);
     });
   };
@@ -324,7 +326,6 @@ function listenVideo() {
     isReadyVideoDB = true;
   };
   videoDB.oncreated = function(event) {
-    videoCount += event.detail.length;
     event.detail.forEach(function(video) {
       addToMetadataQueue(video, false);
     });
@@ -344,5 +345,6 @@ function addVideo(video) {
   if (!video || !video.metadata.isVideo) {
     return;
   }
+  curJsonCmd.result = RS_OK;
   sendVideo(curSocket, curJsonCmd, curSendCallback, video);
 }
