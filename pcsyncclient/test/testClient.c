@@ -21,7 +21,7 @@
 #include <dirent.h>
 #include "cJSON.h"
 
-#define SERVER_PORT    10010
+#define SERVER_PORT    25679
 #define BUFFER_SIZE 51200
 #define PACKAGE_SIZE 40960
 #define FILE_NAME_MAX_SIZE 512
@@ -30,7 +30,7 @@ int runOneTestCase(char * testCase, char * testData);
 int keepRun = 0;
 int main(int argc, char **argv)
 {
-    system("adb forward tcp:10010 tcp:10010");
+    system("adb forward tcp:25679 tcp:25679");
     if ((argc < 2)){
         printf("Error: Please select .tc or .atc like \"./client ./unit/autoTest.atc\"\n");
         exit(1);

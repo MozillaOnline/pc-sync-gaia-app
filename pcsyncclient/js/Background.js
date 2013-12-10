@@ -14,7 +14,7 @@ function debug(s) {
 }
 
 var backgroundService = {
-  PORT: 10010,
+  PORT: 25679,
   BACKLOG: -1,
   OPTIONS: {
     binaryType: 'arraybuffer'
@@ -27,11 +27,7 @@ var backgroundService = {
         return;
       }
       tcpServer.onconnect = function(event) {
-        var deviceStatus = document.getElementById('menuItem-device-unconnected');
-        if (deviceStatus) {
-          deviceStatus.textContent = navigator.mozL10n.get('device-connected');
-        }
-        new TCPSocketWrapper({
+        var socketWrapper = new TCPSocketWrapper({
           socket: event,
           onmessage: handleMessage,
           onclose: function() {
@@ -41,6 +37,12 @@ var backgroundService = {
             }
           }
         });
+        var deviceStatus = document.getElementById('menuItem-device-unconnected');
+        if (deviceStatus) {
+          deviceStatus.textContent = navigator.mozL10n.get('device-connected');
+        }
+        var connectFlagString = 'server-connected';
+        socketWrapper.send(null, connectFlagString);
       };
       var wifiConnectCode = document.getElementById('menuItem-wifi-connect-number');
       if (!wifiConnectCode) {
