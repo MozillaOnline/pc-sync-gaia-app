@@ -41,8 +41,14 @@ var backgroundService = {
         if (deviceStatus) {
           deviceStatus.textContent = navigator.mozL10n.get('device-connected');
         }
-        var connectFlagString = 'server-connected';
-        socketWrapper.send(null, connectFlagString);
+        var dataJson = {
+          id: 0,
+          type: CMD_TYPE.connected,
+          command: 0,
+          result: 0,
+          datalength: 0
+        };
+        socketWrapper.send(dataJson, null);
       };
       var wifiConnectCode = document.getElementById('menuItem-wifi-connect-number');
       if (!wifiConnectCode) {
