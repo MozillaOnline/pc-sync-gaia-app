@@ -471,13 +471,13 @@ function resendMessage(socket, jsonCmd, sendCallback, recvData) {
     });
   }
   request.onsuccess = function onSuccess(evt) {
-    _mozMobileMessage.delete(message.id);
+    _mozMobileMessage.delete(parseInt(message.id));
     jsonCmd.result = RS_OK;
     //var messagesData = JSON.stringify(evt.target.result);
     sendCallback(socket, jsonCmd, null);
   };
   request.onerror = function onError(evt) {
-    _mozMobileMessage.delete(message.id);
+    _mozMobileMessage.delete(parseInt(message.id));
     jsonCmd.result = RS_ERROR.SMS_DELETEMESSAGE;
     //var messagesData = JSON.stringify(evt.target.error);
     sendCallback(socket, jsonCmd, null);
