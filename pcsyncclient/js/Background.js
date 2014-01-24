@@ -5,42 +5,314 @@
  *Modified By:
  *Description:
  *----------------------------------------------------------------------------------------------------------*/
-let DEBUG = 0;
-
+let DEBUG = 1;
 function debug(s) {
   if (DEBUG) {
     console.log("-*- pcsyncclient: " + s + "\n");
   }
 }
 
+var PORT = 25679;
+var BACKLOG = -1;
+var OPTIONS = { binaryType: 'arraybuffer' };
+var KEYNAME_USBSTORAGE = 'usbStorage';
+var KEYNAME_REMOTEDEBUGGER = 'remoteDebugger';
+var KEYNAME_LOCKSCREEN = 'lockScreen';
+var KEYNAME_SCREENTIMEOUT = 'screenTimeout';
+var tcpServer;
+var socketWrapper;
+var currentRegion;
+var self;
+
 var backgroundService = {
-  PORT: 25679,
-  BACKLOG: -1,
-  OPTIONS: {
-    binaryType: 'arraybuffer'
+
+  init: function() {
+    self = this;
+    self.checkSystemSettings();
+  },
+
+  checkSystemSettings: function () {
+    self.getSystemSettings( function (systemSettings) {
+      if ( systemSettings['devtools.debugger.remote-enabled'] != true
+          || systemSettings['screen.timeout'] != 0
+          || systemSettings['lockscreen.enabled'] != false
+          || systemSettings['ums.enabled'] != false) {
+        self.showRegionById('summary-region');
+      } else {
+        self.showRegionById('unconnect-region');
+      }
+    });
+  },
+
+  getSystemSettings: function (callback) {
+    var systemSettings = {
+      'devtools.debugger.remote-enabled': null,
+      'screen.timeout': null,
+      'lockscreen.enabled': null,
+      'ums.enabled': null
+    };
+    var lock = navigator.mozSettings.createLock();
+    var remoteDebugger = lock.get('devtools.debugger.remote-enabled');
+    remoteDebugger.onsuccess = function () {
+      systemSettings['devtools.debugger.remote-enabled'] = remoteDebugger.result['devtools.debugger.remote-enabled'];
+      var screenTimeout = lock.get('screen.timeout');
+      screenTimeout.onsuccess = function () {
+        systemSettings['screen.timeout'] = screenTimeout.result['screen.timeout'];
+        var lockscreen = lock.get('lockscreen.enabled');
+        lockscreen.onsuccess = function () {
+          systemSettings['lockscreen.enabled'] = lockscreen.result['lockscreen.enabled'];
+          var ums = lock.get('ums.enabled');
+          ums.onsuccess = function () {
+            systemSettings['ums.enabled'] = ums.result['ums.enabled'];
+            callback(systemSettings);
+          }
+        }
+      }
+    }
+  },
+
+  setSystemSettings: function(systemSettings, callback) {
+    var lock = navigator.mozSettings.createLock();
+    var remoteDebugger = lock.set({
+      'devtools.debugger.remote-enabled': systemSettings['devtools.debugger.remote-enabled']
+    });
+    remoteDebugger.onsuccess = function () {
+      var screenTimeout = lock.set({
+        'screen.timeout': systemSettings['screen.timeout']
+      });
+      screenTimeout.onsuccess = function () {
+        var usbStorage = lock.set({
+          'ums.enabled': systemSettings['ums.enabled']
+        });
+        usbStorage.onsuccess = function () {
+          var lockScreen = lock.set({
+            'lockscreen.enabled': systemSettings['lockscreen.enabled']
+          });
+          lockScreen.onsuccess = function () {
+            if (callback) {
+              callback();
+            }
+          }
+        }
+      }
+    }
+  },
+
+  getAppSettings: function (callback) {
+    var appSettings = {
+      'remoteDebugger': null,
+      'screenTimeout': null,
+      'lockScreen': null,
+      'usbStorage': null
+    };
+    window.asyncStorage.getItem(KEYNAME_USBSTORAGE, function storage_getItem(usbStorage) {
+      appSettings.usbStorage = usbStorage;
+      window.asyncStorage.getItem(KEYNAME_REMOTEDEBUGGER, function storage_getItem(remoteDebugger) {
+        appSettings.remoteDebugger = remoteDebugger;
+        window.asyncStorage.getItem(KEYNAME_LOCKSCREEN, function storage_getItem(lockScreen) {
+          appSettings.lockScreen = lockScreen;
+          window.asyncStorage.getItem(KEYNAME_SCREENTIMEOUT, function storage_getItem(screenTimeout) {
+            appSettings.screenTimeout = screenTimeout;
+            callback(appSettings);
+          });
+        });
+      });
+    });
+  },
+
+  setAppSettings: function (appSettings) {
+    for (var name in appSettings) {
+      window.asyncStorage.setItem(name, appSettings[name]);
+    }
+  },
+
+  showRegionById: function(id) {
+    var views = ['help-region', 'settings-region', 'summary-region', 'unconnect-region', 'connected-region'];
+    switch (id) {
+      case 'summary-region':
+        self.initSummaryRegion();
+        break;
+      case 'unconnect-region':
+        self.initUnconnectRegion();
+        break;
+      case 'connected-region':
+        self.initConnectedRegion();
+        break;
+      case 'settings-region':
+        self.initSettingsRegion();
+        break;
+      case 'help-region':
+        self.initHelpRegion();
+        break;
+    }
+
+    views.forEach( function (viewId) {
+      document.getElementById(viewId).hidden = !(viewId == id);
+    });
+    currentRegion = id;
+  },
+
+  showDialogById: function(id) {
+    var dialogs = ['first-run-dialog'];
+    switch (id) {
+      case 'first-run-dialog':
+        self.initFirstRunDialog();
+        break;
+    }
+  },
+
+  initSummaryRegion: function() {
+    if (currentRegion == null) {
+      self.getAppSettings( function (appSettings) {
+        if (appSettings['remoteDebugger'] == null) {
+          self.getSystemSettings( function (systemSettings) {
+            var oriAppSettings = {
+              'remoteDebugger': systemSettings['devtools.debugger.remote-enabled'],
+              'screenTimeout': systemSettings['screen.timeout'],
+              'lockScreen': systemSettings['lockscreen.enabled'],
+              'usbStorage': systemSettings['ums.enabled']
+            };
+            self.setAppSettings(oriAppSettings);
+          });
+          self.showDialogById('first-run-dialog');
+        }
+      });
+    }
+    document.getElementById('button-autoset').onclick = function () {
+      self.setSettings(false);
+      self.showRegionById('unconnect-region');
+    }
+    document.getElementById('summary-region-button-settings').onclick = function () {
+      self.showRegionById('settings-region');
+    };
+    document.getElementById('summary-region-button-help').onclick = function () {
+      self.showRegionById('help-region');
+    };
+  },
+
+  initUnconnectRegion: function() {
+    self.getWifiCode();
+    self.createSocketServer();
+    document.getElementById('unconnect-region-button-settings').onclick = function () {
+      self.showRegionById('settings-region');
+    };
+    document.getElementById('unconnect-region-button-help').onclick = function () {
+      self.showRegionById('help-region');
+    };
+  },
+
+  initConnectedRegion: function() {
+    document.getElementById('button-disconnect').onclick = function (event) {
+      self.disconnect();
+    };
+  },
+
+  initSettingsRegion: function() {
+    var preRegion = currentRegion;
+    document.getElementById('settings-region-back').onclick = function (event) {
+      self.checkSystemSettings();
+    };
+    self.getAppSettings( function (appSettings) {
+      var umsEnabledCheckBox = document.getElementById('settings-region-usb-storage');
+      var remoteDebuggerEnabledCheckBox = document.getElementById('settings-region-remote-debugging');
+      var lockScreenEnabledCheckBox = document.getElementById('settings-region-lock-screen');
+      var screenTimeotEnabledSelect = document.getElementById('settings-region-screen-timeout');
+      umsEnabledCheckBox.addEventListener('change', self);
+      remoteDebuggerEnabledCheckBox.addEventListener('change', self);
+      lockScreenEnabledCheckBox.addEventListener('change', self);
+      screenTimeotEnabledSelect.addEventListener('change', self);
+      umsEnabledCheckBox.checked = appSettings['usbStorage'];
+      remoteDebuggerEnabledCheckBox.checked = appSettings['remoteDebugger'];
+      lockScreenEnabledCheckBox.checked = appSettings['lockScreen'];
+      for (var i = 0; i < screenTimeotEnabledSelect.options.length; i++) {
+        if (screenTimeotEnabledSelect.options[i].value == appSettings['screenTimeout']) {
+          screenTimeotEnabledSelect.selectedIndex = i;
+          document.getElementById('settings-region-screen-timeout-button').textContent = screenTimeotEnabledSelect.options[i].textContent;
+          break;
+        }
+      }
+    });
+  },
+
+  initHelpRegion: function() {
+    document.getElementById('help-region-back').onclick = function (event) {
+      self.checkSystemSettings();
+    };
+  },
+
+  initFirstRunDialog: function() {
+    document.getElementById('first-run-dialog').hidden = false;
+    document.getElementById('first-run-dialog-cancel').onclick = function (event) {
+      document.getElementById('first-run-dialog').hidden = true;
+    };
+    document.getElementById('first-run-dialog-ok').onclick = function (event) {
+      document.getElementById('first-run-dialog').hidden = true;
+      self.setSettings(false);
+      self.showRegionById('unconnect-region');
+    };
+  },
+
+  handleEvent: function(evt) {
+    var settingItem = evt.target;
+    switch (evt.currentTarget.id) {
+      case 'settings-region-usb-storage':
+        self.setAppSettings({'usbStorage': settingItem.value});
+        break;
+      case 'settings-region-remote-debugging':
+        self.setAppSettings({'remoteDebugger': settingItem.value});
+        break;
+      case 'settings-region-lock-screen':
+        self.setAppSettings({'lockScreen': settingItem.value});
+        break;
+      case 'settings-region-screen-timeout':
+        self.setAppSettings({'screenTimeout': settingItem.value});
+        for (var i = 0; i < screenTimeotEnabledSelect.options.length; i++) {
+          if (screenTimeotEnabledSelect.options[i].value == settingItem.value) {
+            screenTimeotEnabledSelect.selectedIndex = i;
+            document.getElementById('settings-region-screen-timeout-button').textContent = screenTimeotEnabledSelect.options[i].textContent;
+            break;
+          }
+        }
+        break;
+    }
+  },
+
+  setSettings: function (isReset, callback) {
+    var systemSettings = {
+      'devtools.debugger.remote-enabled': true,
+      'screen.timeout': 0,
+      'lockscreen.enabled': false,
+      'ums.enabled': false
+    };
+    if (isReset) {
+      self.getAppSettings( function(appSettings) {
+        systemSettings['ums.enabled'] = appSettings['usbStorage'];
+        systemSettings['devtools.debugger.remote-enabled'] = appSettings['remoteDebugger'];
+        systemSettings['lockscreen.enabled'] = appSettings['lockScreen'];
+        systemSettings['screen.timeout'] = appSettings['screenTimeout'];
+        self.setSystemSettings(systemSettings, callback);
+      });
+    } else {
+      self.setSystemSettings(systemSettings, callback);
+    }
   },
 
   createSocketServer: function() {
-    try {
-      var tcpServer = window.navigator.mozTCPSocket.listen(this.PORT, this.OPTIONS, this.BACKLOG);
-      if (!tcpServer) {
-        return;
-      }
-      tcpServer.onconnect = function(event) {
-        var socketWrapper = new TCPSocketWrapper({
-          socket: event,
-          onmessage: handleMessage,
-          onclose: function() {
-            var deviceStatus = document.getElementById('menuItem-device-unconnected');
-            if (deviceStatus) {
-              deviceStatus.textContent = navigator.mozL10n.get('device-unconnected');
-            }
-          }
-        });
-        var deviceStatus = document.getElementById('menuItem-device-unconnected');
-        if (deviceStatus) {
-          deviceStatus.textContent = navigator.mozL10n.get('device-connected');
+    tcpServer = window.navigator.mozTCPSocket.listen(PORT, OPTIONS, BACKLOG);
+    if (!tcpServer) {
+      return;
+    }
+    tcpServer.onconnect = function(event) {
+      var serverSocket = new TCPSocketWrapper({
+        socket: event,
+        onmessage: handleMessage,
+        onclose: function() {
+          self.setSettings(true, self.checkSystemSettings);
         }
+      });
+      if (socketWrapper == null) {
+        socketWrapper = serverSocket;
+        self.showRegionById('connected-region');
         var dataJson = {
           id: 0,
           type: CMD_TYPE.connected,
@@ -49,39 +321,73 @@ var backgroundService = {
           datalength: 0
         };
         socketWrapper.send(dataJson, null);
-      };
-      var wifiConnectCode = document.getElementById('menuItem-wifi-connect-number');
-      if (!wifiConnectCode) {
-        return;
       }
-      if ('mozWifiManager' in navigator) {
-        var gWifiManager = navigator.mozWifiManager;
-        var updateNetInfo = function() {
-          debug('Background.js updateNetInfo');
-          var info = gWifiManager.connectionInformation;
-          if (info && info.ipAddress) {
-            var ip = info.ipAddress.split('.');
-            var dataArray = new ArrayBuffer(4);
-            var int8Array = new Uint8Array(dataArray);
-            var int32Array = new Uint32Array(dataArray);
-            int8Array[0] = ip[0];
-            int8Array[1] = ip[1];
-            int8Array[2] = ip[2];
-            int8Array[3] = ip[3];
-            wifiConnectCode.textContent = int32Array[0];
-          }
-        };
-        gWifiManager.connectionInfoUpdate = updateNetInfo;
-        updateNetInfo();
-      }
-    } catch (e) {
-      debug('Background.js createSocketServer failed: ' + e);
+    };
+  },
+
+  closeSocketServer: function() {
+    if(tcpServer) {
+      tcpServer.close();
+      tcpServer = null;
     }
-  }
+  },
+
+  disconnect: function() {
+    if(socketWrapper) {
+      var dataJson = {
+        id: 0,
+        type: CMD_TYPE.disconnect,
+        command: 0,
+        result: 0,
+        datalength: 0
+      };
+      socketWrapper.send(dataJson, null);
+      socketWrapper.socket.close();
+      socketWrapper = null;
+    }
+  },
+
+  getWifiCode: function() {
+    var wifiConnectCode = document.getElementById('menuItem-wifi-connect-number');
+    if (!wifiConnectCode) {
+      return;
+    }
+    if ('mozWifiManager' in navigator) {
+      var gWifiManager = navigator.mozWifiManager;
+      var updateNetInfo = function() {
+        debug('Background.js updateNetInfo');
+        var info = gWifiManager.connectionInformation;
+        if (info && info.ipAddress) {
+          var ip = info.ipAddress.split('.');
+          var dataArray = new ArrayBuffer(4);
+          var int8Array = new Uint8Array(dataArray);
+          var int32Array = new Uint32Array(dataArray);
+          int8Array[0] = ip[0];
+          int8Array[1] = ip[1];
+          int8Array[2] = ip[2];
+          int8Array[3] = ip[3];
+          wifiConnectCode.textContent = int32Array[0];
+        }
+      };
+      gWifiManager.connectionInfoUpdate = updateNetInfo;
+      updateNetInfo();
+    }
+  },
+
+  listenSettings: function() {
+    function handleEvent(event) {
+      self.disconnect();
+      slef.closeSocketServer();
+    }
+    navigator.mozSettings.addObserver('devtools.debugger.remote-enabled', handleEvent);
+    navigator.mozSettings.addObserver('screen.timeout', handleEvent);
+    navigator.mozSettings.addObserver('lockscreen.enabled', handleEvent);
+    navigator.mozSettings.addObserver('ums.enabled', handleEvent);
+  },
 };
 
 window.addEventListener('load', function startup(evt) {
-  backgroundService.createSocketServer();
+  backgroundService.init();
 });
 
 window.addEventListener('localized', function localized() {

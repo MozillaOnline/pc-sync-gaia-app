@@ -6,6 +6,14 @@
   <title>PC Sync</title>
     <!-- Include shared building blocks -->
     <link rel="stylesheet" type="text/css" href="style/pcsync.css"/>
+
+    <link rel="stylesheet" type="text/css" href="shared/style/headers.css">
+    <link rel="stylesheet" type="text/css" href="shared/style/switches.css">
+    <link rel="stylesheet" type="text/css" href="shared/style/action_menu.css"/>
+    <link rel="stylesheet" type="text/css" href="shared/style/buttons.css"/>
+    <link rel="stylesheet" type="text/css" href="shared/style/confirm.css"/>
+    <link rel="stylesheet" type="text/css" href="shared/style/input_areas.css"/>
+
     <!-- Localization -->
     <link rel="resource" type="application/l10n" href="locales/locales.ini">
     <!-- Shared code - common -->
@@ -42,28 +50,165 @@
     <script type="text/javascript;version=1.8" src="js/HandleMessage.js"></script>
     <script type="text/javascript;version=1.8" src="js/Background.js"></script>
   </head>
-  <body>
-      <div class="title-bar">
-        <div data-l10n-id="pcsync-title">PC Sync</div>
+  <body role="application">
+    <section role="dialog" id="first-run-dialog" hidden>
+      <div>
+        <h3 data-l10n-id="first-run-dialog-title">使用手机助手，会自动修改以下设置</h3>
+        <li data-l10n-id="first-run-dialog-info1">1、启用［USB 远程调试］</li>
+        <li data-l10n-id="first-run-dialog-info2">2、禁用［USB 存储］</li>
+        <li data-l10n-id="first-run-dialog-info3">3、禁用［屏幕锁定］</li>
+        <li data-l10n-id="first-run-dialog-info4">4、设置［屏幕休眠时间］为“从不”</li>
+        <li data-l10n-id="first-run-dialog-info">您可以随时通过系统的［设置］或应用中的［快捷设置］，修改以上设定。</li>
+        <h3></h3>
+        <li data-l10n-id="first-run-dialog-footnote">是否确定修改上述设置，并启用手机助手服务？</li>
       </div>
+      <menu data-items="2">
+        <button id="first-run-dialog-cancel" data-l10n-id="button-cancel">取消</button>
+        <button id="first-run-dialog-ok" data-l10n-id="button-ok" class="affirmative">确定</button>
+      </menu>
+    </section>
+    <section role="region" id="help-region" hidden>
+      <header>
+        <a id="help-region-back"><span data-l10n-id="region-back" class="icon icon-back">返回</span></a>
+        <h1 data-l10n-id="help-region-header">连接帮助</h1>
+      </header>
+      <div>
+        <ul data-l10n-id="help-region-title">使用步骤：
+          <li data-l10n-id="help-region-info1">在电脑上运行火狐浏览器</li>
+          <small data-l10n-id="help-region-small-info1">可前往firefox.com.cn免费下载最新版火狐浏览器。</small>
+          <li data-l10n-id="help-region-info2">确保已安装 Firefox OS Assistant 扩展</li>
+          <small data-l10n-id="help-region-small-info2">可前往mozilla.com.cn/addons免费下载安装扩展。</small>
+          <li data-l10n-id="help-region-info3">点击浏览器右上角的手机图标，打开about:ffos</li>
+          <li data-l10n-id="help-region-info4">通过 USB 数据线或 Wi-Fi连接电脑</li>
+          <small data-l10n-id="help-region-small-info3">若通过 USB 连接，电脑上的程序会自动运行并尝试连接。请确保驱动安装正确；</small>
+        </ul>
+        <ul data-l10n-id="help-region-small-info4">若通过 Wi-Fi 连接，请将手机和电脑连入同一 Wi-Fi，选择 Wi-Fi 连接，输入 Wi-Fi 码。</ul>
+      </div>
+    </section>
+    <section role="region" id="settings-region" hidden>
+      <header>
+        <a id="settings-region-back"><span data-l10n-id="region-back" class="icon icon-back">返回</span></a>
+        <h1 data-l10n-id="settings-region-header">我的设置</h1>
+      </header>
+      <ul>
+        <li>
+          <a data-l10n-id="settings-region-title">程序在断开连接后，将系统设置还原为以下设定：</a>
+        </li>
+      </ul>
+      <ul>
+        <li>
+          <label class="pack-switch">
+            <input id="settings-region-usb-storage" type="checkbox" name="ums.enabled"/>
+            <span></span>
+          </label>
+          <a data-l10n-id="settings-region-usb-storage">USB 存储</a>
+        </li>
+        <li>
+          <label class="pack-switch">
+            <input id="settings-region-remote-debugging" type="checkbox" name="devtools.debugger.remote-enabled"/>
+            <span></span>
+          </label>
+          <a data-l10n-id="settings-region-remote-debugging">远程调试</a>
+        </li>
+        <li>
+          <label class="pack-switch">
+            <input id="settings-region-lock-screen" type="checkbox" name="lockscreen.enabled"/>
+            <span></span>
+          </label>
+          <a data-l10n-id="settings-region-lock-screen">屏幕锁定</a>
+        </li>
+        <li id="screen-timeout">
+          <a data-l10n-id="settings-region-screen-timeout">屏幕超时</a>
+          <p class="fake-select">
+            <button id="settings-region-screen-timeout-button" class="icon icon-dialog">empty</button>
+            <select id="settings-region-screen-timeout" name="screen.timeout" data-value-type="integer">
+              <option value="60"  data-l10n-id="settings-region-one-minute" selected>1 分钟</option>
+              <option value="120" data-l10n-id="settings-region-two-minutes">2 分钟</option>
+              <option value="300" data-l10n-id="settings-region-five-minutes">5 分钟</option>
+              <option value="600" data-l10n-id="settings-region-ten-minutes">10 分钟</option>
+              <option value="0"   data-l10n-id="settings-region-never">永不</option>
+            </select>
+          </p>
+        </li>
+      </ul>
+    </section>
+    <section role="region" id="summary-region" hidden>
+      <header>
+        <h1 data-l10n-id="content-region-header">手机助手</h1>
+      </header>
       <div class="status-bar">
-        <a data-l10n-id="connection-title">Device Connection Status - </a>
-        <a id="menuItem-device-unconnected" data-l10n-id="device-unconnected" class="menu-item">Unconnect</a>
+        <a data-l10n-id="content-region-status-unconnect">连接电脑 - 设备未连接</a>
       </div>
-      <div class="content">
-        <header data-l10n-id="connection-type"></header>
+      <div id="summary-view" class="view">
+        <header data-l10n-id="summary-view-header">连接不可用，需要修改系统设置</header>
+        <button id="button-autoset" data-l10n-id="summary-view-button-autoset">一键设置</button>
+        <ul data-l10n-id="summary-view-info-title">包括：
+          <li data-l10n-id="summary-view-info-remotedebugger">启用［USB远程调试］</li>
+          <li data-l10n-id="summary-view-info-ums">禁用［USB 存储］</li>
+          <li data-l10n-id="summary-view-info-lockscreen">禁用［屏幕锁定］</li>
+          <li data-l10n-id="summary-view-info-screentimeout">设置［屏幕休眠时间］为“永不”</li>
+        </ul>
+      </div>
+      <div class="foot-line">
+        <div id="summary-region-button-settings" class="button-settings">
+          <span data-l10n-id="content-region-button-settings">我的设置</span>
+        </div>
+        <div id="summary-region-button-help" class="button-help">
+          <span data-l10n-id="content-region-button-help">连接帮助</span>
+        </div>
+      </div>
+    </section>
+    <section role="region" id="unconnect-region" hidden>
+      <header>
+        <h1 data-l10n-id="content-region-header">手机助手</h1>
+      </header>
+      <div class="status-bar">
+        <a data-l10n-id="content-region-status-unconnect">连接电脑 - 设备未连接</a>
+      </div>
+      <div id="unconnect-view" class="view">
+        <header data-l10n-id="unconnect-view-type">您可以通过以下方式连接电脑</header>
         <div class="connection-line">
             <div class="usb-connection-img"></div>
-            <div class="connection-text" data-l10n-id="usb-connection"></div>
+            <div class="connection-text">
+              <li>
+                <strong data-l10n-id="unconnect-view-usb">USB 连接</strong>
+              </li>
+              <small data-l10n-id="unconnect-view-usb-info">用 USB 线连接电脑后，可通过电脑更好的管理手机上的联系人、短信、音视频等数据。</small>
+            </div>
         </div>
         <div class="connection-line">
             <div class="wifi-connection-img"></div>
-            <div class="connection-text" data-l10n-id="wifi-connection"></div>
+            <div class="connection-text">
+              <li>
+                <strong data-l10n-id="unconnect-view-wifi">Wi-Fi 连接</strong>
+              </li>
+              <small data-l10n-id="unconnect-view-wifi-info">将手机和电脑连入同一个 Wi-Fi 网络中，通过 Wi-Fi 连接码进行连接。</small>
+            </div>
         </div>
         <div class="wifi-connection-line">
-            <li data-l10n-id="wifi-title"></li>
-            <li id="menuItem-wifi-connect-number" data-l10n-id="wifi-connect-number" class="menu-item">Unknown</li>
+            <span id="menuItem-wifi-connect-number" data-l10n-id="unconnect-view-wifi-code" class="menu-item">未知</span>
         </div>
       </div>
+      <div class="foot-line">
+        <div id="unconnect-region-button-settings" class="button-settings">
+          <span data-l10n-id="content-region-button-settings">我的设置</span>
+        </div>
+        <div id="unconnect-region-button-help" class="button-help">
+          <span data-l10n-id="content-region-button-help">连接帮助</span>
+        </div>
+      </div>
+    </section>
+    <section role="region" id="connected-region" hidden>
+      <header>
+        <h1 data-l10n-id="content-region-header">手机助手</h1>
+      </header>
+      <div class="status-bar">
+        <a data-l10n-id="content-region-status-connected">连接电脑 - 设备已连接</a>
+      </div>
+      <div id="connected-view" class="view">
+        <header data-l10n-id="connected-view-header">已连接至电脑</header>
+        <button id="button-disconnect" data-l10n-id="connected-view-button-disconnect">断开连接</button>
+      </div>
+    </section>
   </body>
 </html>
