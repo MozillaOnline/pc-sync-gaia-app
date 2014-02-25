@@ -232,6 +232,14 @@ body[role="application"] a[role="button"] span.goto {
   color: #000;
 }
 
+#settings-region > ul li:first-child  {
+  padding-top: 2rem;
+  padding-bottom: 1rem;
+  color: #000;
+  font-size: 1.9rem;
+  text-decoration: none;
+}
+
 #settings-region > ul li > a,
 #settings-region > ul li > span {
   display: block;
