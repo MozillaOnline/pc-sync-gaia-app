@@ -177,6 +177,8 @@ var backgroundService = {
           self.showDialogById('first-run-dialog');
         }
       });
+    } else {
+      self.closeSocketServer();
     }
     document.getElementById('button-autoset').onclick = function () {
       self.setSettings(false);
@@ -307,10 +309,12 @@ var backgroundService = {
         socket: event,
         onmessage: handleMessage,
         onclose: function() {
+          self.disconnect();
+          self.closeSocketServer();
           self.setSettings(true, self.checkSystemSettings);
         }
       });
-      if (socketWrapper == null) {
+      if (!socketWrapper) {
         socketWrapper = serverSocket;
         self.showRegionById('connected-region');
         var dataJson = {
@@ -377,7 +381,6 @@ var backgroundService = {
   listenSettings: function() {
     function handleEvent(event) {
       self.disconnect();
-      slef.closeSocketServer();
     }
     navigator.mozSettings.addObserver('devtools.debugger.remote-enabled', handleEvent);
     navigator.mozSettings.addObserver('screen.timeout', handleEvent);
