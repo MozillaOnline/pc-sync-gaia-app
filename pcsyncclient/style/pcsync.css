@@ -452,7 +452,7 @@ section[role="region"] > div ul {
 
 section[role="region"] > div ul li {
   font-size: 1.4rem;
-  margin-top: 1.2rem;
+  margin-top: 0.6rem;
 }
 
 
@@ -548,8 +548,8 @@ section[role="region"] > div ul li {
   margin-top: -1rem;
 }
 
-.connection-line {
-  margin-top: 2.1rem;
+.usb-connection-line {
+  margin-top: 2rem;
   font-size: 1.4rem;
   height: 5.7rem;
   width: 100%;
@@ -557,7 +557,15 @@ section[role="region"] > div ul li {
 }
 
 .wifi-connection-line {
-  margin-top: 1.1rem;
+  margin-top: 4rem;
+  font-size: 1.4rem;
+  height: 5.7rem;
+  width: 100%;
+  text-align: center;
+}
+
+.wificode-connection-line {
+  margin-top: 2rem;
   margin-left: 4.3rem;
   height: 5.7rem;
   width: 23.5rem;
@@ -565,7 +573,7 @@ section[role="region"] > div ul li {
   background-color: #e7e7e7;
 }
 
-.wifi-connection-line li {
+.wificode-connection-line li {
   list-style: none;
   color: #a6a6a6;
   font-size: 1.6rem;

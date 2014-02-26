@@ -181,8 +181,7 @@ var backgroundService = {
       self.closeSocketServer();
     }
     document.getElementById('button-autoset').onclick = function () {
-      self.setSettings(false);
-      self.showRegionById('unconnect-region');
+      self.setSettings(false, self.checkSystemSettings);
     }
     document.getElementById('summary-region-button-settings').onclick = function () {
       self.showRegionById('settings-region');
@@ -195,6 +194,7 @@ var backgroundService = {
   initUnconnectRegion: function() {
     self.getWifiCode();
     self.createSocketServer();
+    self.listenSettings(true);
     document.getElementById('unconnect-region-button-settings').onclick = function () {
       self.showRegionById('settings-region');
     };
@@ -249,8 +249,7 @@ var backgroundService = {
     };
     document.getElementById('first-run-dialog-ok').onclick = function (event) {
       document.getElementById('first-run-dialog').hidden = true;
-      self.setSettings(false);
-      self.showRegionById('unconnect-region');
+      self.setSettings(false, self.checkSystemSettings);
     };
   },
 
@@ -309,6 +308,7 @@ var backgroundService = {
         socket: event,
         onmessage: handleMessage,
         onclose: function() {
+          self.listenSettings(false);
           self.disconnect();
           self.closeSocketServer();
           self.setSettings(true, self.checkSystemSettings);
@@ -378,14 +378,28 @@ var backgroundService = {
     }
   },
 
-  listenSettings: function() {
-    function handleEvent(event) {
+  handleSettingsEvent: function(event) {
+    self.listenSettings(false);
+    if (currentRegion == 'connected-region') {
       self.disconnect();
+    } else if (currentRegion == 'unconnect-region') {
+      self.closeSocketServer();
+      self.checkSystemSettings();
     }
-    navigator.mozSettings.addObserver('devtools.debugger.remote-enabled', handleEvent);
-    navigator.mozSettings.addObserver('screen.timeout', handleEvent);
-    navigator.mozSettings.addObserver('lockscreen.enabled', handleEvent);
-    navigator.mozSettings.addObserver('ums.enabled', handleEvent);
+  },
+
+  listenSettings: function(isListening) {
+    if (isListening) {
+      navigator.mozSettings.addObserver('devtools.debugger.remote-enabled', self.handleSettingsEvent);
+      navigator.mozSettings.addObserver('screen.timeout', self.handleSettingsEvent);
+      navigator.mozSettings.addObserver('lockscreen.enabled', self.handleSettingsEvent);
+      navigator.mozSettings.addObserver('ums.enabled', self.handleSettingsEvent);
+    } else {
+      navigator.mozSettings.removeObserver('devtools.debugger.remote-enabled', self.handleSettingsEvent);
+      navigator.mozSettings.removeObserver('screen.timeout', self.handleSettingsEvent);
+      navigator.mozSettings.removeObserver('lockscreen.enabled', self.handleSettingsEvent);
+      navigator.mozSettings.removeObserver('ums.enabled', self.handleSettingsEvent);
+    }
   },
 };
 
