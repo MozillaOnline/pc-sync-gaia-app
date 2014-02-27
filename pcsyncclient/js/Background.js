@@ -307,6 +307,12 @@ var backgroundService = {
       var serverSocket = new TCPSocketWrapper({
         socket: event,
         onmessage: handleMessage,
+        onerror: function() {
+          self.listenSettings(false);
+          self.disconnect();
+          self.closeSocketServer();
+          self.setSettings(true, self.checkSystemSettings);
+        },
         onclose: function() {
           self.listenSettings(false);
           self.disconnect();
