@@ -333,6 +333,13 @@ var backgroundService = {
         socketWrapper.send(dataJson, null);
       }
     };
+    tcpServer.onerror = function(event) {
+      console.log('tcpServer is error !!!!!!!!!!!!!!');
+      self.listenSettings(false);
+      self.disconnect();
+      self.closeSocketServer();
+      self.setSettings(true, self.checkSystemSettings);
+    }
   },
 
   closeSocketServer: function() {
