@@ -29,6 +29,10 @@ var backgroundService = {
   init: function() {
     self = this;
     self.checkSystemSettings();
+    document.getElementById('settings-region-usb-storage').addEventListener('change', self);
+    document.getElementById('settings-region-remote-debugging').addEventListener('change', self);
+    document.getElementById('settings-region-lock-screen').addEventListener('change', self);
+    document.getElementById('settings-region-screen-timeout').addEventListener('change', self);
   },
 
   checkSystemSettings: function () {
@@ -215,17 +219,10 @@ var backgroundService = {
       self.checkSystemSettings();
     };
     self.getAppSettings( function (appSettings) {
-      var umsEnabledCheckBox = document.getElementById('settings-region-usb-storage');
-      var remoteDebuggerEnabledCheckBox = document.getElementById('settings-region-remote-debugging');
-      var lockScreenEnabledCheckBox = document.getElementById('settings-region-lock-screen');
       var screenTimeotEnabledSelect = document.getElementById('settings-region-screen-timeout');
-      umsEnabledCheckBox.addEventListener('change', self);
-      remoteDebuggerEnabledCheckBox.addEventListener('change', self);
-      lockScreenEnabledCheckBox.addEventListener('change', self);
-      screenTimeotEnabledSelect.addEventListener('change', self);
-      umsEnabledCheckBox.checked = appSettings['usbStorage'];
-      remoteDebuggerEnabledCheckBox.checked = appSettings['remoteDebugger'];
-      lockScreenEnabledCheckBox.checked = appSettings['lockScreen'];
+      document.getElementById('settings-region-usb-storage').checked = appSettings['usbStorage'];
+      document.getElementById('settings-region-remote-debugging').checked = appSettings['remoteDebugger'];
+      document.getElementById('settings-region-lock-screen').checked = appSettings['lockScreen'];
       for (var i = 0; i < screenTimeotEnabledSelect.options.length; i++) {
         if (screenTimeotEnabledSelect.options[i].value == appSettings['screenTimeout']) {
           screenTimeotEnabledSelect.selectedIndex = i;
@@ -257,16 +254,17 @@ var backgroundService = {
     var settingItem = evt.target;
     switch (evt.currentTarget.id) {
       case 'settings-region-usb-storage':
-        self.setAppSettings({'usbStorage': settingItem.value});
+        self.setAppSettings({'usbStorage': settingItem.checked});
         break;
       case 'settings-region-remote-debugging':
-        self.setAppSettings({'remoteDebugger': settingItem.value});
+        self.setAppSettings({'remoteDebugger': settingItem.checked});
         break;
       case 'settings-region-lock-screen':
-        self.setAppSettings({'lockScreen': settingItem.value});
+        self.setAppSettings({'lockScreen': settingItem.checked});
         break;
       case 'settings-region-screen-timeout':
         self.setAppSettings({'screenTimeout': settingItem.value});
+        var screenTimeotEnabledSelect = document.getElementById('settings-region-screen-timeout');
         for (var i = 0; i < screenTimeotEnabledSelect.options.length; i++) {
           if (screenTimeotEnabledSelect.options[i].value == settingItem.value) {
             screenTimeotEnabledSelect.selectedIndex = i;
