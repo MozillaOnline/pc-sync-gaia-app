@@ -2,8 +2,6 @@
 
 // Parse the specified blob and pass an object of metadata to the
 // metadataCallback, or invoke the errorCallback with an error message.
-
-
 function parseAudioMetadata(blob, metadataCallback, errorCallback) {
   var filename = blob.name;
 
@@ -13,7 +11,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
   if (filename) {
     // If the file is in the DCIM/ directory and has a .3gp extension
     // then it is a video, not a music file and we ignore it
-    if (filename.slice(0, 5) === 'DCIM/' && filename.slice(-4).toLowerCase() === '.3gp') {
+    if (filename.slice(0, 5) === 'DCIM/' &&
+        filename.slice(-4).toLowerCase() === '.3gp') {
       errorCallback('skipping 3gp video file');
       return;
     }
@@ -83,17 +82,12 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
   // Also see gecko code in /toolkit/components/mediasniffer/nsMediaSniffer.cpp
   // Gaia will accept the supported compatible brands in gecko as well
   var MP4Types = {
-    'M4A ': true,
-    // iTunes audio.  Note space in property name.
-    'M4B ': true,
-    // iTunes audio book. Note space.
-    'mp41': true,
-    // MP4 version 1
-    'mp42': true,
-    // MP4 version 2
-    'isom': true,
-    // ISO base media file format, version 1
-    'iso2': true // ISO base media file format, version 2
+    'M4A ' : true,  // iTunes audio.  Note space in property name.
+    'M4B ' : true,  // iTunes audio book. Note space.
+    'mp41' : true,  // MP4 version 1
+    'mp42' : true,  // MP4 version 2
+    'isom' : true,  // ISO base media file format, version 1
+    'iso2' : true   // ISO base media file format, version 2
   };
 
   // MP4 and 3GP containers both use ISO base media file format.
@@ -104,13 +98,10 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
   //   http://www.3gpp.org/ftp/Specs/html-info/26244.htm
   //
   var MP4Codecs = {
-    'mp4a': true,
-    // MPEG-4 audio
-    'samr': true,
-    // AMR narrow-band speech
-    'sawb': true,
-    // AMR wide-band speech
-    'sawp': true // Extended AMR wide-band audio
+    'mp4a' : true, // MPEG-4 audio
+    'samr' : true, // AMR narrow-band speech
+    'sawb' : true, // AMR wide-band speech
+    'sawp' : true  // Extended AMR wide-band audio
   };
 
   // Start off with some default metadata
@@ -123,7 +114,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
   if (filename) {
     var p1 = filename.lastIndexOf('/');
     var p2 = filename.lastIndexOf('.');
-    if (p2 === -1) p2 = filename.length;
+    if (p2 === -1)
+      p2 = filename.length;
     metadata[TITLE] = filename.substring(p1 + 1, p2);
   }
 
@@ -148,15 +140,18 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
       if (magic.substring(0, 3) === 'ID3') {
         // parse ID3v2 tags in an MP3 file
         parseID3v2Metadata(header);
-      } else if (magic.substring(0, 4) === 'OggS') {
+      }
+      else if (magic.substring(0, 4) === 'OggS') {
         // parse metadata from an Ogg Vorbis file
         parseOggMetadata(header);
-      } else if (magic.substring(4, 8) === 'ftyp') {
+      }
+      else if (magic.substring(4, 8) === 'ftyp') {
         // This is an MP4 file
         if (checkMP4Type(header, MP4Types)) {
           // It is a type of MP4 file that we support
           parseMP4Metadata(header);
-        } else {
+        }
+        else {
           // The MP4 file might be a video or it might be some
           // kind of audio that we don't support. We used to treat
           // files like these as unknown files and see (in the code below)
@@ -165,10 +160,12 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
           // And, the <audio> tag was treating videos as playable.
           errorCallback('Unknown MP4 file type');
         }
-      } else if ((header.getUint16(0, false) & 0xFFFE) === 0xFFFA) {
+      }
+      else if ((header.getUint16(0, false) & 0xFFFE) === 0xFFFA) {
         // If this looks like an MP3 file, then look for ID3v1 metadata
         // tags at the end of the file. But even if there is no metadata
         // treat this as a playable file.
+
         BlobView.get(blob, blob.size - 128, 128, function(footer, error) {
           if (error) {
             errorCallback(error);
@@ -180,16 +177,19 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
             if (magic === 'TAG') {
               // It is an MP3 file with ID3v1 tags
               parseID3v1Metadata(footer);
-            } else {
+            }
+            else {
               // It is an MP3 file with no metadata. We return the default
               // metadata object that just contains the filename as the title
               metadataCallback(metadata);
             }
-          } catch (e) {
+          }
+          catch (e) {
             errorCallback(e);
           }
         });
-      } else {
+      }
+      else {
         // This is some kind of file that we don't know about.
         // Let's see if we can play it.
         var player = new Audio();
@@ -197,7 +197,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
         var canplay = blob.type && player.canPlayType(blob.type);
         if (canplay === 'probably') {
           metadataCallback(metadata);
-        } else {
+        }
+        else {
           var url = URL.createObjectURL(blob);
           player.src = url;
 
@@ -216,7 +217,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
           };
         }
       }
-    } catch (e) {
+    }
+    catch (e) {
       console.error('parseAudioMetadata:', e, e.stack);
       errorCallback(e);
     }
@@ -231,25 +233,27 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
   //   http://www.id3.org/ID3v1
   //   http://en.wikipedia.org/wiki/ID3
   //
-
-
   function parseID3v1Metadata(footer) {
     var title = footer.getASCIIText(3, 30);
     var artist = footer.getASCIIText(33, 30);
     var album = footer.getASCIIText(63, 30);
     var p = title.indexOf('\0');
-    if (p !== -1) title = title.substring(0, p);
+    if (p !== -1)
+      title = title.substring(0, p);
     p = artist.indexOf('\0');
-    if (p !== -1) artist = artist.substring(0, p);
+    if (p !== -1)
+      artist = artist.substring(0, p);
     p = album.indexOf('\0');
-    if (p !== -1) album = album.substring(0, p);
+    if (p !== -1)
+      album = album.substring(0, p);
 
     metadata[TITLE] = title || undefined;
     metadata[ARTIST] = artist || undefined;
     metadata[ALBUM] = album || undefined;
     var b1 = footer.getUint8(125);
     var b2 = footer.getUint8(126);
-    if (b1 === 0 && b2 !== 0) metadata[TRACKNUM] = b2;
+    if (b1 === 0 && b2 !== 0)
+      metadata[TRACKNUM] = b2;
     metadataCallback(metadata);
   }
 
@@ -259,8 +263,6 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
   //   http://phoxis.org/2010/05/08/what-are-id3-tags-all-about/
   //   https://github.com/aadsm/JavaScript-ID3-Reader/
   //
-
-
   function parseID3v2Metadata(header) {
 
     // First three bytes are "ID3" or we wouldn't be here
@@ -306,7 +308,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
 
         // If there is a null byte here, then we've found padding
         // and we're done
-        if (id3.getUint8(id3.index) === 0) break;
+        if (id3.getUint8(id3.index) === 0)
+          break;
 
         switch (id3version) {
         case 2:
@@ -367,8 +370,10 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
             break;
           }
 
-          if (tagvalue !== null) metadata[tagname] = tagvalue;
-        } catch (e) {
+          if (tagvalue !== null)
+            metadata[tagname] = tagvalue;
+        }
+        catch (e) {
           console.warn('Error parsing mp3 metadata tag', tagid, ':', e);
         }
 
@@ -386,9 +391,12 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
       // mimetype is different for old PIC tags and new APIC tags
       if (id === 'PIC') {
         mimetype = view.readASCIIText(3);
-        if (mimetype === 'JPG') mimetype = 'image/jpeg';
-        else if (mimetype === 'PNG') mimetype = 'image/png';
-      } else {
+        if (mimetype === 'JPG')
+          mimetype = 'image/jpeg';
+        else if (mimetype === 'PNG')
+          mimetype = 'image/png';
+      }
+      else {
         mimetype = view.readNullTerminatedLatin1Text(size - 1);
       }
 
@@ -436,12 +444,9 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
   //   http://wiki.xiph.org/VorbisComment
   //   http://tools.ietf.org/html/draft-ietf-codec-oggopus-00
   //
-
-
   function parseOggMetadata(header) {
-    function sum(x, y) {
-      return x + y;
-    } // for Array.reduce() below
+    function sum(x, y) { return x + y; } // for Array.reduce() below
+
     // Ogg metadata is in the second header packet.  We need to read
     // the first packet to find the start of the second.
     var p1_num_segments = header.getUint8(26);
@@ -450,7 +455,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
 
     var p2_header = 27 + p1_num_segments + p1_length;
     var p2_num_segments = header.getUint8(p2_header + 26);
-    var p2_segment_lengths = header.getUnsignedByteArray(p2_header + 27, p2_num_segments);
+    var p2_segment_lengths = header.getUnsignedByteArray(p2_header + 27,
+                                                         p2_num_segments);
     var p2_length = Array.reduce(p2_segment_lengths, sum, 0);
     var p2_offset = p2_header + 27 + p2_num_segments;
 
@@ -465,12 +471,12 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
       var first_byte = page.readByte();
       var valid = false;
       switch (first_byte) {
-      case 3:
-        valid = page.readASCIIText(6) === 'vorbis';
-        break;
-      case 79:
-        valid = page.readASCIIText(7) === 'pusTags';
-        break;
+        case 3:
+          valid = page.readASCIIText(6) === 'vorbis';
+          break;
+        case 79:
+          valid = page.readASCIIText(7) === 'pusTags';
+          break;
       }
       if (!valid) {
         errorCallback('malformed ogg comment packet');
@@ -478,6 +484,7 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
 
       var vendor_string_length = page.readUnsignedInt(true);
       page.advance(vendor_string_length); // skip libvorbis vendor string
+
       var num_comments = page.readUnsignedInt(true);
       // |metadata| already has some of its values filled in (namely the title
       // field). To make sure we overwrite the pre-filled metadata, but also
@@ -496,7 +503,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
             if (seen_fields.hasOwnProperty(propname)) {
               // If we already have a value, append this new one.
               metadata[propname] += ' ' + value;
-            } else {
+            }
+            else {
               // Otherwise, just save the single value.
               metadata[propname] = value;
               seen_fields[propname] = true;
@@ -517,15 +525,14 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
   // MP4 files use 'ftyp' to identify the type of encoding.
   // 'ftyp' information
   //   http://www.ftyps.com/what.html
-
-
   function checkMP4Type(header, types) {
     // The major brand is the four bytes right after 'ftyp'.
     var majorbrand = header.getASCIIText(8, 4);
 
     if (majorbrand in types) {
       return true;
-    } else {
+    }
+    else {
       // Check the rest part for the compatible brands,
       // they are every four bytes after the version of major brand.
       // Usually there are two optional compatible brands,
@@ -537,7 +544,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
       while (index < size) {
         var compatiblebrand = header.getASCIIText(index, 4);
         index += 4;
-        if (compatiblebrand in types) return true;
+        if (compatiblebrand in types)
+          return true;
       }
       return false;
     }
@@ -549,8 +557,6 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
   // http://en.wikipedia.org/wiki/MPEG-4_Part_14
   // http://atomicparsley.sourceforge.net/mpeg-4files.html
   //
-
-
   function parseMP4Metadata(header) {
     //
     // XXX
@@ -561,6 +567,7 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
     // the time to refactor, though... See also the approach in
     // shared/js/get_video_rotation.js
     //
+
     findMoovAtom(header);
 
     function findMoovAtom(atom) {
@@ -572,7 +579,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
         if (size === 0) {
           // A size of 0 means the rest of the file
           size = atom.blob.size - offset;
-        } else if (size === 1) {
+        }
+        else if (size === 1) {
           // A size of 1 means the size is in bytes 8-15
           size = atom.readUnsignedInt() * 4294967296 + atom.readUnsignedInt();
         }
@@ -584,22 +592,26 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
               parseMoovAtom(moov, size);
               handleCoverArt(metadata);
               return;
-            } catch (e) {
+            }
+            catch (e) {
               errorCallback(e);
             }
           });
-        } else {
+        }
+        else {
           // Otherwise, get the start of the next atom and recurse
           // to continue the search for the moov atom.
           // If we're reached the end of the blob without finding
           // anything, just call the metadata callback with no metadata
           if (offset + size + 16 <= atom.blob.size) {
             atom.getMore(offset + size, 16, findMoovAtom);
-          } else {
+          }
+          else {
             metadataCallback(metadata);
           }
         }
-      } catch (e) {
+      }
+      catch (e) {
         errorCallback(e);
       }
     }
@@ -608,10 +620,9 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
     // This function, and the ones that follow are all synchronous.
     // We've read the entire moov atom, so we've got all the bytes
     // we need and don't have to do an async read again.
-
-
     function parseMoovAtom(data, end) {
       data.advance(8); // skip the size and type of this atom
+
       // Find the udta and trak atoms within the moov atom
       // There will only be one udta atom, but there may be multiple trak
       // atoms. In that case, this is probably a movie file and we'll reject
@@ -620,17 +631,19 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
         var size = data.readUnsignedInt();
         var type = data.readASCIIText(4);
         var nextindex = data.index + size - 8;
-        if (type === 'udta') { // Metadata is inside here
+        if (type === 'udta') {       // Metadata is inside here
           parseUdtaAtom(data, end);
           data.index = nextindex;
-        } else if (type === 'trak') { // We find the audio format inside here
+        }
+        else if (type === 'trak') {  // We find the audio format inside here
           data.advance(-8); // skip back to beginning
           var mdia = findChildAtom(data, 'mdia');
           if (mdia) {
             var minf = findChildAtom(mdia, 'minf');
             if (minf) {
               var vmhd = searchChildAtom(minf, 'vmhd');
-              if (vmhd) throw 'Found video track in MP4 container';
+              if (vmhd)
+                throw 'Found video track in MP4 container';
               var smhd = searchChildAtom(minf, 'smhd');
               if (smhd) {
                 var stbl = findChildAtom(minf, 'stbl');
@@ -648,7 +661,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
             }
           }
           data.index = nextindex;
-        } else {
+        }
+        else {
           data.advance(size - 8);
         }
       }
@@ -665,19 +679,18 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
         if (type === atom) {
           data.advance(-8);
           return data;
-        } else {
+        }
+        else {
           data.advance(size - 8);
         }
       }
 
-      return null; // not found
+      return null;  // not found
     }
 
     // This function searches the child atom just like findChildAtom().
     // But the internal pointer/index will be reset to the start
     // after the searching finishes.
-
-
     function searchChildAtom(data, atom) {
       var start = data.index;
       var target = findChildAtom(data, atom);
@@ -695,7 +708,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
           parseMetaAtom(data, data.index + size - 8);
           data.index = end;
           return;
-        } else {
+        }
+        else {
           data.advance(size - 8);
         }
       }
@@ -714,7 +728,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
           parseIlstAtom(data, data.index + size - 8);
           data.index = end;
           return;
-        } else {
+        }
+        else {
           data.advance(size - 8);
         }
       }
@@ -732,7 +747,8 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
           try {
             var value = getMetadataValue(data, next, type);
             metadata[tagname] = value;
-          } catch (e) {
+          }
+          catch (e) {
             console.warn('skipping', type, ':', e);
           }
         }
@@ -742,8 +758,6 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
 
     // Find the data atom and return its value or throw an error
     // We handle UTF-8 strings, numbers, and blobs
-
-
     function getMetadataValue(data, end, tagtype) {
       // Loop until we find a data atom
       while (data.index < end) {
@@ -758,7 +772,9 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
         // Return its (first) value or throw an error.
         var datatype = data.readUnsignedInt() & 0xFFFFFF;
         data.advance(4); // Ignore locale
+
         var datasize = size - 16; // the rest of the atom is the value
+
         // Special case for track number
         if (tagtype === 'trkn') {
           data.advance(2);
@@ -766,18 +782,15 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
         }
 
         switch (datatype) {
-        case 1:
-          // utf8 text
+        case 1: // utf8 text
           return data.readUTF8Text(datasize);
-        case 13:
-          // jpeg
+        case 13: // jpeg
           return {
             start: data.sliceOffset + data.viewOffset + data.index,
             end: data.sliceOffset + data.viewOffset + data.index + datasize,
             type: 'image/jpeg'
           };
-        case 14:
-          // png
+        case 14: // png
           return {
             start: data.sliceOffset + data.viewOffset + data.index,
             end: data.sliceOffset + data.viewOffset + data.index + datasize,
@@ -794,8 +807,6 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
   // Before we call the metadataCallback, we create a thumbnail
   // for the song, if there is not already one cached.  In the normal
   // (cache hit) case, this happens synchronously.
-
-
   function handleCoverArt(metadata) {
     var fileinfo = {
       name: blob.name,
@@ -820,12 +831,16 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
         // When we're done, add metadata to indicate that this is locked
         // content (so it isn't shared) and to specify the vendor that
         // locked it.
-        parseAudioMetadata(unlocked, function(metadata) {
-          metadata.locked = true;
-          if (unlockedMetadata.vendor) metadata.vendor = unlockedMetadata.vendor;
-          if (!metadata[TITLE]) metadata[TITLE] = unlockedMetadata.name;
-          metadataCallback(metadata);
-        }, errorCallback);
+        parseAudioMetadata(unlocked,
+                           function(metadata) {
+                             metadata.locked = true;
+                             if (unlockedMetadata.vendor)
+                               metadata.vendor = unlockedMetadata.vendor;
+                             if (!metadata[TITLE])
+                               metadata[TITLE] = unlockedMetadata.name;
+                             metadataCallback(metadata);
+                           },
+                           errorCallback);
       }
     });
   }
@@ -835,13 +850,12 @@ function parseAudioMetadata(blob, metadataCallback, errorCallback) {
 var THUMBNAIL_WIDTH = 300;
 var THUMBNAIL_HEIGHT = 300;
 var offscreenImage = new Image();
-var thumbnailCache = {}; // maps keys to blob urls
+var thumbnailCache = {};  // maps keys to blob urls
+
 // Get a thumbnail image for the specified song (reading from the
 // cache if possible and storing to the cache if necessary) and pass a
 // blob URL for it it to the specified callback. fileinfo is an object
 // with metadata from the MediaDB.
-
-
 function getThumbnailURL(fileinfo, callback) {
   function cacheThumbnail(key, blob, url) {
     asyncStorage.setItem(key, blob);
@@ -865,7 +879,8 @@ function getThumbnailURL(fileinfo, callback) {
 
   if (album || artist) {
     key = 'thumbnail.' + album + '.' + artist + '.' + size;
-  } else {
+  }
+  else {
     key = 'thumbnail.' + (fileinfo.name || fileinfo.blob.name);
   }
 
@@ -884,16 +899,18 @@ function getThumbnailURL(fileinfo, callback) {
       thumbnailCache[key] = url;
       callback(url);
       return;
-    } else {
+    }
+    else {
       // Otherwise, create the thumbnail image
       createAndCacheThumbnail();
     }
   });
 
   function createAndCacheThumbnail() {
-    if (fileinfo.blob) { // this can happen for the open activity
+    if (fileinfo.blob) {       // this can happen for the open activity
       getImage(fileinfo.blob);
-    } else { // this is the normal case
+    }
+    else {                     // this is the normal case
       musicdb.getFile(fileinfo.name, function(file) {
         getImage(file);
       });
@@ -901,7 +918,9 @@ function getThumbnailURL(fileinfo, callback) {
 
     function getImage(file) {
       // Get the embedded image from the music file
-      var embedded = file.slice(metadata.picture.start, metadata.picture.end, metadata.picture.type);
+      var embedded = file.slice(metadata.picture.start,
+                                metadata.picture.end,
+                                metadata.picture.type);
       // Convert to a blob url
       var embeddedURL = URL.createObjectURL(embedded);
       // Load it into an image element
@@ -942,7 +961,8 @@ function getThumbnailURL(fileinfo, callback) {
         var y = Math.round((offscreenImage.height - h) / 2);
 
         // Draw that region of the image into the canvas, scaling it down
-        context.drawImage(offscreenImage, x, y, w, h, 0, 0, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+        context.drawImage(offscreenImage, x, y, w, h,
+                          0, 0, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
 
         // We're done with the image now
         offscreenImage.removeAttribute('src');

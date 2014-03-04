@@ -340,6 +340,12 @@
  *     named file in DeviceStorage and passes it (a Blob) to the callback.
  *     An error callback is available as an optional third argument.
  *
+ * - getFileInfo(): given a filename and a callback, this method looks up
+ *     the database record for that file and passes it to the callback. If
+ *     no such record exists and an error callback was passed as the 3rd
+ *     argument, then an error message is passed to that error callback.
+ *     Note that unlike getFile() this method does not return file content.
+ *
  * - count(): count the number of records in the database and pass the value
  *     to the specified callback. Like enumerate(), this method allows you
  *     to specify the name of an index and a key range if you only want to
@@ -884,6 +890,33 @@ var MediaDB = (function() {
       listeners.splice(position, 1);
     },
 
+    // Look up the database record for the specfied filename and pass it
+    // to the specified callback.
+    getFileInfo: function getFile(filename, callback, errback) {
+      if (this.state === MediaDB.OPENING)
+        throw Error('MediaDB is not ready. State: ' + this.state);
+
+      var media = this;
+
+      // First, look up the fileinfo record in the db
+      var read = media.db.transaction('files', 'readonly')
+        .objectStore('files')
+        .get(filename);
+
+      read.onerror = function() {
+        var msg = 'MediaDB.getFileInfo: unknown filename: ' + filename;
+        if (errback)
+          errback(msg);
+        else
+          console.error(msg);
+      };
+
+      read.onsuccess = function() {
+        if (callback)
+          callback(read.result);
+      };
+    },
+
     // Look up the specified filename in DeviceStorage and pass the
     // resulting File object to the specified callback.
     getFile: function getFile(filename, callback, errback) {
@@ -1103,9 +1136,76 @@ var MediaDB = (function() {
               callback(cursor.value);
           }
           catch (e) {
-            console.warn('MediaDB.enumerate(): callback threw', e);
+            console.warn('MediaDB.enumerate(): callback threw', e, e.stack);
           }
           cursor.continue();
+        }
+        else {
+          // Final time, tell the callback that there are no more.
+          handle.state = 'complete';
+          callback(null);
+        }
+      };
+
+      return handle;
+    },
+
+    // Basically this function is a variation of enumerate(), since retrieving
+    // a large number of records from indexedDB takes some time and if the
+    // enumeration is cancelled, people can use this function to resume getting
+    // the rest records by providing an index where it was stopped.
+    // Also, if you want to get just one record, just give the target index and
+    // the first returned record is the record you want, remember to call
+    // cancelEnumeration() immediately after you got the record.
+    // All the arguments are required because this function is for advancing
+    // enumeration, people who use this function should already have all the
+    // arguments, and pass them again to get the target records from the index.
+    advancedEnumerate: function(key, range, direction, index, callback) {
+      if (this.state !== MediaDB.READY)
+        throw Error('MediaDB is not ready. State: ' + this.state);
+
+      var handle = { state: 'enumerating' };
+
+      var store = this.db.transaction('files').objectStore('files');
+
+      // If a key other than "name" is specified, then use the index for that
+      // key instead of the store.
+      if (key && key !== 'name')
+        store = store.index(key);
+
+      // Now create a cursor for the store or index.
+      var cursorRequest = store.openCursor(range || null, direction || 'next');
+      var isTarget = false;
+
+      cursorRequest.onerror = function() {
+        console.error('MediaDB.enumerate() failed with', cursorRequest.error);
+        handle.state = 'error';
+      };
+
+      cursorRequest.onsuccess = function() {
+        // If the enumeration has been cancelled, return without
+        // calling the callback and without calling cursor.continue();
+        if (handle.state === 'cancelling') {
+          handle.state = 'cancelled';
+          return;
+        }
+
+        var cursor = cursorRequest.result;
+        if (cursor) {
+          try {
+            // if metadata parsing succeeded and is the target record
+            if (!cursor.value.fail && isTarget) {
+              callback(cursor.value);
+              cursor.continue();
+            }
+            else {
+              cursor.advance(index - 1);
+              isTarget = true;
+            }
+          }
+          catch (e) {
+            console.warn('MediaDB.enumerate(): callback threw', e, e.stack);
+          }
         }
         else {
           // Final time, tell the callback that there are no more.
@@ -1798,6 +1898,8 @@ var MediaDB = (function() {
     }
 
     if (details.pendingCreateNotifications.length > 0) {
+      var creations = details.pendingCreateNotifications;
+      details.pendingCreateNotifications = [];
 
       // If this is a first scan, and we have records that are not
       // in the db yet, write them to the db now
@@ -1807,11 +1909,21 @@ var MediaDB = (function() {
         for (var i = 0; i < details.records.length; i++)
           store.add(details.records[i]);
         details.records.length = 0;
-      }
 
-      var creations = details.pendingCreateNotifications;
-      details.pendingCreateNotifications = [];
-      dispatchEvent(media, 'created', creations);
+        // One of the original points of this firstscan optimization was that
+        // we could dispatch the created events without waiting for the
+        // database writes to complete. It turns out (see bug 963917) that
+        // we can't do that because the Gallery app needs to read records
+        // from the db in order to be sure it is holding file-based blobs
+        // instead of memory-based blobs. So we wait for the transaction to
+        // complete before sending the notifications.
+        transaction.oncomplete = function() {
+          dispatchEvent(media, 'created', creations);
+        };
+      }
+      else {
+        dispatchEvent(media, 'created', creations);
+      }
     }
   }
 
@@ -1838,7 +1950,8 @@ var MediaDB = (function() {
         handler.call(media, event);
       }
       catch (e) {
-        console.warn('MediaDB: ', 'on' + type, 'event handler threw', e);
+        console.warn('MediaDB: ', 'on' + type,
+                     'event handler threw', e, e.stack);
       }
     }
 
@@ -1856,7 +1969,7 @@ var MediaDB = (function() {
         }
       }
       catch (e) {
-        console.warn('MediaDB: ', type, 'event listener threw', e);
+        console.warn('MediaDB: ', type, 'event listener threw', e, e.stack);
       }
     }
   }

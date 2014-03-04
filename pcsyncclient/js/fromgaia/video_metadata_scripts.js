@@ -28,6 +28,7 @@
 // metadata is ready, it is saved to MediaDB, and then addVideo() is invoked
 // to display the video title and thumbnail.
 //
+
 var metadataQueue = [];
 var processingQueue = false;
 var stopParsingMetadataCallback = null;
@@ -35,19 +36,16 @@ var stopParsingMetadataCallback = null;
 // This function queues a fileinfo object with no metadata. When the app is
 // able it will obtain metadata for the video and pass the updated fileinfo
 // to addVideo() so that it becomes visible to the user.
-
-
 function addToMetadataQueue(fileinfo) {
   metadataQueue.push(fileinfo);
   startParsingMetadata();
 }
 
 // Start or resume metadata parsing, if conditions are right
-
-
 function startParsingMetadata() {
   // If there is no work queued, or if we're already working, return right away
-  if (processingQueue || metadataQueue.length === 0) return;
+  if (processingQueue || metadataQueue.length === 0)
+    return;
 
   // Start processing the queue
   processingQueue = true;
@@ -55,12 +53,11 @@ function startParsingMetadata() {
 }
 
 // Stop parsing metadata. If a callback is specified, call it when stopped.
-
-
 function stopParsingMetadata(callback) {
   // If we're not processing metadata, just call the callback right away
   if (!processingQueue) {
-    if (callback) callback();
+    if (callback)
+      callback();
     return;
   }
 
@@ -80,8 +77,6 @@ function stopParsingMetadata(callback) {
 // XXX: are there any race conditions here?
 // Are we guaranteed to always stop and to always call the callback?
 //
-
-
 function processFirstQueuedItem() {
   // If the stop flag is set, call the callback and stop
   if (stopParsingMetadataCallback) {
@@ -89,11 +84,13 @@ function processFirstQueuedItem() {
     stopParsingMetadataCallback = null;
     processingQueue = false;
 
-    if (callback !== true) callback(); // Okay, we've stopped.
+    if (callback !== true)
+      callback();  // Okay, we've stopped.
     return;
   }
 
-  // If there is no work queued, up return right away
+  // If there is no work queued, update dialog in case there are no playable
+  // videos; then return right away
   if (metadataQueue.length === 0) {
     processingQueue = false;
     return;
@@ -114,7 +111,8 @@ function processFirstQueuedItem() {
       videoDB.updateMetadata(fileinfo.name, metadata);
 
       // Create and insert a thumbnail for the video
-      addVideo(fileinfo);
+      if (metadata.isVideo)
+        addVideo(fileinfo);
 
       // And process the next video in the queue
       setTimeout(processFirstQueuedItem);
@@ -128,8 +126,6 @@ function processFirstQueuedItem() {
 
 // Given a video File object, asynchronously pass an object of metadata to
 // the specified callback.
-
-
 function getMetadata(videofile, callback) {
   // This is the video element that will get the metadata for us.
   // Because of an apparent bug in gecko, it needs to be here rather than
@@ -175,7 +171,8 @@ function getMetadata(videofile, callback) {
     metadata.isVideo = true;
 
     // read title from metadata or fallback to filename.
-    metadata.title = readFromMetadata('title') || fileNameToVideoName(videofile.name);
+    metadata.title = readFromMetadata('title') ||
+                     fileNameToVideoName(videofile.name);
 
     // The video element tells us the video duration and size.
     metadata.duration = offscreenVideo.duration;
@@ -188,8 +185,10 @@ function getMetadata(videofile, callback) {
     // in shared/js/media/get_video_rotation.js
     if (/.3gp$/.test(videofile.name)) {
       getVideoRotation(videofile, function(rotation) {
-        if (typeof rotation === 'number') metadata.rotation = rotation;
-        else if (typeof rotation === 'string') console.warn('Video rotation:', rotation);
+        if (typeof rotation === 'number')
+          metadata.rotation = rotation;
+        else if (typeof rotation === 'string')
+          console.warn('Video rotation:', rotation);
         createThumbnail();
       });
     } else {
@@ -202,8 +201,6 @@ function getMetadata(videofile, callback) {
   // The text case of key in metadata is not always lower or upper cases. That
   // depends on the creation tools. This function helps to read keys in lower
   // cases and returns the value of corresponding key.
-
-
   function readFromMetadata(lowerCaseKey) {
     var tags = offscreenVideo.mozGetMetadata();
     for (var key in tags) {
@@ -224,13 +221,14 @@ function getMetadata(videofile, callback) {
     // and may not fire an error event, so if we aren't able to seek
     // after a certain amount of time, we'll abort and assume that the
     // video is invalid.
-    var failed = false; // Did seeking fail?
-    var timeout = setTimeout(fail, 10000); // Fail after 10 seconds
-    offscreenVideo.onerror = fail; // Or if we get an error event
+    offscreenVideo.currentTime = Math.min(5, offscreenVideo.duration / 10);
 
-
-    function fail() { // Seeking failure case
-      console.warn('Seek failed while creating thumbnail for', videofile.name, '. Ignoring corrupt file.');
+    var failed = false;                      // Did seeking fail?
+    var timeout = setTimeout(fail, 10000);   // Fail after 10 seconds
+    offscreenVideo.onerror = fail;           // Or if we get an error event
+    function fail() {                        // Seeking failure case
+      console.warn('Seek failed while creating thumbnail for', videofile.name,
+                   '. Ignoring corrupt file.');
       failed = true;
       clearTimeout(timeout);
       offscreenVideo.onerror = null;
@@ -238,9 +236,9 @@ function getMetadata(videofile, callback) {
       unload();
       callback(metadata);
     }
-    offscreenVideo.onseeked = function() { // Seeking success case
+    offscreenVideo.onseeked = function() {   // Seeking success case
       if (failed) // Avoid race condition: if we already failed, stop now
-      return;
+        return;
       clearTimeout(timeout);
       captureFrame(offscreenVideo, metadata, function(poster) {
         if (poster === null) {
@@ -249,19 +247,17 @@ function getMetadata(videofile, callback) {
           // thumbnail image we shouldn't try to display it to the user.
           // XXX: See bug 869289: maybe we should not fail here.
           fail();
-        } else {
+        }
+        else {
           metadata.poster = poster;
           unload();
           callback(metadata); // We've got all the metadata we need now.
         }
       });
     };
-    offscreenVideo.currentTime = Math.min(5, offscreenVideo.duration / 10);
   }
 
   // Free the resources being used by the offscreen video element
-
-
   function unload() {
     URL.revokeObjectURL(offscreenVideo.src);
     offscreenVideo.removeAttribute('src');
@@ -269,10 +265,10 @@ function getMetadata(videofile, callback) {
   }
 
   // Derive the video title from its filename.
-
-
   function fileNameToVideoName(filename) {
-    filename = filename.split('/').pop().replace(/\.(webm|ogv|ogg|mp4|3gp)$/, '').replace(/[_\.]/g, ' ');
+    filename = filename.split('/').pop()
+      .replace(/\.(webm|ogv|ogg|mp4|3gp)$/, '')
+      .replace(/[_\.]/g, ' ');
     return filename.charAt(0).toUpperCase() + filename.slice(1);
   }
 }
@@ -284,8 +280,7 @@ function captureFrame(player, metadata, callback) {
     canvas.width = THUMBNAIL_WIDTH;
     canvas.height = THUMBNAIL_HEIGHT;
 
-    var vw = player.videoWidth,
-        vh = player.videoHeight;
+    var vw = player.videoWidth, vh = player.videoHeight;
     var tw, th;
 
     // If a rotation is specified, rotate the canvas context
@@ -314,19 +309,27 @@ function captureFrame(player, metadata, callback) {
       break;
     }
 
-    // Figure out what portion of the video we want to draw into the thumbnail
-    var scale = Math.min(vw / tw, vh / th);
-    var w = tw * scale,
-        h = th * scale;
-    var x = (vw - w) / 2,
-        y = (vh - h) / 2;
+    // Need to find the minimum ratio between heights and widths,
+    // so the image (especailly the square thumbnails) would fit
+    // in the container with right ratio and no extra stretch.
+    // x and y are right/left and top/bottom margins and where we
+    // start drawing the image. Since we scale the image, x and y
+    // will be scaled too. Below gives us x and y actual pixels
+    // without scaling.
+    var scale = Math.min(tw / vw, th / vh),
+        w = scale * vw, h = scale * vh,
+        x = (tw - w) / 2 / scale, y = (th - h) / 2 / scale;
+
+    // Scale the image
+    ctx.scale(scale, scale);
 
     // Draw the current video frame into the image
-    ctx.drawImage(player, x, y, w, h, 0, 0, tw, th);
+    ctx.drawImage(player, x, y);
 
     // Convert it to an image file and pass to the callback.
     canvas.toBlob(callback, 'image/jpeg');
-  } catch (e) {
+  }
+  catch (e) {
     console.error('Exception in captureFrame:', e, e.stack);
     callback(null);
   }
