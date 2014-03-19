@@ -109,7 +109,7 @@ function getThreads(socket, jsonCmd, sendCallback) {
       var smsMessage = {
         'id': this.result.id,
         'body': this.result.body,
-        'timestamp': this.result.timestamp.getTime(),
+        'timestamp': this.result.timestamp,
         'unreadCount': this.result.unreadCount,
         'participants': this.result.participants,
         'lastMessageType': this.result.lastMessageType
@@ -162,7 +162,7 @@ function getThreadMessagesById(socket, jsonCmd, sendCallback, recvData) {
         'receiver': result.receiver,
         'body': result.body,
         'messageClass': result.messageClass,
-        'timestamp': result.timestamp.getTime(),
+        'timestamp': result.timestamp,
         'read': result.read
       };
       messages.push(smsMessage);
@@ -174,7 +174,7 @@ function getThreadMessagesById(socket, jsonCmd, sendCallback, recvData) {
         'delivery': result.delivery,
         'deliveryStatus': result.deliveryStatus,
         'sender': result.sender,
-        'timestamp': result.timestamp.getTime(),
+        'timestamp': result.timestamp,
         'read': result.read,
         'receivers': result.receivers,
         'subject': result.subject,
@@ -245,7 +245,7 @@ function getAllMessages(socket, jsonCmd, sendCallback) {
         'receiver': result.receiver,
         'body': result.body,
         'messageClass': result.messageClass,
-        'timestamp': result.timestamp.getTime(),
+        'timestamp': result.timestamp,
         'read': result.read
       };
       messages.push(smsMessage);
@@ -257,7 +257,7 @@ function getAllMessages(socket, jsonCmd, sendCallback) {
         'delivery': result.delivery,
         'deliveryStatus': result.deliveryStatus,
         'sender': result.sender,
-        'timestamp': result.timestamp.getTime(),
+        'timestamp': result.timestamp,
         'read': result.read,
         'receivers': result.receivers,
         'subject': result.subject,
@@ -316,7 +316,7 @@ function getSMSById(socket, jsonCmd, sendCallback, recvData) {
       'receiver': this.result.receiver,
       'body': this.result.body,
       'messageClass': this.result.messageClass,
-      'timestamp': this.result.timestamp.getTime(),
+      'timestamp': this.result.timestamp,
       'read': this.result.read
     };
     jsonCmd.result = RS_OK;
@@ -347,7 +347,7 @@ function getMMSById(socket, jsonCmd, sendCallback, recvData) {
       'delivery': result.delivery,
       'deliveryStatus': result.deliveryStatus,
       'sender': result.sender,
-      'timestamp': result.timestamp.getTime(),
+      'timestamp': result.timestamp,
       'read': result.read,
       'receivers': result.receivers,
       'subject': result.subject,

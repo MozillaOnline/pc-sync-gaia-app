@@ -70,7 +70,7 @@ function listenSms() {
         'receiver': message.receiver,
         'body': message.body,
         'messageClass': message.messageClass,
-        'timestamp': message.timestamp.getTime(),
+        'timestamp': message.timestamp,
         'read': message.read
       };
       curJsonCmd.result = RS_OK;
@@ -84,7 +84,7 @@ function listenSms() {
         'delivery': message.delivery,
         'deliveryStatus': message.deliveryStatus,
         'sender': message.sender,
-        'timestamp': message.timestamp.getTime(),
+        'timestamp': message.timestamp,
         'read': message.read,
         'receivers': message.receivers,
         'subject': message.subject,
@@ -129,7 +129,7 @@ function listenSms() {
         'receiver': message.receiver,
         'body': message.body,
         'messageClass': message.messageClass,
-        'timestamp': message.timestamp.getTime(),
+        'timestamp': message.timestamp,
         'read': message.read
       };
       curJsonCmd.result = RS_OK;
@@ -143,7 +143,7 @@ function listenSms() {
         'delivery': message.delivery,
         'deliveryStatus': message.deliveryStatus,
         'sender': message.sender,
-        'timestamp': message.timestamp.getTime(),
+        'timestamp': message.timestamp,
         'read': message.read,
         'receivers': message.receivers,
         'subject': message.subject,
@@ -188,7 +188,7 @@ function listenSms() {
         'receiver': message.receiver,
         'body': message.body,
         'messageClass': message.messageClass,
-        'timestamp': message.timestamp.getTime(),
+        'timestamp': message.timestamp,
         'read': message.read
       };
       curJsonCmd.result = RS_OK;
@@ -202,7 +202,7 @@ function listenSms() {
         'delivery': message.delivery,
         'deliveryStatus': message.deliveryStatus,
         'sender': message.sender,
-        'timestamp': message.timestamp.getTime(),
+        'timestamp': message.timestamp,
         'read': message.read,
         'receivers': message.receivers,
         'subject': message.subject,
