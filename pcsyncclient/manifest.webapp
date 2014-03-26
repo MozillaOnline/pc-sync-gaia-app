@@ -4,6 +4,7 @@
   "orientation": "portrait-primary",
   "name": "PCSyncClient",
   "launch_path": "/index.html",
+  "version": "m1.0",
   "permissions": {
     "tcp-socket": {},
     "contacts": {

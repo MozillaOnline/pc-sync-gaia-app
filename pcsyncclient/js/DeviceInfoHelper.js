@@ -9,24 +9,40 @@
 function deviceInfoHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
     switch (jsonCmd.command) {
+    case DEVICEINFO_COMMAND.getVersion:
+      getVersion(socket, jsonCmd, sendCallback);
+      break;
     case DEVICEINFO_COMMAND.getStorage:
-      {
-        getStorage(socket, jsonCmd, sendCallback);
-        break;
-      }
+      getStorage(socket, jsonCmd, sendCallback);
+      break;
     default:
-      {
-        debug('DeviceInfoHelper.js undefined command :' + jsonCmd.command);
-        jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        sendCallback(socket, jsonCmd, null);
-        break;
-      }
+      debug('DeviceInfoHelper.js undefined command :' + jsonCmd.command);
+      jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
+      sendCallback(socket, jsonCmd, null);
+      break;
     }
   } catch (e) {
     debug('DeviceInfoHelper.js deviceInfoHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     sendCallback(socket, jsonCmd, null);
   }
+}
+
+function getVersion(socket, jsonCmd, sendCallback) {
+  var request = window.navigator.mozApps.getSelf();
+  request.onsuccess = function() {
+    if (request.result) {
+	  jsonCmd.result = RS_OK;
+      sendCallback(socket, jsonCmd, request.result.manifest.version);
+    } else {
+      jsonCmd.result = RS_ERROR.UNKNOWEN;
+      sendCallback(socket, jsonCmd, null);
+    }
+  };
+  request.onerror = function() {
+    jsonCmd.result = RS_ERROR.UNKNOWEN;
+    sendCallback(socket, jsonCmd, null);
+  };
 }
 
 function getStorage(socket, jsonCmd, sendCallback) {
