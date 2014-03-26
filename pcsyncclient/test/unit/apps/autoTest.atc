@@ -1,5 +1,0 @@
-[
-{"testCase":"./unit/apps/getAllApps.tc", "testData":""},
-{"testCase":"./unit/apps/getInstalledApps.tc", "testData":""},
-{"testCase":"./unit/apps/uninstallAppByName.tc", "testData":""}
-]

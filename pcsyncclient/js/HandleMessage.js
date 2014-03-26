@@ -8,11 +8,6 @@
 
 function handleMessage(socket, jsonCmd, sendCallback, recvData) {
   switch (jsonCmd.type) {
-  case CMD_TYPE.app:
-    {
-      appManagerHelper(socket, jsonCmd, sendCallback, recvData);
-      break;
-    }
   case CMD_TYPE.contact:
     {
       contactHelper(socket, jsonCmd, sendCallback, recvData);
@@ -33,19 +28,9 @@ function handleMessage(socket, jsonCmd, sendCallback, recvData) {
       pictureHelper(socket, jsonCmd, sendCallback, recvData);
       break;
     }
-  case CMD_TYPE.sms:
-    {
-      smsHelper(socket, jsonCmd, sendCallback, recvData);
-      break;
-    }
   case CMD_TYPE.video:
     {
       videoHelper(socket, jsonCmd, sendCallback, recvData);
-      break;
-    }
-  case CMD_TYPE.file:
-    {
-      fileHelper(socket, jsonCmd, sendCallback, recvData);
       break;
     }
   case CMD_TYPE.listen:

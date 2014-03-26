@@ -18,255 +18,117 @@ section[role="region"] {
   overflow: hidden;
 }
 
-body[role="application"] [role="dialog"] {
-  background: url(images/ui/pattern.png) repeat left top, url(images/ui/gradient.png) no-repeat left top;
-  background-size: auto auto, 100% 100%;
-  overflow: hidden;
-  position: absolute;
-  z-index: 100;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  white-space: nowrap;
-  padding: 1.5rem 0 7rem;
-  font-family: "Open Sans", Sans-serif;
+/* ----------------------------------
+ * HEADERS: default
+ * ---------------------------------- */
+section[role="region"] > header:first-child {
+  position: relative;
+  z-index: 10;
+  padding: 0;
+  height: 5rem;
   color: #fff;
+  background-color: #F97C17;
+  border: none;
 }
 
-body[role="application"] [role="dialog"]:before {
-  content: "";
-  display: inline-block;
-  vertical-align: middle;
-  width: .1rem;
-  height: 100%;
-}
-
-body[role="application"] [role="dialog"] > div {
-  padding: 0 2.5rem 0 2rem;
-  -moz-box-sizing: padding-box;
-  width: 100%;
-  display: inline-block;
-  vertical-align: middle;
-  white-space: normal;  
-}
-
-body[role="application"] [role="dialog"] h3 {
-  font-family: 'Open Sans', Sans-serif;
-  font-weight: normal;
-  font-size: 1.6rem;
-  line-height: 1em;
+section[role="region"] > header:first-child h1 {
+  font-size: 2.5rem;
+  line-height: 5rem;
+  text-align: left;
   color: #fff;
-  border-bottom: 0.1rem solid #686868;
-  margin: 0 0 1rem;
-  padding-bottom: 1rem;
-}
-
-body[role="application"] menu:not([type="toolbar"]) {
   white-space: nowrap;
-  margin: 0;
-  padding: 1.5rem;
-  border-top: solid .1rem rgba(255, 255, 255, 0.1);
-  background: #2d2d2d url(images/ui/pattern.png) repeat left top;
+  text-overflow: ellipsis;
   display: block;
   overflow: hidden;
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-body[role="application"] menu:not([type="toolbar"]) button:last-child,
-body[role="application"] menu:not([type="toolbar"]) a[role="button"]:last-child {
-  margin-left: 1rem;
-}
-
-body[role="application"] menu:not([type="toolbar"]) button,
-body[role="application"] menu:not([type="toolbar"]) a[role="button"],
-body[role="application"] menu:not([type="toolbar"]) button:first-child,
-body[role="application"] menu:not([type="toolbar"]) a[role="button"]:first-child {
   margin: 0;
+  padding: 0 1rem 0 3rem;
+  height: 100%;
+  font-weight: lighter;
 }
 
-body[role="application"] menu:not([type="toolbar"])[data-items="2"] button,
-body[role="application"] menu:not([type="toolbar"])[data-items="2"] a[role="button"] {
-  width: -moz-calc((100% - 1rem) / 2);
-}
 
-/* ----------------------------------
-
- * BUTTONS: DEFAULT
- * ---------------------------------- */
-body[role="application"] button::-moz-focus-inner {
+section[role="region"] > header:first-child a,
+section[role="region"] > header:first-child button {
   border: none;
-  outline: none;
-}
-
-body[role="application"] button,
-body[role="application"] a[role="button"] {
-  width: 100%;
-  height: 3.8rem;
-  margin: 0 0 1rem;
-  padding: 0 1.5rem;
-  -moz-box-sizing: border-box;
-  display: inline-block;
-  vertical-align: middle;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-  background: #fafafa url(images/ui/default.png) repeat-x left bottom;
-  border: .1rem solid #9f9f9f;
-  border-radius: 0.3rem;
-  font-size: 1.6rem;
-  font-family: 'Open Sans', Sans-serif;
-  font-weight: 600;
-  line-height: 3.8rem;
-  color: #333;
-  text-align: center;
-  text-shadow: .1rem .1rem 0 rgba(255,255,255,0.3);
-  text-decoration: none;
-  outline: none;
-}
-
-/* Press (default & affirmative) */
-body[role="application"] button:active,
-body[role="application"] a[role="button"]:active,
-body[role="application"] button.affirmative:active,
-body[role="application"] a.affirmative[role="button"]:active  {
-  border-color: #008aaa;
-  background: #008aaa;
-  color: #333;
-}
-
-/* Affirmative */
-body[role="application"] button.affirmative,
-body[role="application"] a[role="button"].affirmative {
-  background-image: url(images/ui/affirmative.png);
-  background-color: #00caf2;
-  border-color: #00acce;
-}
-
-/* Negative */
-body[role="application"] button.negative,
-body[role="application"] a.negative[role="button"] {
-  background-image: url(images/ui/negative.png);
-  background-color: #b70404;
-  color: #fff;
-  text-shadow: -0.1rem -0.1rem 0 #830b0b;
-  border: none; 
-}
-
-/* Negative Press */
-body[role="application"] button.negative:active,
-body[role="application"] a[role="button"].negative:active {
-  background-image: url(images/ui/negative-press.png);
-  background-color: #890707;
-}
-
-/* Disabled (default & affirmative) */
-body[role="application"] button[disabled="disabled"],
-body[role="application"] a[role="button"][aria-disabled="true"],
-body[role="application"] button[disabled="disabled"].affirmative,
-body[role="application"] a[role="button"][aria-disabled="true"].affirmative {
-  background-image: url(images/ui/disabled-bright.png);
-  background-color: transparent;
-  border-color: #dadada;
-  color: #bcbcbc;
-}
-
-/* Disabled dark (default & affirmative) */
-body[role="application"] menu button[disabled="disabled"],
-body[role="application"] menu a[role="button"][aria-disabled="true"],
-body[role="application"] menu button[disabled="disabled"].affirmative,
-body[role="application"] menu a[role="button"][aria-disabled="true"].affirmative {
-  background-image: url(images/ui/disabled-dark.png);
-  background-color: transparent;
-  border: none;
-  color: #4a4a4a;
-  text-shadow: 0 .1rem 0 rgba(255, 255, 255, 0.2);
-}
-
-/* Negative disabled */
-body[role="application"] button[disabled="disabled"].negative,
-body[role="application"] a[role="button"][aria-disabled="true"].negative {
-  background-image: url(images/ui/negative-disabled.png);
-  color: #fff;
-  text-shadow: none;
-}
-
-/* Icons in buttons */
-body[role="application"] button span,
-body[role="application"] a[role="button"] span {
-  float: left;
-  width: 2.5rem;
-  height: 2.5rem;
-  margin: 0 0.5rem 0 -1rem;
-  background: transparent no-repeat center center;
-}
-
-/* Icon base types */
-body[role="application"] button span.goto,
-body[role="application"] a[role="button"] span.goto {
-  background-image: url(images/icons/goto.png);
-}
-
-/**
- * Table View
- * line height = 6rem, border included
- */
-
-#settings-region > ul {
-  margin: 0;
   padding: 0;
   overflow: hidden;
-  list-style: none;
-  background: url(images/document_bg.png);
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.1em;
+  color: #fff;
+  border-radius: 0;
+  text-decoration: none;
 }
 
-#settings-region > ul li {
-  -moz-box-sizing: border-box;
+/* Pressed state */
+section[role="region"] > header:first-child a:focus {
+  outline: none;
+}
+
+section[role="region"] > header:first-child button::-moz-focus-inner {
+  outline: none;
+  border: none;
+  margin-top: -0.2rem; /* To fix line-height bug (697451) */
+  padding: 0;
+}
+
+section[role="region"] > header:first-child > a:not([aria-disabled="true"]):active:after,
+section[role="region"] > header:first-child > button:not(:disabled):active:after,
+section[role="region"] > header:first-child > a:not([aria-disabled="true"]):hover:after,
+section[role="region"] > header:first-child > button:not(:disabled):hover:after,
+section[role="region"] > header:first-child menu[type="toolbar"] a:not([aria-disabled="true"]):hover,
+section[role="region"] > header:first-child menu[type="toolbar"] button:not(:disabled):hover,
+section[role="region"] > header:first-child menu[type="toolbar"] a:not([aria-disabled="true"]):active,
+section[role="region"] > header:first-child menu[type="toolbar"] button:not(:disabled):active  {
+  background-color: #dc6a0e !important;
+}
+
+/* Icon definitions */
+section[role="region"] > header:first-child .icon {
   position: relative;
-  min-height: 6rem;
-  margin: 0 1.5rem;
-  border-bottom: 0.1rem solid #e6e6e3;
-  color: #000;
-}
-
-#settings-region > ul li:first-child  {
-  padding-top: 2rem;
-  padding-bottom: 1rem;
-  color: #000;
-  font-size: 1.9rem;
-  text-decoration: none;
-}
-
-#settings-region > ul li > a,
-#settings-region > ul li > span {
-  display: block;
-  text-decoration: none;
-  outline: 0;
-  color: #000;
-  -moz-box-sizing: border-box;
-  height: 6rem;
-  font-size: 1.9rem;
-  line-height: 6rem;
-  padding: 0 3rem;
-  margin: 0 -1.5rem;
-}
-
-/* description + value on the same line */
-#settings-region > ul li > a span {
-  position: absolute;
-  right: 1.5rem;
-  color: #505859;
-}
-
-/* text ellipsis */
-#settings-region > ul li > * {
-  display: block;
+  float: none;
+  display: inline-block;
+  vertical-align: middle;
+  width: 3rem;
+  height: 5rem;
+  margin: 0 -1rem;
+  background: transparent no-repeat center center / 3rem auto;
+  font-size: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+section[role="region"] > header:first-child .icon.icon-back {
+  background-image: url(images/back.png);
+}
+
+/* Navigation links (back, cancel, etc) */
+section[role="region"] > header:first-child > button,
+section[role="region"] > header:first-child > a {
+  position: relative;
+  width: 5rem;
+  height: 5rem;
+  background: none;
+  float: left;
+  overflow: visible;
+  margin: 0 -5rem 0 0;
+}
+
+section[role="region"] > header:first-child > button:after,
+section[role="region"] > header:first-child > a:after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: -1;
+  width: 2.6rem;
+  height: 5rem;
+}
+
+section[role="region"] > header:first-child > button .icon,
+section[role="region"] > header:first-child > a .icon {
+  display: block;
+  margin: 0;
+  font-size: 0;
 }
 
 /* sublines */
@@ -280,15 +142,6 @@ ul li > small {
   color: #505859;
   /* click/tap events should be caught by the <a> element below the <small> */
   pointer-events: none;
-}
-
-ul li > label.pack-checkbox + small,
-ul li > label.pack-radio + small {
-  right: 6.1rem;
-}
-
-ul li > label.pack-switch + small {
-   right: 9rem;
 }
 
 /* required for empty elements like Bluetooth */
@@ -313,135 +166,6 @@ ul li a[role="button"] {
 /* custom styles for boolean inputs (see /shared/style/switches.css) */
 ul li label {
   text-transform: none;
-}
-
-ul li > label:not([for]),
-ul li > label.pack-checkbox,
-ul li > label.pack-radio,
-ul li > label.pack-switch {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-ul li > label.pack-checkbox > span,
-ul li > label.pack-radio > span,
-ul li > label.pack-switch > input + span {
-  left: auto;
-  right: 0;
-}
-
-ul li > label.pack-checkbox ~ a,
-ul li > label.pack-radio ~ a {
-  padding-right: 6.1rem;
-}
-ul li > label.pack-radio ~ p {
-  padding-right: 3rem;
-}
-
-ul li > label.pack-switch ~ a {
-   padding-right: 9rem;
-}
-ul li > label.pack-radio ~ a {
-  padding-right: 5.9rem;
-}
-
-ul li > label.pack-checkbox:active ~ a,
-ul li > label.pack-radio:active ~ a,
-ul li > label.pack-switch:active ~ a {
-  background-color: #b2f2ff;
-  color: #222;
-}
-
-ul li > label:not([for]):only-child {
-  position: relative;
-  padding: 0.5rem 0 1.5rem 0;
-}
-
-
-/******************************************************************************
- * Select boxes
- */
-
-ul li select {
-  font-size: 1.9rem;
-  height: 3rem;
-  line-height: 3rem;
-  text-align: center;
-}
-
-/* half-width select boxes */
-ul li span select {
-  display: inline-block;
-  position: absolute;
-  top: 1.5rem;
-  right: 3rem;
-  width: calc(50% - 2rem);
-}
-
-/* full-width select boxes */
-ul li p + select {
-  display: block;
-  width: calc(100% - 15rem);
-  margin: -1rem 3rem 1rem 12rem;
-}
-
-/******************************************************************************
- * Fake select boxes
- */
-.fake-select {
-  position: relative;
-  display: block;
-  padding: 0;
-  margin-bottom: 1.5rem;
-  height: 3.8rem;
-}
-
-a + .fake-select {
-  margin-top: -1rem;
-}
-
-.fake-select.small {
-  display: inline-block;
-  vertical-align: top;
-}
-
-.fake-select > button {
-  display: block;
-  top: 0;
-  left: 0;
-  width: 100%;
-}
-
-.fake-select > select {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 3.8rem;
-  border: none;
-  background: red;
-  opacity: 0;
-}
-
-p > .fake-select {
-  margin: 1rem -1.5rem 0.5rem; 
-}
-
-/* */
-section[role="region"] > ul > li > p + .fake-select {
-  padding-top: 0;
-  margin-top: -0.8rem;
-}
-
-/*///////////////////////////////////////////////////////////////////*/
-
-section[role="dialog"] > div li {
-  list-style-type: none;
-  font-size: 1.6rem;
-  margin-top: 1.2rem;
 }
 
 section[role="region"] > div ul {
@@ -476,11 +200,6 @@ section[role="region"] > div ul li {
   color: #a6a6a6;
 }
 
-#content-region-status {
-  margin-left: 0rem;
-  color: #00c8f0;
-}
-
 .view {
   position: relative;
   z-index: 10;
@@ -494,39 +213,16 @@ section[role="region"] > div ul li {
   text-align: center;
 }
 
-#summary-view header {
-  margin-top: 2.8rem;
-  font-size: 1.8rem;
-  color: #333333;
-}
-
-#summary-view button {
-  margin-top: 2rem;
-  font-size: 1.5rem;
-  width: 13rem;
-  color: #333333
-}
-
-#summary-view ul {
-  text-align: left;
-  margin-left: 1rem;
-}
-
-#summary-view li {
-  text-align: left;
-  margin-left: 1rem;
-}
-
 .foot-line {
   margin-top: 34rem;
   height: 7rem;
-  background: url(images/ui/gradient.png) no-repeat 0 0;
+  background: url(images/gradient.png) no-repeat 0 0;
   font-size: 1.2rem;
   text-align: center;
 }
 
 .foot-line > div{
-  width: 50%;
+  width: 100%;
   height: 100%;
   float: left;
 }
@@ -536,11 +232,6 @@ section[role="region"] > div ul li {
   display: block;
   color: #FFFFFF;
   font-size: 1.4rem;
-}
-
-.button-settings {
-  background: url(images/settings.png) no-repeat center;
-  margin-top: -1rem;
 }
 
 .button-help {
@@ -556,37 +247,6 @@ section[role="region"] > div ul li {
   text-align: center;
 }
 
-.wifi-connection-line {
-  margin-top: 4rem;
-  font-size: 1.4rem;
-  height: 5.7rem;
-  width: 100%;
-  text-align: center;
-}
-
-.wificode-connection-line {
-  margin-top: 2rem;
-  margin-left: 4.3rem;
-  height: 5.7rem;
-  width: 23.5rem;
-  text-align: center;
-  background-color: #e7e7e7;
-}
-
-.wificode-connection-line li {
-  list-style: none;
-  color: #a6a6a6;
-  font-size: 1.6rem;
-  padding-top: 1rem;
-}
-
-#menuItem-wifi-connect-number {
-  color: #00c8f0;
-  font-size: 1.8rem;
-  display: block;
-  padding-top: 1.6rem;
-}
-
 .usb-connection-img {
   position: relative;
   z-index: 10;
@@ -595,20 +255,6 @@ section[role="region"] > div ul li {
   width: 5.7rem;
   color: #fff;
   background: url(images/USB.png) no-repeat 0 0;
-  background-size: auto 100%;
-  border: none;
-  float: left;
-  margin-left: 4.2rem;
-}
-
-.wifi-connection-img {
-  position: relative;
-  z-index: 10;
-  padding: 0;
-  height: 5.7rem;
-  width: 5.7rem;
-  color: #fff;
-  background: url(images/Wifi.png) no-repeat 0 0;
   background-size: auto 100%;
   border: none;
   float: left;

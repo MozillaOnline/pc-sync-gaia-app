@@ -14,11 +14,6 @@ function deviceInfoHelper(socket, jsonCmd, sendCallback, recvData) {
         getStorage(socket, jsonCmd, sendCallback);
         break;
       }
-    case DEVICEINFO_COMMAND.getSettings:
-      {
-        getSettings(socket, jsonCmd, sendCallback);
-        break;
-      }
     default:
       {
         debug('DeviceInfoHelper.js undefined command :' + jsonCmd.command);
@@ -111,20 +106,4 @@ function getStorage(socket, jsonCmd, sendCallback) {
       sendCallback(socket, jsonCmd, sendData);
     };
   });
-}
-
-function getSettings(socket, jsonCmd, sendCallback) {
-  var key = '*';
-  var request = navigator.mozSettings.createLock().get(key);
-  request.onsuccess = function successGetCurrentSound() {
-    debug('success get current settings: ' + request.result);
-    jsonCmd.result = RS_OK;
-    var sendData = JSON.stringify(request.result);
-    debug('deviceInfoHelper.js getSettings sendData: ' + sendData.length);
-    sendCallback(socket, jsonCmd, sendData);
-  };
-  request.onerror = function errorGetCurrentSound() {
-    jsonCmd.result = RS_ERROR.UNKNOWEN;
-    sendCallback(socket, jsonCmd, null);
-  };
 }

@@ -5,25 +5,11 @@
   "name": "PCSyncClient",
   "launch_path": "/index.html",
   "permissions": {
-    "bluetooth": {},
-    "telephony": {},
-    "webapps-manage": {},
     "tcp-socket": {},
-    "wifi-manage": {},
     "contacts": {
       "access": "readwrite"
     },
-    "sms": {},
-    "permissions": {},
-    "desktop-notification": {},
-    "power": {},
-    "attention": {},
     "systemXHR": {},
-    "mobileconnection": {},
-    "backgroundservice": {},
-    "settings": {
-      "access": "readwrite"
-    },
     "storage": {},
     "device-storage:pictures": {
       "access": "readwrite"
@@ -36,16 +22,9 @@
     },
     "device-storage:sdcard": {
       "access": "readwrite"
-    },
-    "device-storage:apps": {
-      "access": "readwrite"
-    },
-    "deprecated-hwvideo":{},
-    "audio-channel-content":{},
-    "time": {},
-    "alarms": {}
+    }
   },
-  "type": "certified",
+  "type": "privileged",
   "locales": {
     "zh-CN": {
       "name": "PC\u8fde\u63a5\u5668",
@@ -58,10 +37,10 @@
   },
   "icons": {
     "60": "/style/icons/60/pcsyncclient.png",
-    "120": "/style/icons/pcsyncclient.png"
+    "128": "/style/icons/pcsyncclient.png"
   },
   "developer": {
-    "url": "https://github.com/mozilla-b2g/gaia",
-    "name": "The BeiJing Team"
+    "url": "https://github.com/MozillaOnline/pc-sync-gaia-app",
+    "name": "The Beijing Team"
   }
 }
