@@ -46,140 +46,9 @@ section[role="region"] > header:first-child h1 {
   font-weight: lighter;
 }
 
-
-section[role="region"] > header:first-child a,
-section[role="region"] > header:first-child button {
-  border: none;
-  padding: 0;
-  overflow: hidden;
-  font-weight: 400;
-  font-size: 1.5rem;
-  line-height: 1.1em;
-  color: #fff;
-  border-radius: 0;
-  text-decoration: none;
-}
-
-/* Pressed state */
-section[role="region"] > header:first-child a:focus {
-  outline: none;
-}
-
-section[role="region"] > header:first-child button::-moz-focus-inner {
-  outline: none;
-  border: none;
-  margin-top: -0.2rem; /* To fix line-height bug (697451) */
-  padding: 0;
-}
-
-section[role="region"] > header:first-child > a:not([aria-disabled="true"]):active:after,
-section[role="region"] > header:first-child > button:not(:disabled):active:after,
-section[role="region"] > header:first-child > a:not([aria-disabled="true"]):hover:after,
-section[role="region"] > header:first-child > button:not(:disabled):hover:after,
-section[role="region"] > header:first-child menu[type="toolbar"] a:not([aria-disabled="true"]):hover,
-section[role="region"] > header:first-child menu[type="toolbar"] button:not(:disabled):hover,
-section[role="region"] > header:first-child menu[type="toolbar"] a:not([aria-disabled="true"]):active,
-section[role="region"] > header:first-child menu[type="toolbar"] button:not(:disabled):active  {
-  background-color: #dc6a0e !important;
-}
-
-/* Icon definitions */
-section[role="region"] > header:first-child .icon {
-  position: relative;
-  float: none;
-  display: inline-block;
-  vertical-align: middle;
-  width: 3rem;
-  height: 5rem;
-  margin: 0 -1rem;
-  background: transparent no-repeat center center / 3rem auto;
-  font-size: 0;
-  overflow: hidden;
-}
-
-section[role="region"] > header:first-child .icon.icon-back {
-  background-image: url(images/back.png);
-}
-
-/* Navigation links (back, cancel, etc) */
-section[role="region"] > header:first-child > button,
-section[role="region"] > header:first-child > a {
-  position: relative;
-  width: 5rem;
-  height: 5rem;
-  background: none;
-  float: left;
-  overflow: visible;
-  margin: 0 -5rem 0 0;
-}
-
-section[role="region"] > header:first-child > button:after,
-section[role="region"] > header:first-child > a:after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  z-index: -1;
-  width: 2.6rem;
-  height: 5rem;
-}
-
-section[role="region"] > header:first-child > button .icon,
-section[role="region"] > header:first-child > a .icon {
-  display: block;
-  margin: 0;
-  font-size: 0;
-}
-
-/* sublines */
-ul li > small {
-  position: absolute;
-  left: 1.5rem;
-  right: 1.5rem;
-  top: 50%;
-  padding-top: 0.4rem;
-  font-size: 1.4rem;
-  color: #505859;
-  /* click/tap events should be caught by the <a> element below the <small> */
-  pointer-events: none;
-}
-
-/* required for empty elements like Bluetooth */
-ul li > small:not(:empty) + a,
-ul li > small:not(:empty) + span {
-  line-height: 4.4rem;
-  padding-bottom: 0.1rem; /* Bug 903438 */
-}
-
-
-/******************************************************************************
- * Boolean inputs
- */
-
-ul li button,
-ul li a[role="button"] {
-  position: relative;
-  top: 1.1rem;
-  width: 100%;
-}
-
-/* custom styles for boolean inputs (see /shared/style/switches.css) */
-ul li label {
-  text-transform: none;
-}
-
-section[role="region"] > div ul {
-  font-size: 1.6rem;
-  margin-top: 1.2rem;
-  margin-right: 2rem;
-}
-
-section[role="region"] > div ul li {
-  font-size: 1.4rem;
-  margin-top: 0.6rem;
-}
-
-
+/* ----------------------------------
+ * status-bar: default
+ * ---------------------------------- */
 .status-bar {
   position: relative;
   z-index: 10;
@@ -200,98 +69,75 @@ section[role="region"] > div ul li {
   color: #a6a6a6;
 }
 
+/* ----------------------------------
+ * view: default
+ * ---------------------------------- */
 .view {
   position: relative;
   z-index: 10;
   padding: 0;
-  height: 2.8rem;
+  height: 60%;
   color: #000;
   background-size: auto 100%;
   border: none;
   float: left;
   width: 100%;
+}
+
+.view > header {
+  font-size: 2.6rem;
+  margin-top: 2.2rem;
+  color: #000;
   text-align: center;
 }
 
-.foot-line {
-  margin-top: 34rem;
-  height: 7rem;
-  background: url(images/gradient.png) no-repeat 0 0;
-  font-size: 1.2rem;
-  text-align: center;
+.view > ul {
+  font-size: 1.8rem;
+  margin-top: 1.2rem;
+  color: #505859;
+  list-style-type: none;
+  margin-right: 2rem;
 }
 
-.foot-line > div{
-  width: 100%;
-  height: 100%;
-  float: left;
+.view > ul li {
+  font-size: 1.6rem;
+  margin-top: 1.2rem;
+  color: #000;
+  list-style-type: decimal;
 }
 
-.foot-line > div span{
-  margin-top: 5rem;
-  display: block;
-  color: #FFFFFF;
-  font-size: 1.4rem;
+.custompadding {
+  padding-left: 2rem;
 }
 
-.button-help {
-  background: url(images/help.png) no-repeat center;
-  margin-top: -1rem;
-}
-
-.usb-connection-line {
-  margin-top: 2rem;
-  font-size: 1.4rem;
-  height: 5.7rem;
-  width: 100%;
-  text-align: center;
-}
-
-.usb-connection-img {
+/* ----------------------------------
+ * button: default
+ * ---------------------------------- */
+section[role="region"] > button {
   position: relative;
-  z-index: 10;
+  background: -moz-linear-gradient(center top , #00C8F0, #00AAC8) repeat scroll 0 0 rgba(0, 0, 0, 0);
   padding: 0;
-  height: 5.7rem;
-  width: 5.7rem;
-  color: #fff;
-  background: url(images/USB.png) no-repeat 0 0;
+  height: 4rem;
+  color: #FFF;
   background-size: auto 100%;
   border: none;
   float: left;
-  margin-left: 4.2rem;
+  margin-left: 30%;
+  width: 40%;
+  text-align: center;
+  font-size: 2rem;
 }
 
-.connection-text {
+.sync-connection-img {
   position: relative;
   z-index: 10;
   padding: 0;
-  height: 5.7rem;
-  width: 18.5rem;
-  color: #858585;
+  height: 10rem;
+  width: 17rem;
+  color: #fff;
+  background: url(images/sync.png) no-repeat 0 0;
+  background-size: auto 100%;
   border: none;
   float: left;
-  text-align: left;
-}
-
-.connection-text > li {
-  list-style-type: none;
-}
-
-#unconnect-view header {
-  margin-top: 2.8rem;
-  font-size: 1.8rem;
-  color: #333333;
-}
-
-#connected-view header {
-  margin-top: 2.8rem;
-  font-size: 1.8rem;
-  color: #333333;
-}
-
-#connected-view button {
-  margin-top: 2rem;
-  font-size: 1.5rem;
-  width: 13rem;
-  color: #333333
+  margin-left: 7.2rem;
 }

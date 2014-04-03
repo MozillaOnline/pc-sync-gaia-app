@@ -41,59 +41,55 @@
     <script type="text/javascript;version=1.8" src="js/pcsync.js"></script>
   </head>
   <body role="application">
-    <section role="region" id="help-region" hidden>
+    <section role="region" id="summary-region" hidden>
       <header>
-        <a id="help-region-back"><span data-l10n-id="region-back" class="icon icon-back">返回</span></a>
-        <h1 data-l10n-id="help-region-header">连接帮助</h1>
+        <h1 data-l10n-id="content-region-header">手机助手</h1>
       </header>
-      <div>
-        <ul data-l10n-id="help-region-title">使用步骤：
-          <li data-l10n-id="help-region-info1">在电脑上运行火狐浏览器</li>
-          <small data-l10n-id="help-region-small-info1">可前往firefox.com.cn免费下载最新版火狐浏览器。</small>
-          <li data-l10n-id="help-region-info2">确保已安装 Firefox OS Assistant 扩展</li>
-          <small data-l10n-id="help-region-small-info2">可前往mozilla.com.cn/addons免费下载安装扩展。</small>
-          <li data-l10n-id="help-region-info3">点击浏览器右上角的手机图标，打开about:ffos</li>
-          <li data-l10n-id="help-region-info4">通过 USB 数据线连接电脑</li>
-          <small data-l10n-id="help-region-small-info3">电脑上的程序会自动运行并尝试连接。请确保驱动安装正确；</small>
+      <div class="status-bar">
+        <a data-l10n-id="content-region-status-prepare">状态 - 环境准备</a>
+      </div>
+      <div id="summary-view" class="view">
+        <header data-l10n-id="summary-view-header">启动服务</header>
+        <ul class="custompadding" data-l10n-id="summary-view-info-title">开始前，您需要修改以下系统设置：</ul>
+        <ul>
+          <li data-l10n-id="summary-view-info-remotedebugger">启用［USB远程调试］</li>
+          <li data-l10n-id="summary-view-info-lockscreen">禁用［屏幕锁定］</li>
+          <li data-l10n-id="summary-view-info-ums">禁用［USB 存储］</li>
         </ul>
       </div>
+      <button id="button-start-service" data-l10n-id="button-start-service">开始</button>
     </section>
     <section role="region" id="unconnect-region" hidden>
       <header>
         <h1 data-l10n-id="content-region-header">手机助手</h1>
       </header>
       <div class="status-bar">
-        <a data-l10n-id="content-region-status-unconnect">连接电脑 - 设备未连接</a>
+        <a data-l10n-id="content-region-status-unconnect">状态 - 设备未连接</a>
       </div>
       <div id="unconnect-view" class="view">
         <header data-l10n-id="unconnect-view-type">您可以通过USB连接电脑</header>
-        <div class="usb-connection-line">
-            <div class="usb-connection-img"></div>
-            <div class="connection-text">
-              <li>
-                <strong data-l10n-id="unconnect-view-usb">USB 连接</strong>
-              </li>
-              <small data-l10n-id="unconnect-view-usb-info">用 USB 线连接电脑后，可通过电脑更好的管理手机上的联系人、短信、音视频等数据。</small>
-            </div>
-        </div>
+        <ul>
+          <li data-l10n-id="unconnect-view-info1">在电脑上运行火狐浏览器V28</li>
+          <li data-l10n-id="unconnect-view-info2">确保已安装 Firefox OS Assistant 扩展和设备驱动</li>
+          <li data-l10n-id="unconnect-view-info3">点击浏览器右上角的手机图标，打开about:ffos</li>
+          <li data-l10n-id="unconnect-view-info4">通过 USB 数据线连接电脑</li>
+        </ul>
       </div>
-      <div class="foot-line">
-        <div id="unconnect-region-button-help" class="button-help">
-          <span data-l10n-id="content-region-button-help">连接帮助</span>
-        </div>
-      </div>
+      <button id="button-stop-service" data-l10n-id="button-stop-service">停止</button>
     </section>
     <section role="region" id="connected-region" hidden>
       <header>
         <h1 data-l10n-id="content-region-header">手机助手</h1>
       </header>
       <div class="status-bar">
-        <a data-l10n-id="content-region-status-connected">连接电脑 - 设备已连接</a>
+        <a data-l10n-id="content-region-status-connected">状态 - 设备已连接</a>
       </div>
       <div id="connected-view" class="view">
         <header data-l10n-id="connected-view-header">已连接至电脑</header>
-        <button id="button-disconnect" data-l10n-id="connected-view-button-disconnect">断开连接</button>
+        <ul class="custompadding" data-l10n-id="connected-view-usb-info">用 USB 线连接电脑后，可通过电脑更好的管理手机上的联系人、图片、音乐、视频等数据。</ul>
+        <div class="sync-connection-img"></div>
       </div>
+      <button id="button-disconnect" data-l10n-id="button-disconnect">断开连接</button>
     </section>
   </body>
 </html>

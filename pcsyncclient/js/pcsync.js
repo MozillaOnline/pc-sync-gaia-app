@@ -24,20 +24,20 @@ var pcsync = {
 
   init: function() {
     self = this;
-    self.showRegionById('unconnect-region');
+    self.showRegionById('summary-region');
   },
 
   showRegionById: function(id) {
-    var views = ['help-region', 'unconnect-region', 'connected-region'];
+    var views = ['summary-region', 'unconnect-region', 'connected-region'];
     switch (id) {
+      case 'summary-region':
+        self.initSummaryRegion();
+        break;
       case 'unconnect-region':
         self.initUnconnectRegion();
         break;
       case 'connected-region':
         self.initConnectedRegion();
-        break;
-      case 'help-region':
-        self.initHelpRegion();
         break;
     }
 
@@ -47,21 +47,24 @@ var pcsync = {
     currentRegion = id;
   },
 
+  initSummaryRegion: function() {
+    document.getElementById('button-start-service').onclick = function () {
+      self.createSocketServer();
+      self.showRegionById('unconnect-region');
+    }
+  },
+
   initUnconnectRegion: function() {
-    self.createSocketServer();
-    document.getElementById('unconnect-region-button-help').onclick = function () {
-      self.showRegionById('help-region');
+    document.getElementById('button-stop-service').onclick = function () {
+      self.disconnect();
+      self.closeSocketServer();
+      self.showRegionById('summary-region');
     };
   },
 
   initConnectedRegion: function() {
     document.getElementById('button-disconnect').onclick = function (event) {
       self.disconnect();
-    };
-  },
-
-  initHelpRegion: function() {
-    document.getElementById('help-region-back').onclick = function (event) {
       self.showRegionById('unconnect-region');
     };
   },
@@ -69,20 +72,23 @@ var pcsync = {
   createSocketServer: function() {
     tcpServer = window.navigator.mozTCPSocket.listen(PORT, OPTIONS, BACKLOG);
     if (!tcpServer) {
+      console.log('tcpServer is null !!!!!!!!!!!!!!');
+      self.disconnect();
+      self.closeSocketServer();
+      self.showRegionById('summary-region');
       return;
     }
     tcpServer.onconnect = function(event) {
+      console.log('tcpServer is connect !!!!!!!!!!!!!!');
       var serverSocket = new TCPSocketWrapper({
         socket: event,
         onmessage: handleMessage,
         onerror: function() {
           self.disconnect();
-          self.closeSocketServer();
           self.showRegionById('unconnect-region');
         },
         onclose: function() {
           self.disconnect();
-          self.closeSocketServer();
           self.showRegionById('unconnect-region');
         }
       });
@@ -103,7 +109,7 @@ var pcsync = {
       console.log('tcpServer is error !!!!!!!!!!!!!!');
       self.disconnect();
       self.closeSocketServer();
-      self.showRegionById('unconnect-region');
+      self.showRegionById('summary-region');
     }
   },
 
