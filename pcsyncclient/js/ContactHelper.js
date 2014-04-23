@@ -64,10 +64,10 @@ function addContact(socket, jsonCmd, sendCallback, recvData) {
   var newContact = new mozContact();
   debug('ContactHelper.js addContact contactData is: ' + contactData);
   var jsonContact = JSON.parse(contactData);
-  newContact.init(jsonContact);
   if (jsonContact.photo.length > 0) {
-    newContact.photo = [dataUri2Blob(jsonContact.photo)];
+    jsonContact.photo = [dataUri2Blob(jsonContact.photo)];
   }
+  newContact.init(jsonContact);
   var saveRequest = window.navigator.mozContacts.save(newContact);
   saveRequest.onsuccess = function() {
     jsonCmd.result = RS_OK;

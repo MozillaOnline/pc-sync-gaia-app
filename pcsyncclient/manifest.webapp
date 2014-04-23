@@ -1,27 +1,38 @@
 {
-  "description": "Connect to PC",
+  "description": "Connect to computer via USB cable, and manage contacts, pictures, musics and videos on it",
   "default_locale": "en-US",
   "orientation": "portrait-primary",
-  "name": "PCSyncClient",
+  "name": "PC Sync",
   "launch_path": "/index.html",
   "version": "m1.0",
   "permissions": {
-    "tcp-socket": {},
+    "tcp-socket": {
+      "description" : "Connect to computer."
+    },
     "contacts": {
+      "description" : "Manage contacts in Firefox browser.",
       "access": "readwrite"
     },
-    "systemXHR": {},
-    "storage": {},
+    "systemXHR": {
+      "description" : "Create tcp socket server."
+    },
+    "storage": {
+      "description" : "Display storage infomation in Firefox browser."
+    },
     "device-storage:pictures": {
+      "description" : "Display pictures in Firefox browser.",
       "access": "readwrite"
     },
     "device-storage:music": {
+      "description" : "Display musics in Firefox browser.",
       "access": "readwrite"
     },
     "device-storage:videos": {
+      "description" : "Display videos in Firefox browser.",
       "access": "readwrite"
     },
     "device-storage:sdcard": {
+      "description" : "Get media files from SD card.",
       "access": "readwrite"
     }
   },
@@ -32,8 +43,8 @@
       "description": "PC\u8fde\u63a5\u5668"
     },
     "en-US": {
-      "name": "PCSyncClient",
-      "description": "Connect to PC"
+      "name": "PC Sync",
+      "description": "Connect to computer via USB cable, and manage contacts, pictures, musics and videos on it"
     }
   },
   "icons": {
@@ -41,7 +52,7 @@
     "128": "/style/icons/pcsyncclient.png"
   },
   "developer": {
-    "url": "https://github.com/MozillaOnline/pc-sync-gaia-app",
-    "name": "The Beijing Team"
+    "url": "http://www.firefox.com.cn/",
+    "name": "Mozilla Online Limited"
   }
 }
