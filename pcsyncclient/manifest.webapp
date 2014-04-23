@@ -4,7 +4,7 @@
   "orientation": "portrait-primary",
   "name": "PC Sync",
   "launch_path": "/index.html",
-  "version": "m1.0",
+  "version": "m1.1",
   "permissions": {
     "tcp-socket": {
       "description" : "Connect to computer."
