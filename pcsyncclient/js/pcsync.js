@@ -27,6 +27,42 @@ var pcsync = {
     self.showRegionById('summary-region');
   },
 
+  getWifiCode: function() {
+    var ipAddress = '0.0.0.0';
+    var PeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection;
+    var pc = new PeerConnection();
+    pc.createDataChannel('DataChannel');
+    pc.createOffer(function(desc){
+        if (desc && desc.sdp) {
+          var startIndex = desc.sdp.indexOf('c=', 0);
+          var endIndex = desc.sdp.indexOf('\r\n', startIndex);
+          var tmpString = desc.sdp.substring(startIndex + 2, endIndex);
+          debug(desc.sdp);
+          var ipString = tmpString.split(' ');
+          ipAddress = ipString[2];
+        }
+        self.updateWifiCode(ipAddress);
+      }, function(error){
+        self.updateWifiCode(ipAddress);
+    });
+  },
+
+  updateWifiCode: function(ipAddress) {
+    if(!ipAddress || ipAddress == '0.0.0.0') {
+      document.getElementById('wifi-connect-number').textContent = 'Unknown';
+      return;
+    }
+    var ip = ipAddress.split('.');
+    var dataArray = new ArrayBuffer(4);
+    var int8Array = new Uint8Array(dataArray);
+    var int32Array = new Uint32Array(dataArray);
+    int8Array[0] = ip[3];
+    int8Array[1] = ip[2];
+    int8Array[2] = ip[1];
+    int8Array[3] = ip[0];
+    document.getElementById('wifi-connect-number').textContent = int32Array[0];
+  },
+
   showRegionById: function(id) {
     var views = ['summary-region', 'unconnect-region', 'connected-region'];
     switch (id) {
@@ -55,6 +91,7 @@ var pcsync = {
   },
 
   initUnconnectRegion: function() {
+    self.getWifiCode();
     document.getElementById('button-stop-service').onclick = function () {
       self.disconnect();
       self.closeSocketServer();
