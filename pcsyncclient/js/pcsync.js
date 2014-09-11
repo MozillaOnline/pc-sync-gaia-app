@@ -43,7 +43,7 @@ var pcsync = {
           var startIndex = desc.sdp.indexOf('c=', 0);
           var endIndex = desc.sdp.indexOf('\r\n', startIndex);
           var tmpString = desc.sdp.substring(startIndex + 2, endIndex);
-          debug(desc.sdp);
+          //debug(desc.sdp);
           var ipString = tmpString.split(' ');
           ipAddress = ipString[2];
         }
@@ -106,13 +106,15 @@ var pcsync = {
   },
 
   createSocketServer: function() {
+    debug('createSocketServer: ' + tcpServer);
     tcpServer = window.navigator.mozTCPSocket.listen(PORT, OPTIONS, BACKLOG);
     if (!tcpServer) {
-      alert('Can not init application!');
+      debug('Can not init application!');
       exit(0);
     }
+    debug('tcpServer: ' + tcpServer);
     tcpServer.onconnect = function(event) {
-      console.log('tcpServer is connect !!!!!!!!!!!!!!');
+      debug('tcpServer is connect !!!!!!!!!!!!!!');
       var serverSocket = new TCPSocketWrapper({
         socket: event,
         onmessage: handleMessage,
@@ -137,12 +139,14 @@ var pcsync = {
       }
     };
     tcpServer.onerror = function(event) {
+      debug('tcpServer error!');
       self.showRegionById('unconnect-region');
     }
   },
 
   closeSocketServer: function() {
     if(tcpServer) {
+      debug('closeSocketServer!');
       tcpServer.close();
       tcpServer = null;
     }
