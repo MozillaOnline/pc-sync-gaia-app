@@ -24,7 +24,13 @@ var pcsync = {
 
   init: function() {
     self = this;
-    self.showRegionById('summary-region');
+    self.showRegionById('unconnect-region');
+  },
+
+  loading: function() {
+    document.getElementById('modal-loading').classList.remove('hidden');
+    document.getElementById('modal-loading').style.marginTop = 0 + 'px';
+    document.getElementById('loading-container').style.marginTop = (document.getElementById('modal-loading').clientHeight/2 - 50) + 'px';
   },
 
   getWifiCode: function() {
@@ -48,27 +54,26 @@ var pcsync = {
   },
 
   updateWifiCode: function(ipAddress) {
+    /*document.getElementById('wifi-connect-number').textContent = ipAddress;*/
     if(!ipAddress || ipAddress == '0.0.0.0') {
       document.getElementById('wifi-connect-number').textContent = 'Unknown';
-      return;
+    } else {
+      var ip = ipAddress.split('.');
+      var dataArray = new ArrayBuffer(4);
+      var int8Array = new Uint8Array(dataArray);
+      var int32Array = new Uint32Array(dataArray);
+      int8Array[0] = ip[0];
+      int8Array[1] = ip[1];
+      int8Array[2] = ip[2];
+      int8Array[3] = ip[3];
+      document.getElementById('wifi-connect-number').textContent = int32Array[0];
     }
-    var ip = ipAddress.split('.');
-    var dataArray = new ArrayBuffer(4);
-    var int8Array = new Uint8Array(dataArray);
-    var int32Array = new Uint32Array(dataArray);
-    int8Array[0] = ip[3];
-    int8Array[1] = ip[2];
-    int8Array[2] = ip[1];
-    int8Array[3] = ip[0];
-    document.getElementById('wifi-connect-number').textContent = int32Array[0];
+    document.getElementById('modal-loading').classList.add('hidden');
   },
 
   showRegionById: function(id) {
-    var views = ['summary-region', 'unconnect-region', 'connected-region'];
+    var views = ['unconnect-region', 'connected-region'];
     switch (id) {
-      case 'summary-region':
-        self.initSummaryRegion();
-        break;
       case 'unconnect-region':
         self.initUnconnectRegion();
         break;
@@ -83,25 +88,19 @@ var pcsync = {
     currentRegion = id;
   },
 
-  initSummaryRegion: function() {
-    document.getElementById('button-start-service').onclick = function () {
-      self.createSocketServer();
-      self.showRegionById('unconnect-region');
-    }
-  },
-
   initUnconnectRegion: function() {
+    self.loading();
+    self.disconnect();
+    self.closeSocketServer();
+    self.createSocketServer();
     self.getWifiCode();
-    document.getElementById('button-stop-service').onclick = function () {
-      self.disconnect();
-      self.closeSocketServer();
-      self.showRegionById('summary-region');
+    document.getElementById('button-restart-service').onclick = function () {
+      self.showRegionById('unconnect-region');
     };
   },
 
   initConnectedRegion: function() {
     document.getElementById('button-disconnect').onclick = function (event) {
-      self.disconnect();
       self.showRegionById('unconnect-region');
     };
   },
@@ -109,11 +108,8 @@ var pcsync = {
   createSocketServer: function() {
     tcpServer = window.navigator.mozTCPSocket.listen(PORT, OPTIONS, BACKLOG);
     if (!tcpServer) {
-      console.log('tcpServer is null !!!!!!!!!!!!!!');
-      self.disconnect();
-      self.closeSocketServer();
-      self.showRegionById('summary-region');
-      return;
+      alert('Can not init application!');
+      exit(0);
     }
     tcpServer.onconnect = function(event) {
       console.log('tcpServer is connect !!!!!!!!!!!!!!');
@@ -121,11 +117,9 @@ var pcsync = {
         socket: event,
         onmessage: handleMessage,
         onerror: function() {
-          self.disconnect();
           self.showRegionById('unconnect-region');
         },
         onclose: function() {
-          self.disconnect();
           self.showRegionById('unconnect-region');
         }
       });
@@ -143,10 +137,7 @@ var pcsync = {
       }
     };
     tcpServer.onerror = function(event) {
-      console.log('tcpServer is error !!!!!!!!!!!!!!');
-      self.disconnect();
-      self.closeSocketServer();
-      self.showRegionById('summary-region');
+      self.showRegionById('unconnect-region');
     }
   },
 
