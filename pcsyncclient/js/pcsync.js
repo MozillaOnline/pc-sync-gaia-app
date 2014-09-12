@@ -37,6 +37,19 @@ var pcsync = {
     var ipAddress = '0.0.0.0';
     var PeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection;
     var pc = new PeerConnection();
+    var firstCon = true;
+    pc.onicecandidate = function (e) {
+      if (e.candidate && firstCon) {
+        firstCon = false;
+        var ipString = e.candidate.candidate.split(' ');
+        if (ipString.length == 8) {
+          ipAddress = ipString[4];
+        } else if (ipString.length == 12) {
+          ipAddress = ipString[9];
+        }
+        self.updateWifiCode(ipAddress);
+      }
+    };
     pc.createDataChannel('DataChannel');
     pc.createOffer(function(desc){
         if (desc && desc.sdp) {
@@ -45,9 +58,13 @@ var pcsync = {
           var tmpString = desc.sdp.substring(startIndex + 2, endIndex);
           //debug(desc.sdp);
           var ipString = tmpString.split(' ');
-          ipAddress = ipString[2];
+          if (ipString[2] == '0.0.0.0') {
+            pc.setLocalDescription(desc);
+          } else {
+            ipAddress = ipString[2];
+            self.updateWifiCode(ipAddress);
+          }
         }
-        self.updateWifiCode(ipAddress);
       }, function(error){
         self.updateWifiCode(ipAddress);
     });
