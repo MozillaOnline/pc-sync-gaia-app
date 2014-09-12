@@ -1,10 +1,22 @@
-html, body {
+* {
   margin: 0;
   padding: 0;
-  width: 100%;
+}
+
+html, body {
   height: 100%;
-  font-size: 10px;
-  overflow: hidden;
+  overflow-y: hidden;
+  font-size: 62.5%;
+}
+
+body {
+  font-size: 1.6rem;
+}
+
+.main {
+  background-color: #FFFFFF;
+  width: 100%;
+  color: #FFFFFF;
 }
 
 section[role="region"] {
@@ -14,59 +26,54 @@ section[role="region"] {
   width: 100%;
   height: 100%;
   border: 0;
-  background: url(images/document_bg.png);
   overflow: hidden;
 }
 
 /* ----------------------------------
  * HEADERS: default
  * ---------------------------------- */
-section[role="region"] > header:first-child {
+section[role="region"] > header {
   position: relative;
   z-index: 10;
   padding: 0;
   height: 5rem;
   color: #fff;
-  background-color: #F97C17;
+  background-color: #f37e21;
   border: none;
-}
-
-section[role="region"] > header:first-child h1 {
+  text-align: center;
   font-size: 2.5rem;
   line-height: 5rem;
-  text-align: left;
-  color: #fff;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  display: block;
-  overflow: hidden;
-  margin: 0;
-  padding: 0 1rem 0 3rem;
-  height: 100%;
   font-weight: lighter;
 }
 
 /* ----------------------------------
- * status-bar: default
+ * wifi-status-bar: default
  * ---------------------------------- */
-.status-bar {
+.wifi-status-bar {
   position: relative;
   z-index: 10;
   padding: 0;
-  height: 2.8rem;
-  background-color: #4d4d4d;
+  height: 12.4rem;
+  background: -moz-radial-gradient(#fff, #e5ecef) repeat scroll 0 0 transparent;
   background-size: auto 100%;
   border: none;
   float: left;
   width: 100%;
 }
 
-.status-bar a {
-  float: left;
-  margin-left: 1.2rem;
-  font-size: 1.2rem;
-  margin-top: .8rem;
-  color: #a6a6a6;
+.wifi {
+  margin-top: 1.2rem;
+  margin-left: calc(50% - 5rem);
+  width: 10rem;
+  height: 10rem;
+  background-image: url("images/wifi-disconnected.png");
+  background-origin: content-box;
+  background-repeat: no-repeat;
+  background-size: 100%;
+}
+
+.connected {
+  background-image: url("images/wifi-connected.png");
 }
 
 /* ----------------------------------
@@ -77,7 +84,7 @@ section[role="region"] > header:first-child h1 {
   z-index: 10;
   padding: 0;
   height: 60%;
-  color: #000;
+  color: #f4f4f4;
   background-size: auto 100%;
   border: none;
   float: left;
@@ -85,102 +92,59 @@ section[role="region"] > header:first-child h1 {
 }
 
 .view > header {
-  font-size: 2.6rem;
-  margin-top: 2.2rem;
-  color: #000;
+  font-size: 2rem;
+  margin-top: 2.6rem;
+  color: #333333;
   text-align: center;
 }
 
 .view > ul {
-  font-size: 1.8rem;
-  margin-top: 1.2rem;
-  color: #505859;
+  font-size: 3rem;
+  margin-top: 1.4rem;
+  color: #333333;
   list-style-type: none;
-  margin-right: 2rem;
+  text-align: center;
 }
 
 .view > ul li {
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   margin-top: 1.2rem;
-  color: #000;
-  list-style-type: decimal;
-}
-
-.custompadding {
-  padding-left: 2rem;
-}
-
-/* ----------------------------------
- * view: unconnect-view
- * ---------------------------------- */
-#unconnect-view > header {
-  font-size: 2.6rem;
-  margin-top: 11rem;
-  color: #505859;
-  text-align: center;
-}
-
-#unconnect-view > ul {
-  font-size: 2.2rem;
-  margin-top: 4rem;
-  color: #000;
-  list-style-type: none;
-  text-align: center;
-  margin-right: 0rem;
-  padding-left: 0rem;
-}
-
-#unconnect-view > ul li {
-  font-size: 1.6rem;
-  margin-top: 1.2rem;
-  color: #505859;
-  list-style-type: none;
-  padding-left: 3rem;
-  margin-right: 2rem;
+  margin-left: 3.4rem;
+  margin-right: 3.4rem;
+  color: #858585;
+  list-style-image: url("images/dot.png");
+  list-style-type: circle;
 }
 
 /* ----------------------------------
  * button: default
  * ---------------------------------- */
-section[role="region"] button::-moz-focus-inner {
+.button {
   border: none;
-  outline: none;
-}
-
-section[role="region"] button {
-  position: relative;
-  padding: 0;
-  background-size: auto 100%;
-  border: none;
-  float: left;
-  margin-left: 30%;
+  margin-left: 3.4rem;
+  margin-top: 2rem;
   text-align: center;
+  width: calc(100% - 6.8rem);
+  height: 5rem;
+  color: #fff;
   font-size: 2rem;
-  width: 40%;
-  height: 4rem;
-  color: #333;
+  background-color: #f37e21;
 }
 
-/* Pressed */
-section[role="region"] > button: active {
-  background-color: #006f86;
-  color: #fff;
-  text-shadow: 0 0.1rem 0 rgba(255, 255, 255, 0.25);
+
+
+/* ----------------------------------
+ * view: connected-view
+ * ---------------------------------- */
+#connected-view > ul li {
+  list-style-image: none;
+  list-style-type: none;
 }
 
-.sync-connection-img {
-  position: relative;
-  z-index: 10;
-  padding: 0;
-  height: 10rem;
-  width: 17rem;
-  color: #fff;
-  background: url(images/sync.png) no-repeat 0 0;
-  background-size: auto 100%;
-  border: none;
-  float: left;
-  margin-left: 7.2rem;
+#connected-view > button {
+  margin-top: 4.6rem;
 }
+
 /* loading */
 .modal {
   position: fixed;

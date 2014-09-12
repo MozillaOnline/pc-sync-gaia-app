@@ -38,7 +38,9 @@ var pcsync = {
     var PeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection;
     var pc = new PeerConnection();
     var firstCon = true;
+    var wifi_enabled = true;
     pc.onicecandidate = function (e) {
+      console.log(e);
       if (e.candidate && firstCon) {
         firstCon = false;
         var ipString = e.candidate.candidate.split(' ');
@@ -47,12 +49,17 @@ var pcsync = {
         } else if (ipString.length == 12) {
           ipAddress = ipString[9];
         }
-        self.updateWifiCode(ipAddress);
       }
+      self.updateWifiCode(ipAddress);
     };
+    pc.oniceconnectionstatechange = function (e) {
+      console.log(e);
+      wifi_enabled = false;
+    }
     pc.createDataChannel('DataChannel');
     pc.createOffer(function(desc){
-        if (desc && desc.sdp) {
+        console.log(desc.sdp);
+        if (desc && desc.sdp && wifi_enabled) {
           var startIndex = desc.sdp.indexOf('c=', 0);
           var endIndex = desc.sdp.indexOf('\r\n', startIndex);
           var tmpString = desc.sdp.substring(startIndex + 2, endIndex);
@@ -64,6 +71,8 @@ var pcsync = {
             ipAddress = ipString[2];
             self.updateWifiCode(ipAddress);
           }
+        } else {
+          self.updateWifiCode(ipAddress);
         }
       }, function(error){
         self.updateWifiCode(ipAddress);
@@ -74,6 +83,7 @@ var pcsync = {
     /*document.getElementById('wifi-connect-number').textContent = ipAddress;*/
     if(!ipAddress || ipAddress == '0.0.0.0') {
       document.getElementById('wifi-connect-number').textContent = 'Unknown';
+      document.getElementById('wifi-status').classList.remove('connected');
     } else {
       var ip = ipAddress.split('.');
       var dataArray = new ArrayBuffer(4);
@@ -84,6 +94,7 @@ var pcsync = {
       int8Array[2] = ip[2];
       int8Array[3] = ip[3];
       document.getElementById('wifi-connect-number').textContent = int32Array[0];
+      document.getElementById('wifi-status').classList.add('connected');
     }
     document.getElementById('modal-loading').classList.add('hidden');
   },
