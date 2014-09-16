@@ -48,8 +48,13 @@
     }
   },
   "icons": {
-    "60": "/style/icons/60/pcsyncclient.png",
-    "128": "/style/icons/pcsyncclient.png"
+    "48": "/style/icons/icon48.png",
+    "60": "/style/icons/icon60.png",
+    "64": "/style/icons/icon64.png",
+    "90": "/style/icons/icon90.png",
+    "120": "/style/icons/icon120.png",
+    "128": "/style/icons/icon128.png",
+    "135": "/style/icons/icon135.png"
   },
   "developer": {
     "url": "http://www.firefox.com.cn/",
