@@ -434,85 +434,90 @@ var MediaDB = (function() {
     // DB Version is a 32bits unsigned short: upper 16bits is client app db
     // number, lower 16bits is MediaDB version number.
     var dbVersion = (0xFFFF & this.version) << 16 | (0xFFFF & MediaDB.VERSION);
-    var openRequest = indexedDB.open(this.dbname,
+    //dxue add to clear database
+    var deleteRequest = indexedDB.deleteDatabase(this.dbname);
+    var dbname = this.dbname;
+    deleteRequest.onsuccess = function() {
+        var openRequest = indexedDB.open(dbname,
                                      dbVersion);
 
-    // This should never happen for Gaia apps
-    openRequest.onerror = function(e) {
-      console.error('MediaDB():', openRequest.error.name);
-    };
+        // This should never happen for Gaia apps
+        openRequest.onerror = function(e) {
+          console.error('MediaDB():', openRequest.error.name);
+        };
 
-    // This should never happen for Gaia apps
-    openRequest.onblocked = function(e) {
-      console.error('indexedDB.open() is blocked in MediaDB()');
-    };
+        // This should never happen for Gaia apps
+        openRequest.onblocked = function(e) {
+          console.error('indexedDB.open() is blocked in MediaDB()');
+        };
 
-    // This is where we create (or delete and recreate) the database
-    openRequest.onupgradeneeded = function(e) {
-      var db = openRequest.result;
-      // read transaction from event for data manipulation (read/write).
-      var transaction = e.target.transaction;
-      var oldVersion = e.oldVersion;
-      // translate to db version and client version.
-      var oldDbVersion = 0xFFFF & oldVersion;
-      var oldClientVersion = 0xFFFF & (oldVersion >> 16);
+        // This is where we create (or delete and recreate) the database
+        openRequest.onupgradeneeded = function(e) {
+          var db = openRequest.result;
+          // read transaction from event for data manipulation (read/write).
+          var transaction = e.target.transaction;
+          var oldVersion = e.oldVersion;
+          // translate to db version and client version.
+          var oldDbVersion = 0xFFFF & oldVersion;
+          var oldClientVersion = 0xFFFF & (oldVersion >> 16);
 
-      // if client version is 0, oldVersion is the version number prior to
-      // bug 891797. The MediaDB.VERSION may be 2, and other parts is client
-      // version.
-      if (oldClientVersion === 0) {
-        oldDbVersion = 2;
-        oldClientVersion = oldVersion / oldDbVersion;
-      }
+          // if client version is 0, oldVersion is the version number prior to
+          // bug 891797. The MediaDB.VERSION may be 2, and other parts is client
+          // version.
+          if (oldClientVersion === 0) {
+            oldDbVersion = 2;
+            oldClientVersion = oldVersion / oldDbVersion;
+          }
 
-      if (0 == db.objectStoreNames.length) {
-        // No objectstore found. It is the first time use MediaDB, we need to
-        // create it.
-        createObjectStores(db);
-      } else {
-        // ObjectStore found, we need to upgrade data for both client upgrade
-        // and mediadb upgrade.
-        handleUpgrade(db, transaction, oldDbVersion, oldClientVersion);
-      }
-    };
+          if (0 == db.objectStoreNames.length) {
+            // No objectstore found. It is the first time use MediaDB, we need to
+            // create it.
+            createObjectStores(db);
+          } else {
+            // ObjectStore found, we need to upgrade data for both client upgrade
+            // and mediadb upgrade.
+            handleUpgrade(db, transaction, oldDbVersion, oldClientVersion);
+          }
+        };
 
-    // This is called when we've got the database open and ready.
-    openRequest.onsuccess = function(e) {
-      media.db = openRequest.result;
+        // This is called when we've got the database open and ready.
+        openRequest.onsuccess = function(e) {
+          media.db = openRequest.result;
 
-      // Log any errors that propagate up to here
-      media.db.onerror = function(event) {
-        console.error('MediaDB: ',
-                      event.target.error && event.target.error.name);
-      };
+          // Log any errors that propagate up to here
+          media.db.onerror = function(event) {
+            console.error('MediaDB: ',
+                          event.target.error && event.target.error.name);
+          };
 
-      // Query the db to find the modification time of the newest file
-      var cursorRequest =
-        media.db.transaction('files', 'readonly')
-        .objectStore('files')
-        .index('date')
-        .openCursor(null, 'prev');
+          // Query the db to find the modification time of the newest file
+          var cursorRequest =
+            media.db.transaction('files', 'readonly')
+            .objectStore('files')
+            .index('date')
+            .openCursor(null, 'prev');
 
-      cursorRequest.onerror = function() {
-        // If anything goes wrong just display an error.
-        // If this fails, don't even attempt error recovery
-        console.error('MediaDB initialization error', cursorRequest.error);
-      };
-      cursorRequest.onsuccess = function() {
-        var cursor = cursorRequest.result;
-        if (cursor) {
-          media.details.newestFileModTime = cursor.value.date;
-        }
-        else {
-          // No files in the db yet, so use a really old time
-          media.details.newestFileModTime = 0;
-        }
+          cursorRequest.onerror = function() {
+            // If anything goes wrong just display an error.
+            // If this fails, don't even attempt error recovery
+            console.error('MediaDB initialization error', cursorRequest.error);
+          };
+          cursorRequest.onsuccess = function() {
+            var cursor = cursorRequest.result;
+            if (cursor) {
+              media.details.newestFileModTime = cursor.value.date;
+            }
+            else {
+              // No files in the db yet, so use a really old time
+              media.details.newestFileModTime = 0;
+            }
 
-        // The DB is initialized, and we've got our mod time
-        // so move on and initialize device storage
-        initDeviceStorage();
-      };
-    };
+            // The DB is initialized, and we've got our mod time
+            // so move on and initialize device storage
+            initDeviceStorage();
+          };
+        };
+    }
 
     // helper function to create all indexes
     function createObjectStores(db) {
