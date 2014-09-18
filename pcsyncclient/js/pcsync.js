@@ -20,6 +20,16 @@ var socketWrapper;
 var currentRegion;
 var self;
 
+var photoDB = null;
+var musicDB = null;
+var videoDB = null;
+var isReadyPhotoDB = false;
+var isReadyMusicDB = false;
+var isReadyVideoDB = false;
+var curSocket = null;
+var curJsonCmd = null;
+var curSendCallback = null;
+
 var pcsync = {
 
   init: function() {
@@ -120,6 +130,24 @@ var pcsync = {
     self.loading();
     self.disconnect();
     self.closeSocketServer();
+    if (photoDB) {
+      photoDB.close();
+      photoDB = null;
+    }
+    if (musicDB) {
+      musicDB.close();
+      musicDB = null;
+    }
+    if (videoDB) {
+      videoDB.close();
+      videoDB = null;
+    }
+    isReadyPhotoDB = false;
+    isReadyMusicDB = false;
+    isReadyVideoDB = false;
+    curSocket = null;
+    curJsonCmd = null;
+    curSendCallback = null;
     self.createSocketServer();
     self.getWifiCode();
     document.getElementById('button-restart-service').onclick = function () {

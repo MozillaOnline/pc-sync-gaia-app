@@ -6,15 +6,6 @@
  *Description:
  *----------------------------------------------------------------------------------------------------------*/
 var videostorage;
-var photoDB = null;
-var musicDB = null;
-var videoDB = null;
-var isReadyPhotoDB = false;
-var isReadyMusicDB = false;
-var isReadyVideoDB = false;
-var curSocket = null;
-var curJsonCmd = null;
-var curSendCallback = null;
 function listenHelper(socket, jsonCmd, sendCallback, recvData) {
   try {
     debug('listenHelper.js start');
@@ -35,6 +26,9 @@ function listenHelper(socket, jsonCmd, sendCallback, recvData) {
 function listenContact() {
   navigator.mozContacts.oncontactchange = function oncontactchange(event) {
     debug('listenHelper.js oncontactchange');
+    if (!curSocket || !curJsonCmd || !curSendCallback) {
+      return;
+    }
     var contactMessage = {
       type: 'contact',
       contactID: event.contactID,
@@ -47,6 +41,7 @@ function listenContact() {
 }
 
 function listenPicture() {
+  debug('listenHelper.js photoDB:' + photoDB);
   if (photoDB != null) {
     return;
   }
@@ -67,6 +62,9 @@ function listenPicture() {
     isReadyPhotoDB = true;
   };
   photoDB.oncreated = function(event) {
+    if (!curSocket || !curJsonCmd || !curSendCallback) {
+      return;
+    }
     event.detail.forEach(function(photo) {
       if (photo.metadata.video) {
         return;
@@ -76,6 +74,9 @@ function listenPicture() {
     });
   };
   photoDB.ondeleted = function(event) {
+    if (!curSocket || !curJsonCmd || !curSendCallback) {
+      return;
+    }
     var pictureMessage = {
       type: 'picture',
       callbackID: 'ondeleted',
@@ -87,7 +88,10 @@ function listenPicture() {
 }
 
 function listenMusic() {
-  if (musicDB != null) {
+  /*if (musicDB != null) {
+    return;
+  }*/
+  if (!curSocket || !curJsonCmd || !curSendCallback) {
     return;
   }
   musicDB = new MediaDB('music', parseAudioMetadata, {
@@ -97,7 +101,7 @@ function listenMusic() {
     version: 2
   });
   musicDB.onunavailable = function(event) {
-  isReadyMusicDB = false;
+    isReadyMusicDB = false;
   };
   musicDB.oncardremoved = function oncardremoved() {
     isReadyMusicDB = false;
@@ -106,12 +110,18 @@ function listenMusic() {
     isReadyMusicDB = true;
   };
   musicDB.oncreated = function(event) {
+    if (!curSocket || !curJsonCmd || !curSendCallback) {
+      return;
+    }
     event.detail.forEach(function(music) {
       curJsonCmd.result = RS_OK;
       sendMusic(curSocket, curJsonCmd, curSendCallback, music);
     });
   };
   musicDB.ondeleted = function(event) {
+    if (!curSocket || !curJsonCmd || !curSendCallback) {
+      return;
+    }
     var musicMessage = {
       type: 'music',
       callbackID: 'ondeleted',
@@ -123,7 +133,10 @@ function listenMusic() {
 }
 
 function listenVideo() {
-  if (videoDB != null) {
+  /*if (videoDB != null) {
+    return;
+  }*/
+  if (!curSocket || !curJsonCmd || !curSendCallback) {
     return;
   }
   videoDB = new MediaDB('videos', null, {
@@ -140,11 +153,17 @@ function listenVideo() {
     isReadyVideoDB = true;
   };
   videoDB.oncreated = function(event) {
+    if (!curSocket || !curJsonCmd || !curSendCallback) {
+      return;
+    }
     event.detail.forEach(function(video) {
       addToMetadataQueue(video, false);
     });
   };
   videoDB.ondeleted = function(event) {
+    if (!curSocket || !curJsonCmd || !curSendCallback) {
+      return;
+    }
     var videoMessage = {
       type: 'video',
       callbackID: 'ondeleted',
