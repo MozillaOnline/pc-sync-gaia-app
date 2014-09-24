@@ -116,6 +116,12 @@ section[role="region"] > header {
   list-style-type: circle;
 }
 
+.view > ul a {
+  font-size: 1.4rem;
+  margin-top: 1.2rem;
+  color: #858585;
+}
+
 /* ----------------------------------
  * button: default
  * ---------------------------------- */

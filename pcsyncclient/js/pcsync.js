@@ -153,6 +153,11 @@ var pcsync = {
     document.getElementById('button-restart-service').onclick = function () {
       self.showRegionById('unconnect-region');
     };
+    if (navigator.mozL10n.language.code == 'zh-CN') {
+      document.getElementById("unconnect-view-help").href = "http://os.firefox.com.cn/project/ffos-assistant/help-cn.html";
+    } else {
+      document.getElementById("unconnect-view-help").href = "http://os.firefox.com.cn/project/ffos-assistant/help-en.html";
+    }
   },
 
   initConnectedRegion: function() {
