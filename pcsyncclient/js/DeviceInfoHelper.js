@@ -43,7 +43,7 @@ function getVersion(socket, jsonCmd, sendCallback) {
   };
 }
 
-function getSpace(storage, name, type, callback) {
+function getSpace(storage, id, name, type, callback) {
   var request = storage.freeSpace();
   var data = {};
   request.onsuccess = function(e) {
@@ -53,18 +53,18 @@ function getSpace(storage, name, type, callback) {
       var usedSpace = e.target.result;
       data['usedSpace'] = usedSpace;
       data['freeSpace'] = freeSpace;
-      callback(name, type, data);
+      callback(id, name, type, data);
     };
     requestused.onerror = function(e) {
       data['usedSpace'] = 'undefined';
       data['freeSpace'] = freeSpace;
-      callback(name, type, data);
+      callback(id, name, type, data);
     };
   };
   request.onerror = function(e) {
     data['usedSpace'] = 'undefined';
     data['freeSpace'] = 'undefined';
-    callback(name, type, data);
+    callback(id, name, type, data);
   };
 }
 
@@ -81,26 +81,34 @@ function getStorage(socket, jsonCmd, sendCallback) {
         storages.push(storage);
       }
     }
-    if (storages && storages.length > 0) {
-      storages.forEach(function(storage) {
-        var name = storage.storageName;
-        if (!storagesInfo.hasOwnProperty(name)) {
-          storagesInfo[name] = {};
-        }
-        storagesInfo[name][aType] = storage;
-        totalVolumes++;
-      });
+    if (!storages) {
+      return;
+    }
+    for (var i=0; i<storages.length; i++) {
+      var storage = storages[i];
+      var name = storage.storageName;
+      if (!storagesInfo.hasOwnProperty(name)) {
+        storagesInfo[name] = {};
+        storagesInfo[name]['id'] = i;
+      }
+      storagesInfo[name][aType] = storage;
+      totalVolumes++;
     }
   });
   if (totalVolumes > 0) {
     for (var uname in storagesInfo) {
       for (var utype in storagesInfo[uname]) {
+        if (utype == 'id') {
+          continue;
+        }
         getSpace(storagesInfo[uname][utype],
+                 storagesInfo[uname]['id'],
                  uname,
                  utype,
-                 function (cname, ctype, cdata){
+                 function (cid, cname, ctype, cdata){
                   if (!deviceInfo.hasOwnProperty(cname)) {
                     deviceInfo[cname] = {};
+                    deviceInfo[cname]['id'] = cid;
                   }
                   deviceInfo[cname][ctype] = cdata;
                   totalVolumes--;
