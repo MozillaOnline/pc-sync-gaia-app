@@ -93,6 +93,19 @@ function clearAllContacts(socket, jsonCmd, sendCallback) {
 }
 
 function getAllContacts(socket, jsonCmd, sendCallback) {
+  navigator.mozContacts.oncontactchange = function oncontactchange(event) {
+    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
+      return;
+    }
+    var contactMessage = {
+      type: 'contact',
+      contactID: event.contactID,
+      reason: event.reason
+    };
+    listenJsonCmd.result = RS_OK;
+    var sendData = JSON.stringify(contactMessage);
+    listenSendCallback(listenSocket, listenJsonCmd, sendData);
+  };
   debug('ContactHelper.js getAllContacts');
   var orderByLastName = true;
   var sortBy = (orderByLastName === true ? 'familyName' : 'givenName');
@@ -155,11 +168,10 @@ function getAllContacts(socket, jsonCmd, sendCallback) {
 }
 
 function getContactById(socket, jsonCmd, sendCallback, recvData) {
-  var contactData = recvData;
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
-    filterValue: contactData
+    filterValue: recvData
   };
   var request = window.navigator.mozContacts.find(options);
   request.onsuccess = function(evt) {
@@ -216,11 +228,10 @@ function getContactById(socket, jsonCmd, sendCallback, recvData) {
 }
 
 function getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvData) {
-  var contactData = recvData;
   var options = {
     filterBy: ['tel'],
     filterOp: 'match',
-    filterValue: contactData.replace(/\s+/g, '')
+    filterValue: recvData.replace(/\s+/g, '')
   };
   var request = window.navigator.mozContacts.find(options);
   request.onsuccess = function(evt) {
@@ -277,11 +288,10 @@ function getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvData) {
 }
 
 function removeContactById(socket, jsonCmd, sendCallback, recvData) {
-  var contactData = recvData;
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
-    filterValue: contactData
+    filterValue: recvData
   };
   var findRequest = window.navigator.mozContacts.find(options);
   findRequest.onsuccess = function(e) {
@@ -308,8 +318,7 @@ function removeContactById(socket, jsonCmd, sendCallback, recvData) {
 }
 
 function updateContactById(socket, jsonCmd, sendCallback, recvData) {
-  var contactData = recvData;
-  var newContact = JSON.parse(contactData);
+  var newContact = JSON.parse(recvData);
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',

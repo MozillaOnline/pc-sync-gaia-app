@@ -40,27 +40,96 @@ function musicHelper(socket, jsonCmd, sendCallback, recvData) {
 }
 
 function getOldMusicsInfo(socket, jsonCmd, sendCallback) {
+  if (!musicDB) {
+    isReadyMusicDB = false;
+    musicDB = new MediaDB('music', parseAudioMetadata, {
+      indexes: ['metadata.album', 'metadata.artist', 'metadata.title', 'metadata.rated', 'metadata.played', 'date'],
+      batchSize: 1,
+      autoscan: false,
+      version: 2
+    });
+     musicDB.onunavailable = function(event) {
+      isReadyMusicDB = false;
+    };
+    musicDB.oncardremoved = function oncardremoved() {
+      isReadyMusicDB = false;
+    };
+    musicDB.onready = function() {
+      isReadyMusicDB = true;
+      musicScan();
+    }
+  } else if (isReadyMusicDB) {
+    musicScan();
+  }
+
+  function musicScan() {
+    var musicsCount = 0;
+    musicDB.enumerate('metadata.title', function(music) {
+      if (!isReadyMusicDB) {
+        return;
+      }
+      if (!music) {
+        var musicMessage = {
+          type: 'music',
+          callbackID: 'enumerate-done',
+          detail: musicsCount
+        };
+        jsonCmd.result = RS_OK;
+        sendCallback(socket, jsonCmd, JSON.stringify(musicMessage));
+        return;
+      }
+      musicsCount++;
+      jsonCmd.result = RS_MIDDLE;
+      sendMusic(socket, jsonCmd, sendCallback, music);
+    });
+  };
+}
+
+function getChangedMusicsInfo(socket, jsonCmd, sendCallback) {
   if (!musicDB || !isReadyMusicDB) {
     jsonCmd.result = RS_ERROR.MUSIC_INIT;
     sendCallback(socket, jsonCmd, null);
     return;
   }
-  var musicsCount = 0;
-  musicDB.enumerate('metadata.title', function(music) {
-    if (!music) {
-      var musicMessage = {
-        type: 'music',
-        callbackID: 'enumerate-done',
-        detail: musicsCount
-      };
-      jsonCmd.result = RS_OK;
-      sendCallback(socket, jsonCmd, JSON.stringify(musicMessage));
+  musicDB.onscanend = function onscanend() {
+    jsonCmd.result = RS_OK;
+    sendCallback(socket, jsonCmd, null);
+  };
+  musicDB.oncreated = function(event) {
+    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
       return;
     }
-    musicsCount++;
-    jsonCmd.result = RS_MIDDLE;
-    sendMusic(socket, jsonCmd, sendCallback, music);
-  });
+    event.detail.forEach(function(music) {
+      listenJsonCmd.result = RS_OK;
+      sendMusic(listenSocket, listenJsonCmd, listenSendCallback, music);
+    });
+  };
+  musicDB.ondeleted = function(event) {
+    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
+      return;
+    }
+    var musicMessage = {
+      type: 'music',
+      callbackID: 'ondeleted',
+      detail: event.detail
+    };
+    listenJsonCmd.result = RS_OK;
+    listenSendCallback(listenSocket, listenJsonCmd, JSON.stringify(musicMessage));
+  };
+  musicDB.scan();
+
+}
+
+function deleteMusic(socket, jsonCmd, sendCallback, recvData) {
+  if (!isReadyMusicDB) {
+    jsonCmd.result = RS_ERROR.MUSIC_INIT;
+    sendCallback(socket, jsonCmd, null);
+    return;
+  }
+  var fileName = recvData;
+  musicDB.deleteFile(fileName);
+  jsonCmd.result = RS_OK;
+  sendCallback(socket, jsonCmd, null);
 }
 
 function sendMusic(socket, jsonCmd, sendCallback, music) {
@@ -77,27 +146,4 @@ function sendMusic(socket, jsonCmd, sendCallback, music) {
     detail: fileInfo
   };
   sendCallback(socket, jsonCmd, JSON.stringify(musicMessage));
-}
-
-function getChangedMusicsInfo(socket, jsonCmd, sendCallback) {
-  if (!musicDB || !isReadyMusicDB) {
-    jsonCmd.result = RS_ERROR.MUSIC_INIT;
-    sendCallback(socket, jsonCmd, null);
-    return;
-  }
-  musicDB.scan();
-  jsonCmd.result = RS_OK;
-  sendCallback(socket, jsonCmd, null);
-}
-
-function deleteMusic(socket, jsonCmd, sendCallback, recvData) {
-  if (!isReadyMusicDB) {
-    jsonCmd.result = RS_ERROR.MUSIC_INIT;
-    sendCallback(socket, jsonCmd, null);
-    return;
-  }
-  var fileName = recvData;
-  musicDB.deleteFile(fileName);
-  jsonCmd.result = RS_OK;
-  sendCallback(socket, jsonCmd, null);
 }

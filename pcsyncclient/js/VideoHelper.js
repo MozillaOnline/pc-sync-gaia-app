@@ -40,50 +40,78 @@ function videoHelper(socket, jsonCmd, sendCallback, recvData) {
   }
 }
 
-function getOldVideosInfo(socket, jsonCmd, sendCallback) {
-  if (!videoDB || !isReadyVideoDB) {
-    jsonCmd.result = RS_ERROR.VIDEO_INIT;
-    sendCallback(socket, jsonCmd, null);
+function addVideo(video) {
+  if (!video || !video.metadata.isVideo) {
     return;
   }
-  var videosCount = 0;
-  videosEnumerateDone = false;
-  videosIndex = 0;
-  videoDB.enumerate('date', null, 'prev', function(video) {
-    if (video === null) {
-      var videoMessage = {
-        type: 'video',
-        callbackID: 'enumerate-done',
-        detail: videosCount
-      };
-      videosEnumerateDone = true;
-      if (videosCount == videosIndex) {
-        jsonCmd.result = RS_OK;
-      } else {
-        jsonCmd.result = RS_MIDDLE;
+  curJsonCmd.result = RS_OK;
+  sendVideo(curSocket, curJsonCmd, curSendCallback, video);
+}
+
+function getOldVideosInfo(socket, jsonCmd, sendCallback) {
+  if (!videoDB) {
+    isReadyVideoDB = false;
+    videoDB = new MediaDB('videos', null, {
+      autoscan: false,
+      excludeFilter: /DCIM\/\d{3}MZLLA\/\.VID_\d{4}\.3gp$/
+    });
+    videoDB.onunavailable = function(event) {
+      isReadyVideoDB = false;
+    };
+    videoDB.oncardremoved = function oncardremoved() {
+      isReadyVideoDB = false;
+    };
+    videoDB.onready = function() {
+      isReadyVideoDB = true;
+      videoScan();
+    }
+  } else if (isReadyVideoDB) {
+    videoScan();
+  }
+
+  function videoScan() {
+    var videosCount = 0;
+    videosEnumerateDone = false;
+    videosIndex = 0;
+    videoDB.enumerate('date', null, 'prev', function(video) {
+      if (!isReadyVideoDB) {
+        return;
       }
-      sendCallback(socket, jsonCmd, JSON.stringify(videoMessage));
-      return;
-    }
-    var isVideo = video.metadata.isVideo;
-    // If we know this is not a video, ignore it
-    if (isVideo === false) {
-      return;
-    }
-    // If we don't have metadata for this video yet, add it to the
-    // metadata queue to get processed. Once the metadata is
-    // available, it will be passed to addVideo()
-    if (isVideo === undefined) {
-      addToMetadataQueue(video, true);
-      return;
-    }
-    // If we've parsed the metadata and know this is a video, display it.
-    if (isVideo === true) {
-      videosCount++;
-      jsonCmd.result = RS_MIDDLE;
-      sendVideo(socket, jsonCmd, sendCallback, video, videosCount);
-    }
-  });
+      if (video === null) {
+        var videoMessage = {
+          type: 'video',
+          callbackID: 'enumerate-done',
+          detail: videosCount
+        };
+        videosEnumerateDone = true;
+        if (videosCount == videosIndex) {
+          jsonCmd.result = RS_OK;
+        } else {
+          jsonCmd.result = RS_MIDDLE;
+        }
+        sendCallback(socket, jsonCmd, JSON.stringify(videoMessage));
+        return;
+      }
+      var isVideo = video.metadata.isVideo;
+      // If we know this is not a video, ignore it
+      if (isVideo === false) {
+        return;
+      }
+      // If we don't have metadata for this video yet, add it to the
+      // metadata queue to get processed. Once the metadata is
+      // available, it will be passed to addVideo()
+      if (isVideo === undefined) {
+        addToMetadataQueue(video, true);
+        return;
+      }
+      // If we've parsed the metadata and know this is a video, display it.
+      if (isVideo === true) {
+        videosCount++;
+        jsonCmd.result = RS_MIDDLE;
+        sendVideo(socket, jsonCmd, sendCallback, video, videosCount);
+      }
+    });
+  };
 }
 
 function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
@@ -92,9 +120,31 @@ function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
     sendCallback(socket, jsonCmd, null);
     return;
   }
+  videoDB.onscanend = function onscanend() {
+    jsonCmd.result = RS_OK;
+    sendCallback(socket, jsonCmd, null);
+  };
+  videoDB.oncreated = function(event) {
+    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
+      return;
+    }
+    event.detail.forEach(function(video) {
+      addToMetadataQueue(video, false);
+    });
+  };
+  videoDB.ondeleted = function(event) {
+    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
+      return;
+    }
+    var videoMessage = {
+      type: 'video',
+      callbackID: 'ondeleted',
+      detail: event.detail
+    };
+    listenJsonCmd.result = RS_OK;
+    listenSendCallback(listenSocket, listenJsonCmd, JSON.stringify(videoMessage));
+  };
   videoDB.scan();
-  jsonCmd.result = RS_OK;
-  sendCallback(socket, jsonCmd, null);
 }
 
 function sendVideo(socket, jsonCmd, sendCallback, video, count) {

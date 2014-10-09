@@ -5,7 +5,7 @@
  *Modified By:
  *Description:
  *----------------------------------------------------------------------------------------------------------*/
-let DEBUG = 1;
+let DEBUG = 0;
 function debug(s) {
   if (DEBUG) {
     console.log("-*- pcsyncclient: " + s + "\n");
@@ -26,9 +26,9 @@ var videoDB = null;
 var isReadyPhotoDB = false;
 var isReadyMusicDB = false;
 var isReadyVideoDB = false;
-var curSocket = null;
-var curJsonCmd = null;
-var curSendCallback = null;
+var listenSocket = null;
+var listenJsonCmd = null;
+var listenSendCallback = null;
 
 var pcsync = {
 
@@ -50,7 +50,7 @@ var pcsync = {
     var firstCon = true;
     var wifi_enabled = true;
     pc.onicecandidate = function (e) {
-      console.log(e);
+      debug(e);
       if (e.candidate && firstCon) {
         firstCon = false;
         var ipString = e.candidate.candidate.split(' ');
@@ -63,12 +63,12 @@ var pcsync = {
       self.updateWifiCode(ipAddress);
     };
     pc.oniceconnectionstatechange = function (e) {
-      console.log(e);
+      debug(e);
       wifi_enabled = false;
     }
     pc.createDataChannel('DataChannel');
     pc.createOffer(function(desc){
-        console.log(desc.sdp);
+        debug(desc.sdp);
         if (desc && desc.sdp && wifi_enabled) {
           var startIndex = desc.sdp.indexOf('c=', 0);
           var endIndex = desc.sdp.indexOf('\r\n', startIndex);
@@ -111,6 +111,7 @@ var pcsync = {
 
   showRegionById: function(id) {
     var views = ['unconnect-region', 'connected-region'];
+    currentRegion = id;
     switch (id) {
       case 'unconnect-region':
         self.initUnconnectRegion();
@@ -119,35 +120,37 @@ var pcsync = {
         self.initConnectedRegion();
         break;
     }
-
     views.forEach( function (viewId) {
       document.getElementById(viewId).hidden = !(viewId == id);
     });
-    currentRegion = id;
   },
 
   initUnconnectRegion: function() {
     self.loading();
     self.disconnect();
     self.closeSocketServer();
+    navigator.mozContacts.oncontactchange = null;
     if (photoDB) {
-      photoDB.close();
-      photoDB = null;
+      photoDB.oncreated = null;
+      photoDB.ondeleted = null;
+      photoDB.onscanend = null;
+      photoDB.cancelScan();
     }
     if (musicDB) {
-      musicDB.close();
-      musicDB = null;
+      musicDB.oncreated = null;
+      musicDB.ondeleted = null;
+      musicDB.onscanend = null;
+      musicDB.cancelScan();
     }
     if (videoDB) {
-      videoDB.close();
-      videoDB = null;
+      videoDB.oncreated = null;
+      videoDB.ondeleted = null;
+      videoDB.onscanend = null;
+      videoDB.cancelScan();
     }
-    isReadyPhotoDB = false;
-    isReadyMusicDB = false;
-    isReadyVideoDB = false;
-    curSocket = null;
-    curJsonCmd = null;
-    curSendCallback = null;
+    listenSocket = null;
+    listenJsonCmd = null;
+    listenSendCallback = null;
     self.createSocketServer();
     self.getWifiCode();
     document.getElementById('button-restart-service').onclick = function () {
@@ -180,10 +183,12 @@ var pcsync = {
         socket: event,
         onmessage: handleMessage,
         onerror: function() {
-          self.showRegionById('unconnect-region');
+          if ( currentRegion != 'unconnect-region')
+            self.showRegionById('unconnect-region');
         },
         onclose: function() {
-          self.showRegionById('unconnect-region');
+          if ( currentRegion != 'unconnect-region')
+            self.showRegionById('unconnect-region');
         }
       });
       if (!socketWrapper) {
@@ -201,7 +206,8 @@ var pcsync = {
     };
     tcpServer.onerror = function(event) {
       debug('tcpServer error!');
-      self.showRegionById('unconnect-region');
+      if ( currentRegion != 'unconnect-region')
+        self.showRegionById('unconnect-region');
     }
   },
 
