@@ -64,8 +64,9 @@ function getOldMusicsInfo(socket, jsonCmd, sendCallback) {
 
   function musicScan() {
     var musicsCount = 0;
-    musicDB.enumerate('metadata.title', function(music) {
-      if (!isReadyMusicDB) {
+    var handle = musicDB.enumerate('metadata.title', function(music) {
+      if ( currentRegion == 'unconnect-region') {
+        musicDB.cancelEnumeration(handle);
         return;
       }
       if (!music) {

@@ -73,8 +73,9 @@ function getOldVideosInfo(socket, jsonCmd, sendCallback) {
     var videosCount = 0;
     videosEnumerateDone = false;
     videosIndex = 0;
-    videoDB.enumerate('date', null, 'prev', function(video) {
-      if (!isReadyVideoDB) {
+    var handle = videoDB.enumerate('date', null, 'prev', function(video) {
+      if ( currentRegion == 'unconnect-region') {
+        videoDB.cancelEnumeration(handle);
         return;
       }
       if (video === null) {

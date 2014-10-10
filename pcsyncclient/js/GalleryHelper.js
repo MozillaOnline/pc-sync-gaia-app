@@ -69,8 +69,9 @@ function getOldPicturesInfo(socket, jsonCmd, sendCallback) {
     var picturesCount = 0;
     picturesEnumerateDone = false;
     picturesIndex = 0;
-    photoDB.enumerate('date', null, 'prev', function(photo) {
-      if (!isReadyPhotoDB) {
+    var handle = photoDB.enumerate('date', null, 'prev', function(photo) {
+      if ( currentRegion == 'unconnect-region') {
+        photoDB.cancelEnumeration(handle);
         return;
       }
       if (!photo) {
