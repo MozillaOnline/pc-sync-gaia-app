@@ -7,36 +7,38 @@
  *----------------------------------------------------------------------------------------------------------*/
 var videosIndex = 0;
 var videosEnumerateDone = false;
-function videoHelper(socket, jsonCmd, sendCallback, recvData) {
+function videoHelper(jsonCmd, recvData) {
   try {
     switch (jsonCmd.command) {
     case VIDEO_COMMAND.getOldVideosInfo:
       {
-        getOldVideosInfo(socket, jsonCmd, sendCallback);
+        getOldVideosInfo(jsonCmd);
         break;
       }
     case VIDEO_COMMAND.getChangedVideosInfo:
       {
-        getChangedVideosInfo(socket, jsonCmd, sendCallback);
+        getChangedVideosInfo(jsonCmd);
         break;
       }
     case VIDEO_COMMAND.deleteVideo:
       {
-        deleteVideo(socket, jsonCmd, sendCallback, recvData);
+        deleteVideo(jsonCmd, recvData);
         break;
       }
     default:
       {
         debug('VideoHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        sendCallback(socket, jsonCmd, null);
+        if (socketWrappers[serverSocket])
+          socketWrappers[serverSocket].send(jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     debug('VideoHelper.js videoHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   }
 }
 
@@ -44,11 +46,10 @@ function addVideo(video) {
   if (!video || !video.metadata.isVideo) {
     return;
   }
-  curJsonCmd.result = RS_OK;
-  sendVideo(curSocket, curJsonCmd, curSendCallback, video);
+  sendVideo(true, null, video);
 }
 
-function getOldVideosInfo(socket, jsonCmd, sendCallback) {
+function getOldVideosInfo(jsonCmd) {
   if (!videoDB) {
     isReadyVideoDB = false;
     videoDB = new MediaDB('videos', null, {
@@ -90,7 +91,8 @@ function getOldVideosInfo(socket, jsonCmd, sendCallback) {
         } else {
           jsonCmd.result = RS_MIDDLE;
         }
-        sendCallback(socket, jsonCmd, JSON.stringify(videoMessage));
+        if (socketWrappers[serverSocket])
+          socketWrappers[serverSocket].send(jsonCmd, JSON.stringify(videoMessage));
         return;
       }
       var isVideo = video.metadata.isVideo;
@@ -105,50 +107,58 @@ function getOldVideosInfo(socket, jsonCmd, sendCallback) {
         addToMetadataQueue(video, true);
         return;
       }
+      debug('videosCount:' + videosCount);
       // If we've parsed the metadata and know this is a video, display it.
       if (isVideo === true) {
         videosCount++;
         jsonCmd.result = RS_MIDDLE;
-        sendVideo(socket, jsonCmd, sendCallback, video, videosCount);
+        sendVideo(false, jsonCmd, video, videosCount);
       }
     });
   };
 }
 
-function getChangedVideosInfo(socket, jsonCmd, sendCallback) {
+function getChangedVideosInfo(jsonCmd) {
   if (!videoDB || !isReadyVideoDB) {
     jsonCmd.result = RS_ERROR.VIDEO_INIT;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
     return;
   }
   videoDB.onscanend = function onscanend() {
     jsonCmd.result = RS_OK;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
   videoDB.oncreated = function(event) {
-    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
+    debug('oncreated:' + !socketWrappers[listenSocket]);
+    if (!socketWrappers[listenSocket])
       return;
-    }
     event.detail.forEach(function(video) {
       addToMetadataQueue(video, false);
     });
   };
   videoDB.ondeleted = function(event) {
-    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
+    if (!socketWrappers[listenSocket])
       return;
-    }
     var videoMessage = {
       type: 'video',
       callbackID: 'ondeleted',
       detail: event.detail
     };
-    listenJsonCmd.result = RS_OK;
-    listenSendCallback(listenSocket, listenJsonCmd, JSON.stringify(videoMessage));
+    var listenJsonCmd = {
+      id: 0,
+      type: CMD_TYPE.listen,
+      command: LISTEN_COMMAND.listenVideo,
+      result: RS_OK,
+      datalength: 0
+    };
+    socketWrappers[listenSocket].send(listenJsonCmd, JSON.stringify(videoMessage));
   };
   videoDB.scan();
 }
 
-function sendVideo(socket, jsonCmd, sendCallback, video, count) {
+function sendVideo(isListen, jsonCmd, video, count) {
   var fileInfo = {
     'name': video.name,
     'type': video.type,
@@ -161,49 +171,111 @@ function sendVideo(socket, jsonCmd, sendCallback, video, count) {
     callbackID: 'enumerate',
     detail: fileInfo
   };
+  debug('sendVideo:' + isListen);
   var imageblob = video.metadata.bookmark || video.metadata.poster;
   if (imageblob == null) {
     videosIndex++;
-    if (count && !videosEnumerateDone) {
-      jsonCmd.result = RS_MIDDLE;
-    } else {
-      jsonCmd.result = RS_OK;
-    }
     var videoData = JSON.stringify(videoMessage);
-    sendCallback(socket, jsonCmd, videoData);
+    if (isListen) {
+      if (socketWrappers[listenSocket]) {
+        var listenJsonCmd = {
+          id: 0,
+          type: CMD_TYPE.listen,
+          command: LISTEN_COMMAND.listenVideo,
+          result: 0,
+          datalength: 0
+        };
+        if (count && !videosEnumerateDone) {
+          listenJsonCmd.result = RS_MIDDLE;
+        } else {
+          listenJsonCmd.result = RS_OK;
+        }
+        socketWrappers[listenSocket].send(listenJsonCmd, videoData);
+      }
+    } else {
+      if (socketWrappers[serverSocket]){
+        if (count && !videosEnumerateDone) {
+          jsonCmd.result = RS_MIDDLE;
+        } else {
+          jsonCmd.result = RS_OK;
+        }
+        socketWrappers[serverSocket].send(jsonCmd, videoData);
+      }
+    }
     return;
   }
   if (typeof(imageblob) == 'string') {
     videoMessage.detail.metadata.poster = imageblob;
     videosIndex++;
-    if (count && !videosEnumerateDone) {
-      jsonCmd.result = RS_MIDDLE;
-    } else {
-      jsonCmd.result = RS_OK;
-    }
     var videoData = JSON.stringify(videoMessage);
-    sendCallback(socket, jsonCmd, videoData);
+    if (isListen) {
+      if (socketWrappers[listenSocket]) {
+        var listenJsonCmd = {
+          id: 0,
+          type: CMD_TYPE.listen,
+          command: LISTEN_COMMAND.listenVideo,
+          result: RS_OK,
+          datalength: 0
+        };
+        if (count && !videosEnumerateDone) {
+          listenJsonCmd.result = RS_MIDDLE;
+        } else {
+          listenJsonCmd.result = RS_OK;
+        }
+        socketWrappers[listenSocket].send(listenJsonCmd, videoData);
+      }
+    } else {
+      if (socketWrappers[serverSocket]){
+        if (count && !videosEnumerateDone) {
+          jsonCmd.result = RS_MIDDLE;
+        } else {
+          jsonCmd.result = RS_OK;
+        }
+        socketWrappers[serverSocket].send(jsonCmd, videoData);
+      }
+    }
   } else {
     var fileReader = new FileReader();
     fileReader.readAsDataURL(imageblob);
     fileReader.onload = function(e) {
       videoMessage.detail.metadata.poster = e.target.result;
       videosIndex++;
-      if (count && !videosEnumerateDone) {
-        jsonCmd.result = RS_MIDDLE;
-      } else {
-        jsonCmd.result = RS_OK;
-      }
       var videoData = JSON.stringify(videoMessage);
-      sendCallback(socket, jsonCmd, videoData);
+      if (isListen) {
+        if (socketWrappers[listenSocket]) {
+          var listenJsonCmd = {
+            id: 0,
+            type: CMD_TYPE.listen,
+            command: LISTEN_COMMAND.listenVideo,
+            result: RS_OK,
+            datalength: 0
+          };
+          if (count && !videosEnumerateDone) {
+            listenJsonCmd.result = RS_MIDDLE;
+          } else {
+            listenJsonCmd.result = RS_OK;
+          }
+          socketWrappers[listenSocket].send(listenJsonCmd, videoData);
+        }
+      } else {
+        if (socketWrappers[serverSocket]){
+          if (count && !videosEnumerateDone) {
+            jsonCmd.result = RS_MIDDLE;
+          } else {
+            jsonCmd.result = RS_OK;
+          }
+          socketWrappers[serverSocket].send(jsonCmd, videoData);
+        }
+      }
     };
   }
 }
 
-function deleteVideo(socket, jsonCmd, sendCallback, recvData) {
+function deleteVideo(jsonCmd, recvData) {
   if (!isReadyVideoDB) {
     jsonCmd.result = RS_ERROR.VIDEO_INIT;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
     return;
   }
   var fileInfo = JSON.parse(recvData);
@@ -217,5 +289,6 @@ function deleteVideo(socket, jsonCmd, sendCallback, recvData) {
     pictures.delete(fileInfo.previewName);
   }
   jsonCmd.result = RS_OK;
-  sendCallback(socket, jsonCmd, null);
+  if (socketWrappers[serverSocket])
+    socketWrappers[serverSocket].send(jsonCmd, null);
 }

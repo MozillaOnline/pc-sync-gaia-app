@@ -8,40 +8,42 @@
 var picturesIndex = 0;
 var picturesEnumerateDone = false;
 var videostorage = null;
-function pictureHelper(socket, jsonCmd, sendCallback, recvData) {
+function pictureHelper(jsonCmd, recvData) {
   try {
     switch (jsonCmd.command) {
     case PICTURE_COMMAND.getOldPicturesInfo:
       {
-        getOldPicturesInfo(socket, jsonCmd, sendCallback);
+        getOldPicturesInfo(jsonCmd);
         break;
       }
     case PICTURE_COMMAND.getChangedPicturesInfo:
       {
-        getChangedPicturesInfo(socket, jsonCmd, sendCallback);
+        getChangedPicturesInfo(jsonCmd);
         break;
       }
     case PICTURE_COMMAND.deletePicture:
       {
-        deletePicture(socket, jsonCmd, sendCallback, recvData);
+        deletePicture(jsonCmd, recvData);
         break;
       }
     default:
       {
         debug('PictureHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        sendCallback(socket, jsonCmd, null);
+        if (socketWrappers[serverSocket])
+          socketWrappers[serverSocket].send(jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     debug('PictureHelper.js pictureHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   }
 }
 
-function getOldPicturesInfo(socket, jsonCmd, sendCallback) {
+function getOldPicturesInfo(jsonCmd) {
   if (!videostorage)
     videostorage = navigator.getDeviceStorage('videos');
   if (!photoDB) {
@@ -87,7 +89,8 @@ function getOldPicturesInfo(socket, jsonCmd, sendCallback) {
           jsonCmd.result = RS_MIDDLE;
         }
         debug('PictureHelper.js pictureHelper picturesCount detail: ' + picturesCount);
-        sendCallback(socket, jsonCmd, JSON.stringify(pictureMessage));
+        if (socketWrappers[serverSocket])
+          socketWrappers[serverSocket].send(jsonCmd, JSON.stringify(pictureMessage));
         return;
       }
       if (photo.metadata.video) {
@@ -96,12 +99,12 @@ function getOldPicturesInfo(socket, jsonCmd, sendCallback) {
       picturesCount++;
       debug('PictureHelper.js pictureHelper picturesCount: ' + picturesCount);
       jsonCmd.result = RS_MIDDLE;
-      sendPicture(socket, jsonCmd, sendCallback, photo, picturesCount);
+      sendPicture(false, jsonCmd, photo, picturesCount);
     });
   }
 }
 
-function sendPicture(socket, jsonCmd, sendCallback, photo, count) {
+function sendPicture(isListen, jsonCmd, photo, count) {
   var fileInfo = {
     'name': photo.name,
     'type': photo.type,
@@ -117,12 +120,32 @@ function sendPicture(socket, jsonCmd, sendCallback, photo, count) {
   var imageblob = photo.metadata.thumbnail;
   if (imageblob == null) {
     picturesIndex++;
-    if (count && !picturesEnumerateDone) {
-      jsonCmd.result = RS_MIDDLE;
+    if (isListen) {
+      if (socketWrappers[listenSocket]) {
+        var listenJsonCmd = {
+          id: 0,
+          type: CMD_TYPE.listen,
+          command: LISTEN_COMMAND.listenPicture,
+          result: 0,
+          datalength: 0
+        };
+        if (count && !picturesEnumerateDone) {
+          listenJsonCmd.result = RS_MIDDLE;
+        } else {
+          listenJsonCmd.result = RS_OK;
+        }
+        socketWrappers[listenSocket].send(listenJsonCmd, JSON.stringify(pictureMessage));
+      }
     } else {
-      jsonCmd.result = RS_OK;
+      if (socketWrappers[serverSocket]) {
+        if (count && !picturesEnumerateDone) {
+          jsonCmd.result = RS_MIDDLE;
+        } else {
+          jsonCmd.result = RS_OK;
+        }
+        socketWrappers[serverSocket].send(jsonCmd, JSON.stringify(pictureMessage));
+      }
     }
-    sendCallback(socket, jsonCmd, JSON.stringify(pictureMessage));
     return;
   }
   var fileReader = new FileReader();
@@ -130,60 +153,87 @@ function sendPicture(socket, jsonCmd, sendCallback, photo, count) {
   fileReader.onload = function(e) {
     pictureMessage.detail.metadata.thumbnail = e.target.result;
     picturesIndex++;
-    if (count && !picturesEnumerateDone) {
-      jsonCmd.result = RS_MIDDLE;
+    if (isListen) {
+      if (socketWrappers[listenSocket]) {
+        var listenJsonCmd = {
+          id: 0,
+          type: CMD_TYPE.listen,
+          command: LISTEN_COMMAND.listenPicture,
+          result: RS_OK,
+          datalength: 0
+        };
+        if (count && !picturesEnumerateDone) {
+          listenJsonCmd.result = RS_MIDDLE;
+        } else {
+          listenJsonCmd.result = RS_OK;
+        }
+        socketWrappers[listenSocket].send(listenJsonCmd, JSON.stringify(pictureMessage));
+      }
     } else {
-      jsonCmd.result = RS_OK;
+      if (socketWrappers[serverSocket]){
+        if (count && !picturesEnumerateDone) {
+          jsonCmd.result = RS_MIDDLE;
+        } else {
+          jsonCmd.result = RS_OK;
+        }
+        socketWrappers[serverSocket].send(jsonCmd, JSON.stringify(pictureMessage));
+      }
     }
-    sendCallback(socket, jsonCmd, JSON.stringify(pictureMessage));
   }
 }
 
-function getChangedPicturesInfo(socket, jsonCmd, sendCallback) {
+function getChangedPicturesInfo(jsonCmd) {
   if (!photoDB || !isReadyPhotoDB) {
     jsonCmd.result = RS_ERROR.PICTURE_INIT;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
     return;
   }
   photoDB.onscanend = function onscanend() {
     jsonCmd.result = RS_OK;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
   photoDB.oncreated = function(event) {
-    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
+    if (!socketWrappers[listenSocket])
       return;
-    }
     event.detail.forEach(function(photo) {
       if (photo.metadata.video) {
         return;
       }
-      listenJsonCmd.result = RS_OK;
-      sendPicture(listenSocket, listenJsonCmd, listenSendCallback, photo);
+      sendPicture(true, null, photo);
     });
   };
   photoDB.ondeleted = function(event) {
-    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
+    if (!socketWrappers[listenSocket])
       return;
-    }
     var pictureMessage = {
       type: 'picture',
       callbackID: 'ondeleted',
       detail: event.detail
     };
-    listenJsonCmd.result = RS_OK;
-    listenSendCallback(listenSocket, listenJsonCmd, JSON.stringify(pictureMessage));
+    var listenJsonCmd = {
+      id: 0,
+      type: CMD_TYPE.listen,
+      command: LISTEN_COMMAND.listenPicture,
+      result: RS_OK,
+      datalength: 0
+    };
+    socketWrappers[listenSocket].send(listenJsonCmd, JSON.stringify(pictureMessage));
   };
   photoDB.scan();
 }
 
-function deletePicture(socket, jsonCmd, sendCallback, recvData) {
+function deletePicture(jsonCmd, recvData) {
   if (!isReadyPhotoDB) {
     jsonCmd.result = RS_ERROR.PICTURE_INIT;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
     return;
   }
   var fileName = recvData;
   photoDB.deleteFile(fileName);
   jsonCmd.result = RS_OK;
-  sendCallback(socket, jsonCmd, null);
+  if (socketWrappers[serverSocket])
+    socketWrappers[serverSocket].send(jsonCmd, null);
 }

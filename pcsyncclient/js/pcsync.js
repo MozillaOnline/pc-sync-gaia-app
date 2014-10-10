@@ -16,7 +16,9 @@ var PORT = 25679;
 var BACKLOG = -1;
 var OPTIONS = { binaryType: 'arraybuffer' };
 var tcpServer;
-var socketWrapper;
+var socketWrappers = {};
+var serverSocket = 'server';
+var listenSocket = 'listen';
 var currentRegion;
 var self;
 
@@ -26,12 +28,8 @@ var videoDB = null;
 var isReadyPhotoDB = false;
 var isReadyMusicDB = false;
 var isReadyVideoDB = false;
-var listenSocket = null;
-var listenJsonCmd = null;
-var listenSendCallback = null;
 
 var pcsync = {
-
   init: function() {
     self = this;
     self.showRegionById('unconnect-region');
@@ -148,9 +146,7 @@ var pcsync = {
       videoDB.onscanend = null;
       videoDB.cancelScan();
     }
-    listenSocket = null;
-    listenJsonCmd = null;
-    listenSendCallback = null;
+    socketWrappers = {};
     self.createSocketServer();
     self.getWifiCode();
     document.getElementById('button-restart-service').onclick = function () {
@@ -178,21 +174,20 @@ var pcsync = {
     }
     debug('tcpServer: ' + tcpServer);
     tcpServer.onconnect = function(event) {
-      debug('tcpServer is connect !!!!!!!!!!!!!!');
-      var serverSocket = new TCPSocketWrapper({
-        socket: event,
-        onmessage: handleMessage,
-        onerror: function() {
-          if ( currentRegion != 'unconnect-region')
-            self.showRegionById('unconnect-region');
-        },
-        onclose: function() {
-          if ( currentRegion != 'unconnect-region')
-            self.showRegionById('unconnect-region');
-        }
-      });
-      if (!socketWrapper) {
-        socketWrapper = serverSocket;
+      if (currentRegion == 'unconnect-region') {
+        var server = new TCPSocketWrapper({
+          socket: event,
+          onmessage: handleMessage,
+          onerror: function() {
+            if ( currentRegion != 'unconnect-region')
+              self.showRegionById('unconnect-region');
+          },
+          onclose: function() {
+            if ( currentRegion != 'unconnect-region')
+              self.showRegionById('unconnect-region');
+          }
+        });
+        socketWrappers[serverSocket] = server;
         self.showRegionById('connected-region');
         var dataJson = {
           id: 0,
@@ -201,7 +196,12 @@ var pcsync = {
           result: 0,
           datalength: 0
         };
-        socketWrapper.send(dataJson, null);
+        server.send(dataJson, null);
+      } else {
+        var listen = new TCPSocketWrapper({
+          socket: event
+        });
+        socketWrappers[listenSocket] = listen;
       }
     };
     tcpServer.onerror = function(event) {
@@ -220,7 +220,7 @@ var pcsync = {
   },
 
   disconnect: function() {
-    if(socketWrapper) {
+    if(socketWrappers[serverSocket]) {
       var dataJson = {
         id: 0,
         type: CMD_TYPE.disconnect,
@@ -228,9 +228,9 @@ var pcsync = {
         result: 0,
         datalength: 0
       };
-      socketWrapper.send(dataJson, null);
-      socketWrapper.socket.close();
-      socketWrapper = null;
+      socketWrappers[serverSocket].send(dataJson, null);
+      socketWrappers[serverSocket].socket.close();
+      socketWrappers = {};
     }
   }
 };

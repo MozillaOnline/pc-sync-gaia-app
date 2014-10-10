@@ -6,60 +6,62 @@
  *Description:
  *----------------------------------------------------------------------------------------------------------*/
 
-function contactHelper(socket, jsonCmd, sendCallback, recvData) {
+function contactHelper(jsonCmd, recvData) {
   try {
     switch (jsonCmd.command) {
     case CONTACT_COMMAND.addContact:
       {
-        addContact(socket, jsonCmd, sendCallback, recvData);
+        addContact(jsonCmd, recvData);
         break;
       }
     case CONTACT_COMMAND.clearAllContacts:
       {
-        clearAllContacts(socket, jsonCmd, sendCallback);
+        clearAllContacts(jsonCmd);
         break;
       }
     case CONTACT_COMMAND.getAllContacts:
       {
-        getAllContacts(socket, jsonCmd, sendCallback);
+        getAllContacts(jsonCmd);
         break;
       }
     case CONTACT_COMMAND.getContactById:
       {
-        getContactById(socket, jsonCmd, sendCallback, recvData);
+        getContactById(jsonCmd, recvData);
         break;
       }
     case CONTACT_COMMAND.getContactByPhoneNumber:
       {
-        getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvData);
+        getContactByPhoneNumber(jsonCmd, recvData);
         break;
       }
     case CONTACT_COMMAND.removeContactById:
       {
-        removeContactById(socket, jsonCmd, sendCallback, recvData);
+        removeContactById(jsonCmd, recvData);
         break;
       }
     case CONTACT_COMMAND.updateContactById:
       {
-        updateContactById(socket, jsonCmd, sendCallback, recvData);
+        updateContactById(jsonCmd, recvData);
         break;
       }
     default:
       {
         debug('ContactHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        sendCallback(socket, jsonCmd, null);
+        if (socketWrappers[serverSocket])
+          socketWrappers[serverSocket].send(jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     debug('ContactHelper.js contactHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   }
 }
 
-function addContact(socket, jsonCmd, sendCallback, recvData) {
+function addContact(jsonCmd, recvData) {
   var contactData = recvData;
   var newContact = new mozContact();
   debug('ContactHelper.js addContact contactData is: ' + contactData);
@@ -72,31 +74,41 @@ function addContact(socket, jsonCmd, sendCallback, recvData) {
   saveRequest.onsuccess = function() {
     jsonCmd.result = RS_OK;
     var foundContact = JSON.stringify(newContact.id);
-    sendCallback(socket, jsonCmd, foundContact);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, foundContact);
   };
   saveRequest.onerror = function() {
     jsonCmd.result = RS_ERROR.CONTACT_ADDCONTACT;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
 }
 
-function clearAllContacts(socket, jsonCmd, sendCallback) {
+function clearAllContacts(jsonCmd) {
   var request = window.navigator.mozContacts.clear();
   request.onsuccess = function() {
     jsonCmd.result = RS_OK;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
   request.onerror = function() {
     jsonCmd.result = RS_ERROR.CONTACT_CLEARALLCONTACTS;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
 }
 
-function getAllContacts(socket, jsonCmd, sendCallback) {
+function getAllContacts(jsonCmd) {
   navigator.mozContacts.oncontactchange = function oncontactchange(event) {
-    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
+    if (!socketWrappers[listenSocket])
       return;
-    }
+    var listenJsonCmd = {
+      id: 0,
+      type: CMD_TYPE.listen,
+      command: LISTEN_COMMAND.listenContact,
+      result: RS_OK,
+      datalength: 0
+    };
     var contactMessage = {
       type: 'contact',
       contactID: event.contactID,
@@ -104,7 +116,7 @@ function getAllContacts(socket, jsonCmd, sendCallback) {
     };
     listenJsonCmd.result = RS_OK;
     var sendData = JSON.stringify(contactMessage);
-    listenSendCallback(listenSocket, listenJsonCmd, sendData);
+    socketWrappers[listenSocket].send(listenJsonCmd, sendData);
   };
   debug('ContactHelper.js getAllContacts');
   var orderByLastName = true;
@@ -158,16 +170,18 @@ function getAllContacts(socket, jsonCmd, sendCallback) {
       jsonCmd.result = RS_OK;
       var contactsData = JSON.stringify(chunk);
       debug('ContactHelper.js getAllContacts contactsData: ' + contactsData);
-      sendCallback(socket, jsonCmd, contactsData);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, contactsData);
     }
   };
   request.onerror = function() {
     jsonCmd.result = RS_ERROR.CONTACT_GETALLCONTACTS;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
 }
 
-function getContactById(socket, jsonCmd, sendCallback, recvData) {
+function getContactById(jsonCmd, recvData) {
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
@@ -178,7 +192,8 @@ function getContactById(socket, jsonCmd, sendCallback, recvData) {
     debug('ContactHelper.js getContactById e.target.result: ' + evt.target.result.length);
     if (evt.target.result.length == 0) {
       jsonCmd.result = RS_OK;
-      sendCallback(socket, jsonCmd, null);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
       return;
     }
     var contact = evt.target.result[0];
@@ -213,21 +228,24 @@ function getContactById(socket, jsonCmd, sendCallback, recvData) {
         contactJson.photo = e.target.result;
         jsonCmd.result = RS_OK;
         var contactData = JSON.stringify(contactJson);
-        sendCallback(socket, jsonCmd, contactData);
+        if (socketWrappers[serverSocket])
+          socketWrappers[serverSocket].send(jsonCmd, contactData);
       }
     } else {
       jsonCmd.result = RS_OK;
       var contactData = JSON.stringify(contactJson);
-      sendCallback(socket, jsonCmd, contactData);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, contactData);
     }
   };
   request.onerror = function() {
     jsonCmd.result = RS_ERROR.CONTACT_GETCONTACT;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
 }
 
-function getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvData) {
+function getContactByPhoneNumber(jsonCmd, recvData) {
   var options = {
     filterBy: ['tel'],
     filterOp: 'match',
@@ -238,7 +256,8 @@ function getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvData) {
     debug('ContactHelper.js getContactByPhoneNumber e.target.result: ' + evt.target.result.length);
     if (evt.target.result.length == 0) {
       jsonCmd.result = RS_OK;
-      sendCallback(socket, jsonCmd, null);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
       return;
     }
     var contact = evt.target.result[0];
@@ -273,21 +292,24 @@ function getContactByPhoneNumber(socket, jsonCmd, sendCallback, recvData) {
         contactJson.photo = e.target.result;
         jsonCmd.result = RS_OK;
         var contactData = JSON.stringify(contactJson);
-        sendCallback(socket, jsonCmd, contactData);
+        if (socketWrappers[serverSocket])
+          socketWrappers[serverSocket].send(jsonCmd, contactData);
       }
     } else {
       jsonCmd.result = RS_OK;
       var contactData = JSON.stringify(contactJson);
-      sendCallback(socket, jsonCmd, contactData);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, contactData);
     }
   };
   request.onerror = function() {
     jsonCmd.result = RS_ERROR.CONTACT_GETCONTACT;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
 }
 
-function removeContactById(socket, jsonCmd, sendCallback, recvData) {
+function removeContactById(jsonCmd, recvData) {
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
@@ -297,27 +319,31 @@ function removeContactById(socket, jsonCmd, sendCallback, recvData) {
   findRequest.onsuccess = function(e) {
     if (e.target.result.length == 0) {
       jsonCmd.result = RS_OK;
-      sendCallback(socket, jsonCmd, null);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
       return;
     }
     var request = window.navigator.mozContacts.remove(e.target.result[0]);
     request.onsuccess = function(e) {
       jsonCmd.result = RS_OK;
-      sendCallback(socket, jsonCmd, null);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
     };
     request.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_REMOVECONTACT;
-      sendCallback(socket, jsonCmd, null);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
     };
   };
   findRequest.onerror = function() {
     debug('pcsync contact.js line108');
     jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
 }
 
-function updateContactById(socket, jsonCmd, sendCallback, recvData) {
+function updateContactById(jsonCmd, recvData) {
   var newContact = JSON.parse(recvData);
   var options = {
     filterBy: ['id'],
@@ -328,7 +354,8 @@ function updateContactById(socket, jsonCmd, sendCallback, recvData) {
   request.onsuccess = function(e) {
     if (e.target.result.length == 0) {
       jsonCmd.result = RS_OK;
-      sendCallback(socket, jsonCmd, null);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
       return;
     }
     var updateContact = e.target.result[0];
@@ -343,15 +370,18 @@ function updateContactById(socket, jsonCmd, sendCallback, recvData) {
     saveRequest.onsuccess = function() {
       jsonCmd.result = RS_OK;
       var savedContact = JSON.stringify(updateContact);
-      sendCallback(socket, jsonCmd, savedContact);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, savedContact);
     };
     saveRequest.onerror = function() {
       jsonCmd.result = RS_ERROR.CONTACT_SAVECONTACT;
-      sendCallback(socket, jsonCmd, null);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
     };
   };
   request.onerror = function() {
     jsonCmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
 }

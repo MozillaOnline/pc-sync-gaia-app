@@ -6,40 +6,45 @@
  *Description:
  *----------------------------------------------------------------------------------------------------------*/
 
-function deviceInfoHelper(socket, jsonCmd, sendCallback, recvData) {
+function deviceInfoHelper(jsonCmd, recvData) {
   try {
     switch (jsonCmd.command) {
     case DEVICEINFO_COMMAND.getVersion:
-      getVersion(socket, jsonCmd, sendCallback);
+      getVersion(jsonCmd);
       break;
     case DEVICEINFO_COMMAND.getStorage:
-      getStorage(socket, jsonCmd, sendCallback);
+      getStorage(jsonCmd);
       break;
     default:
       jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-      sendCallback(socket, jsonCmd, null);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
       break;
     }
   } catch (e) {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   }
 }
 
-function getVersion(socket, jsonCmd, sendCallback) {
+function getVersion(jsonCmd) {
   var request = window.navigator.mozApps.getSelf();
   request.onsuccess = function() {
     if (request.result) {
-	  jsonCmd.result = RS_OK;
-      sendCallback(socket, jsonCmd, request.result.manifest.version);
+      jsonCmd.result = RS_OK;
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, request.result.manifest.version);
     } else {
       jsonCmd.result = RS_ERROR.UNKNOWEN;
-      sendCallback(socket, jsonCmd, null);
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
     }
   };
   request.onerror = function() {
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
 }
 
@@ -68,7 +73,7 @@ function getSpace(storage, id, name, type, callback) {
   };
 }
 
-function getStorage(socket, jsonCmd, sendCallback) {
+function getStorage(jsonCmd) {
   var mediaTypes = ['music', 'pictures', 'videos', 'sdcard'];
   var deviceInfo = {};
   var storagesInfo = {};
@@ -115,8 +120,9 @@ function getStorage(socket, jsonCmd, sendCallback) {
                   if (totalVolumes == 0) {
                     jsonCmd.result = RS_OK;
                     var sendData = JSON.stringify(deviceInfo);
-                    console.log('deviceInfoHelper.js getStorage sendData: ' + sendData);
-                    sendCallback(socket, jsonCmd, sendData);
+                    debug('deviceInfoHelper.js getStorage sendData: ' + sendData);
+                    if (socketWrappers[serverSocket])
+                      socketWrappers[serverSocket].send(jsonCmd, sendData);
                   }
         });
       }
@@ -124,7 +130,7 @@ function getStorage(socket, jsonCmd, sendCallback) {
   } else {
     jsonCmd.result = RS_OK;
     var sendData = JSON.stringify(deviceInfo);
-    console.log('deviceInfoHelper.js getStorage sendData: ' + sendData);
-    sendCallback(socket, jsonCmd, sendData);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, sendData);
   }
 }

@@ -6,40 +6,42 @@
  *Description: Format code
  *----------------------------------------------------------------------------------------------------------*/
 
-function musicHelper(socket, jsonCmd, sendCallback, recvData) {
+function musicHelper(jsonCmd, recvData) {
   try {
     switch (jsonCmd.command) {
     case MUSIC_COMMAND.getOldMusicsInfo:
       {
-        getOldMusicsInfo(socket, jsonCmd, sendCallback);
+        getOldMusicsInfo(jsonCmd);
         break;
       }
     case MUSIC_COMMAND.getChangedMusicsInfo:
       {
-        getChangedMusicsInfo(socket, jsonCmd, sendCallback);
+        getChangedMusicsInfo(jsonCmd);
         break;
       }
     case MUSIC_COMMAND.deleteMusic:
       {
-        deleteMusic(socket, jsonCmd, sendCallback, recvData);
+        deleteMusic(jsonCmd, recvData);
         break;
       }
     default:
       {
         debug('MusicHelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        sendCallback(socket, jsonCmd, null);
+        if (socketWrappers[serverSocket])
+          socketWrappers[serverSocket].send(jsonCmd, null);
         break;
       }
     }
   } catch (e) {
     debug('MusicHelper.js musicHelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   }
 }
 
-function getOldMusicsInfo(socket, jsonCmd, sendCallback) {
+function getOldMusicsInfo(jsonCmd) {
   if (!musicDB) {
     isReadyMusicDB = false;
     musicDB = new MediaDB('music', parseAudioMetadata, {
@@ -76,64 +78,72 @@ function getOldMusicsInfo(socket, jsonCmd, sendCallback) {
           detail: musicsCount
         };
         jsonCmd.result = RS_OK;
-        sendCallback(socket, jsonCmd, JSON.stringify(musicMessage));
+        if (socketWrappers[serverSocket])
+          socketWrappers[serverSocket].send(jsonCmd, JSON.stringify(musicMessage));
         return;
       }
       musicsCount++;
       jsonCmd.result = RS_MIDDLE;
-      sendMusic(socket, jsonCmd, sendCallback, music);
+      sendMusic(false, jsonCmd, music);
     });
   };
 }
 
-function getChangedMusicsInfo(socket, jsonCmd, sendCallback) {
+function getChangedMusicsInfo(jsonCmd) {
   if (!musicDB || !isReadyMusicDB) {
     jsonCmd.result = RS_ERROR.MUSIC_INIT;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
     return;
   }
   musicDB.onscanend = function onscanend() {
     jsonCmd.result = RS_OK;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
   };
   musicDB.oncreated = function(event) {
-    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
+    if (!socketWrappers[listenSocket])
       return;
-    }
     event.detail.forEach(function(music) {
-      listenJsonCmd.result = RS_OK;
-      sendMusic(listenSocket, listenJsonCmd, listenSendCallback, music);
+      sendMusic(true, null, music);
     });
   };
   musicDB.ondeleted = function(event) {
-    if (!listenSocket || !listenJsonCmd || !listenSendCallback) {
+    if (!socketWrappers[listenSocket])
       return;
-    }
     var musicMessage = {
       type: 'music',
       callbackID: 'ondeleted',
       detail: event.detail
     };
-    listenJsonCmd.result = RS_OK;
-    listenSendCallback(listenSocket, listenJsonCmd, JSON.stringify(musicMessage));
+    var listenJsonCmd = {
+      id: 0,
+      type: CMD_TYPE.listen,
+      command: LISTEN_COMMAND.listenMusic,
+      result: RS_OK,
+      datalength: 0
+    };
+    socketWrappers[listenSocket].send(listenJsonCmd, JSON.stringify(musicMessage));
   };
   musicDB.scan();
 
 }
 
-function deleteMusic(socket, jsonCmd, sendCallback, recvData) {
+function deleteMusic(jsonCmd, recvData) {
   if (!isReadyMusicDB) {
     jsonCmd.result = RS_ERROR.MUSIC_INIT;
-    sendCallback(socket, jsonCmd, null);
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, null);
     return;
   }
   var fileName = recvData;
   musicDB.deleteFile(fileName);
   jsonCmd.result = RS_OK;
-  sendCallback(socket, jsonCmd, null);
+  if (socketWrappers[serverSocket])
+    socketWrappers[serverSocket].send(jsonCmd, null);
 }
 
-function sendMusic(socket, jsonCmd, sendCallback, music) {
+function sendMusic(isListen, jsonCmd, music) {
   var fileInfo = {
     'name': music.name,
     'type': music.type,
@@ -146,5 +156,19 @@ function sendMusic(socket, jsonCmd, sendCallback, music) {
     callbackID: 'enumerate',
     detail: fileInfo
   };
-  sendCallback(socket, jsonCmd, JSON.stringify(musicMessage));
+  if (isListen) {
+    if (!socketWrappers[listenSocket])
+      return;
+    var listenJsonCmd = {
+      id: 0,
+      type: CMD_TYPE.listen,
+      command: LISTEN_COMMAND.listenMusic,
+      result: RS_OK,
+      datalength: 0
+    };
+    socketWrappers[listenSocket].send(listenJsonCmd, JSON.stringify(musicMessage));
+  } else {
+    if (socketWrappers[serverSocket])
+      socketWrappers[serverSocket].send(jsonCmd, JSON.stringify(musicMessage));
+  }
 }
