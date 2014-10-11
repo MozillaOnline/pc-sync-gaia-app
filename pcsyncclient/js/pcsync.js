@@ -43,48 +43,54 @@ var pcsync = {
 
   getWifiCode: function() {
     var ipAddress = '0.0.0.0';
-    var PeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection;
-    var pc = new PeerConnection();
-    var firstCon = true;
-    var wifi_enabled = true;
-    pc.onicecandidate = function (e) {
-      debug(e);
-      if (e.candidate && firstCon) {
-        firstCon = false;
-        var ipString = e.candidate.candidate.split(' ');
-        if (ipString.length == 8) {
-          ipAddress = ipString[4];
-        } else if (ipString.length == 12) {
-          ipAddress = ipString[9];
+    try{
+      var PeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection;
+      var pc = new PeerConnection();
+      var firstCon = true;
+      var wifi_enabled = true;
+      pc.onicecandidate = function (e) {
+        debug(e);
+        if (e.candidate && firstCon) {
+          firstCon = false;
+          var ipString = e.candidate.candidate.split(' ');
+          if (ipString.length == 8) {
+            ipAddress = ipString[4];
+          } else if (ipString.length == 12) {
+            ipAddress = ipString[9];
+          }
         }
+        self.updateWifiCode(ipAddress);
+      };
+      pc.oniceconnectionstatechange = function (e) {
+        debug(e);
+        wifi_enabled = false;
       }
-      self.updateWifiCode(ipAddress);
-    };
-    pc.oniceconnectionstatechange = function (e) {
-      debug(e);
-      wifi_enabled = false;
-    }
-    pc.createDataChannel('DataChannel');
-    pc.createOffer(function(desc){
-        debug(desc.sdp);
-        if (desc && desc.sdp && wifi_enabled) {
-          var startIndex = desc.sdp.indexOf('c=', 0);
-          var endIndex = desc.sdp.indexOf('\r\n', startIndex);
-          var tmpString = desc.sdp.substring(startIndex + 2, endIndex);
-          //debug(desc.sdp);
-          var ipString = tmpString.split(' ');
-          if (ipString[2] == '0.0.0.0') {
-            pc.setLocalDescription(desc);
+      pc.createDataChannel('DataChannel');
+      pc.createOffer(function(desc){
+          debug(desc.sdp);
+          if (desc && desc.sdp && wifi_enabled) {
+            var startIndex = desc.sdp.indexOf('c=', 0);
+            var endIndex = desc.sdp.indexOf('\r\n', startIndex);
+            var tmpString = desc.sdp.substring(startIndex + 2, endIndex);
+            //debug(desc.sdp);
+            var ipString = tmpString.split(' ');
+            if (ipString[2] == '0.0.0.0') {
+              pc.setLocalDescription(desc);
+            } else {
+              ipAddress = ipString[2];
+              self.updateWifiCode(ipAddress);
+            }
           } else {
-            ipAddress = ipString[2];
             self.updateWifiCode(ipAddress);
           }
-        } else {
+        }, function(error){
           self.updateWifiCode(ipAddress);
-        }
-      }, function(error){
-        self.updateWifiCode(ipAddress);
-    });
+      });
+    } catch (e) {
+      debug(e);
+      wifi_enabled = false;
+      self.updateWifiCode(ipAddress);
+    }
   },
 
   updateWifiCode: function(ipAddress) {
@@ -123,50 +129,7 @@ var pcsync = {
     });
   },
 
-  initUnconnectRegion: function() {
-    self.loading();
-    self.disconnect();
-    self.closeSocketServer();
-    navigator.mozContacts.oncontactchange = null;
-    if (photoDB) {
-      photoDB.oncreated = null;
-      photoDB.ondeleted = null;
-      photoDB.onscanend = null;
-      photoDB.cancelScan();
-    }
-    if (musicDB) {
-      musicDB.oncreated = null;
-      musicDB.ondeleted = null;
-      musicDB.onscanend = null;
-      musicDB.cancelScan();
-    }
-    if (videoDB) {
-      videoDB.oncreated = null;
-      videoDB.ondeleted = null;
-      videoDB.onscanend = null;
-      videoDB.cancelScan();
-    }
-    socketWrappers = {};
-    self.createSocketServer();
-    self.getWifiCode();
-    document.getElementById('button-restart-service').onclick = function () {
-      self.showRegionById('unconnect-region');
-    };
-    if (navigator.mozL10n.language.code == 'zh-CN') {
-      document.getElementById("unconnect-view-help").href = "http://os.firefox.com.cn/project/ffos-assistant/help-cn.html";
-    } else {
-      document.getElementById("unconnect-view-help").href = "http://os.firefox.com.cn/project/ffos-assistant/help-en.html";
-    }
-  },
-
-  initConnectedRegion: function() {
-    document.getElementById('button-disconnect').onclick = function (event) {
-      self.showRegionById('unconnect-region');
-    };
-  },
-
   createSocketServer: function() {
-    debug('createSocketServer: ' + tcpServer);
     tcpServer = window.navigator.mozTCPSocket.listen(PORT, OPTIONS, BACKLOG);
     if (!tcpServer) {
       debug('Can not init application!');
@@ -209,6 +172,49 @@ var pcsync = {
       if ( currentRegion != 'unconnect-region')
         self.showRegionById('unconnect-region');
     }
+  },
+
+  initUnconnectRegion: function() {
+    self.loading();
+    self.disconnect();
+    self.closeSocketServer();
+    navigator.mozContacts.oncontactchange = null;
+    if (photoDB) {
+      photoDB.oncreated = null;
+      photoDB.ondeleted = null;
+      photoDB.onscanend = null;
+      photoDB.cancelScan();
+    }
+    if (musicDB) {
+      musicDB.oncreated = null;
+      musicDB.ondeleted = null;
+      musicDB.onscanend = null;
+      musicDB.cancelScan();
+    }
+    if (videoDB) {
+      videoDB.oncreated = null;
+      videoDB.ondeleted = null;
+      videoDB.onscanend = null;
+      videoDB.cancelScan();
+    }
+    socketWrappers = {};
+    self.createSocketServer();
+    self.getWifiCode();
+    debug('getWifiCode return');
+    document.getElementById('button-restart-service').onclick = function () {
+      self.showRegionById('unconnect-region');
+    };
+    if (navigator.mozL10n.language.code == 'zh-CN') {
+      document.getElementById("unconnect-view-help").href = "http://os.firefox.com.cn/project/ffos-assistant/help-cn.html";
+    } else {
+      document.getElementById("unconnect-view-help").href = "http://os.firefox.com.cn/project/ffos-assistant/help-en.html";
+    }
+  },
+
+  initConnectedRegion: function() {
+    document.getElementById('button-disconnect').onclick = function (event) {
+      self.showRegionById('unconnect-region');
+    };
   },
 
   closeSocketServer: function() {
