@@ -15,6 +15,9 @@ function deviceInfoHelper(jsonCmd, recvData) {
     case DEVICEINFO_COMMAND.getStorage:
       getStorage(jsonCmd);
       break;
+    case DEVICEINFO_COMMAND.getStorageFree:
+      getStorageFree(jsonCmd);
+      break;
     default:
       jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
       if (socketWrappers[serverSocket])
@@ -155,6 +158,67 @@ function getStorage(jsonCmd) {
       if (socketWrappers[serverSocket]) {
         socketWrappers[serverSocket].send(jsonCmd, sendData);
       }
-  });
+    });
+  }
+}
+
+function getFreeSpace(name, sdcard, callback) {
+  var storageName = name;
+  var freeSpace = 0;
+  var availreq = sdcard.available();
+  availreq.onsuccess = function availSuccess(evt) {
+    var state = evt.target.result;
+    if (state != 'available') {
+      callback(storageName, freeSpace);
+      return;
+    }
+    var reqused = sdcard.freeSpace();
+    reqused.onsuccess = function (evt) {
+      freeSpace = evt.target.result;
+      callback(storageName, freeSpace);
+      return;
+    }
+    reqused.onerror = function (evt) {
+      callback(storageName, freeSpace);
+      return;
+    }
+  };
+  availreq.onerror = function availError(evt) {
+    callback(storageName, freeSpace);
+  };
+}
+
+function getStorageFree(jsonCmd) {
+  var storagesInfo = {};
+  var index = 0;
+  var storages = navigator.getDeviceStorages('sdcard');
+  if (!storages) {
+    var storage = navigator.getDeviceStorage('sdcard');
+    if (storage) {
+      storages.push(storage);
+    }
+  }
+  if (!storages || storages.length == 0) {
+    jsonCmd.result = RS_OK;
+    var sendData = JSON.stringify(storagesInfo);
+    if (socketWrappers[serverSocket]) {
+      socketWrappers[serverSocket].send(jsonCmd, sendData);
+    }
+    return;
+  }
+  for(var i=0; i<storages.length; i++) {
+    var name = storages[i].storageName;
+    getSpace(name, storages[i], function (rName, freeSpace){
+      index++;
+      storagesInfo[rName] = freeSpace;
+      if (index < storages.length) {
+        return;
+      }
+      jsonCmd.result = RS_OK;
+      var sendData = JSON.stringify(storagesInfo);
+      if (socketWrappers[serverSocket]) {
+        socketWrappers[serverSocket].send(jsonCmd, sendData);
+      }
+    });
   }
 }
