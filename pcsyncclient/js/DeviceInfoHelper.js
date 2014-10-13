@@ -48,37 +48,70 @@ function getVersion(jsonCmd) {
   };
 }
 
-function getSpace(storage, id, name, type, callback) {
-  var request = storage.freeSpace();
-  var data = {};
-  request.onsuccess = function(e) {
-    var freeSpace = e.target.result;
-    var requestused = storage.usedSpace();
-    requestused.onsuccess = function(e) {
-      var usedSpace = e.target.result;
-      data['usedSpace'] = usedSpace;
-      data['freeSpace'] = freeSpace;
-      callback(id, name, type, data);
-    };
-    requestused.onerror = function(e) {
-      data['usedSpace'] = 'undefined';
-      data['freeSpace'] = freeSpace;
-      callback(id, name, type, data);
-    };
+function getSpace(name, types, callback) {
+  var storageName = name;
+  var info = {};
+  var availreq = types['sdcard'].available();
+  availreq.onsuccess = function availSuccess(evt) {
+    var state = evt.target.result;
+    if (state != 'available') {
+      callback(storageName, info);
+      return;
+    }
+    var reqused = types['sdcard'].usedSpace();
+    reqused.onsuccess = function (evt) {
+      info['usedSpace'] = evt.target.result;
+      var reqfree = types['sdcard'].freeSpace();
+      reqfree.onsuccess = function (evt) {
+        info['freeSpace'] = evt.target.result;
+        var reqpicture = types['pictures'].usedSpace();
+        reqpicture.onsuccess = function (evt) {
+          info['picture'] = evt.target.result;
+          var reqmusic = types['music'].usedSpace();
+          reqmusic.onsuccess = function (evt) {
+            info['music'] = evt.target.result;
+            var reqvideos = types['videos'].usedSpace();
+            reqvideos.onsuccess = function (evt) {
+              info['videos'] = evt.target.result;
+              callback(storageName, info);
+              return;
+            }
+            reqvideos.onerror = function (evt) {
+              callback(storageName, info);
+              return;
+            }
+          }
+          reqmusic.onerror = function (evt) {
+            callback(storageName, info);
+            return;
+          }
+        }
+        reqpicture.onerror = function (evt) {
+          callback(storageName, info);
+          return;
+        }
+      }
+      reqfree.onerror = function (evt) {
+        callback(storageName, info);
+        return;
+      }
+    }
+    reqused.onerror = function (evt) {
+      callback(storageName, info);
+      return;
+    }
   };
-  request.onerror = function(e) {
-    data['usedSpace'] = 'undefined';
-    data['freeSpace'] = 'undefined';
-    callback(id, name, type, data);
+  availreq.onerror = function availError(evt) {
+    callback(storageName, info);
   };
 }
 
 function getStorage(jsonCmd) {
-  var mediaTypes = ['music', 'pictures', 'videos', 'sdcard'];
-  var deviceInfo = {};
+  var mediaTypes = ['sdcard', 'pictures', 'music', 'videos'];
   var storagesInfo = {};
-  var totalVolumes = 0;
-  mediaTypes.forEach(function(aType) {
+  var storagesType = {};
+  var storagesCount = 0;
+  mediaTypes.forEach(function (aType) {
     var storages = navigator.getDeviceStorages(aType);
     if (!storages) {
       var storage = navigator.getDeviceStorage(aType);
@@ -89,48 +122,39 @@ function getStorage(jsonCmd) {
     if (!storages) {
       return;
     }
-    for (var i=0; i<storages.length; i++) {
-      var storage = storages[i];
-      var name = storage.storageName;
+    for(var i=0; i<storages.length; i++) {
+      var name = storages[i].storageName;
+      if (!storagesType.hasOwnProperty(name)) {
+        storagesCount ++;
+        storagesType[name] = {};
+      }
       if (!storagesInfo.hasOwnProperty(name)) {
         storagesInfo[name] = {};
         storagesInfo[name]['id'] = i;
       }
-      storagesInfo[name][aType] = storage;
-      totalVolumes++;
+      storagesType[name][aType] = storages[i];
     }
   });
-  if (totalVolumes > 0) {
-    for (var uname in storagesInfo) {
-      for (var utype in storagesInfo[uname]) {
-        if (utype == 'id') {
-          continue;
-        }
-        getSpace(storagesInfo[uname][utype],
-                 storagesInfo[uname]['id'],
-                 uname,
-                 utype,
-                 function (cid, cname, ctype, cdata){
-                  if (!deviceInfo.hasOwnProperty(cname)) {
-                    deviceInfo[cname] = {};
-                    deviceInfo[cname]['id'] = cid;
-                  }
-                  deviceInfo[cname][ctype] = cdata;
-                  totalVolumes--;
-                  if (totalVolumes == 0) {
-                    jsonCmd.result = RS_OK;
-                    var sendData = JSON.stringify(deviceInfo);
-                    debug('deviceInfoHelper.js getStorage sendData: ' + sendData);
-                    if (socketWrappers[serverSocket])
-                      socketWrappers[serverSocket].send(jsonCmd, sendData);
-                  }
-        });
-      }
-    }
-  } else {
+  if (storagesCount == 0) {
     jsonCmd.result = RS_OK;
-    var sendData = JSON.stringify(deviceInfo);
-    if (socketWrappers[serverSocket])
+    var sendData = JSON.stringify(storagesInfo);
+    if (socketWrappers[serverSocket]) {
       socketWrappers[serverSocket].send(jsonCmd, sendData);
+    }
+    return;
+  }
+  for(var uname in storagesType) {
+    getSpace(uname, storagesType[uname], function (rName, info){
+      storagesCount--;
+      storagesInfo[rName]['info'] = info;
+      if (storagesCount > 0) {
+        return;
+      }
+      jsonCmd.result = RS_OK;
+      var sendData = JSON.stringify(storagesInfo);
+      if (socketWrappers[serverSocket]) {
+        socketWrappers[serverSocket].send(jsonCmd, sendData);
+      }
+  });
   }
 }
