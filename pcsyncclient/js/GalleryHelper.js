@@ -56,9 +56,15 @@ function getOldPicturesInfo(jsonCmd) {
     });
     photoDB.onunavailable = function(event) {
       isReadyPhotoDB = false;
+      jsonCmd.result = RS_ERROR.PICTURE_INIT;
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
     };
     photoDB.oncardremoved = function oncardremoved() {
       isReadyPhotoDB = false;
+      jsonCmd.result = RS_ERROR.PICTURE_INIT;
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
     };
     photoDB.onready = function() {
       isReadyPhotoDB = true;

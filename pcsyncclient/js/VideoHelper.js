@@ -58,9 +58,15 @@ function getOldVideosInfo(jsonCmd) {
     });
     videoDB.onunavailable = function(event) {
       isReadyVideoDB = false;
+      jsonCmd.result = RS_ERROR.VIDEO_INIT;
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
     };
     videoDB.oncardremoved = function oncardremoved() {
       isReadyVideoDB = false;
+      jsonCmd.result = RS_ERROR.VIDEO_INIT;
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
     };
     videoDB.onready = function() {
       isReadyVideoDB = true;

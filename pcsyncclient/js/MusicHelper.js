@@ -52,9 +52,15 @@ function getOldMusicsInfo(jsonCmd) {
     });
      musicDB.onunavailable = function(event) {
       isReadyMusicDB = false;
+      jsonCmd.result = RS_ERROR.MUSIC_INIT;
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
     };
     musicDB.oncardremoved = function oncardremoved() {
       isReadyMusicDB = false;
+      jsonCmd.result = RS_ERROR.MUSIC_INIT;
+      if (socketWrappers[serverSocket])
+        socketWrappers[serverSocket].send(jsonCmd, null);
     };
     musicDB.onready = function() {
       isReadyMusicDB = true;
