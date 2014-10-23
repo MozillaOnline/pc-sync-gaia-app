@@ -28,10 +28,14 @@ var videoDB = null;
 var isReadyPhotoDB = false;
 var isReadyMusicDB = false;
 var isReadyVideoDB = false;
+var mainSocketConnected = false;
+var listenSocketConnected = false;
+var ipAddress = '0.0.0.0';
 
 var pcsync = {
   init: function() {
     self = this;
+    self.getWifiCode();
     self.showRegionById('unconnect-region');
   },
 
@@ -42,8 +46,9 @@ var pcsync = {
   },
 
   getWifiCode: function() {
-    var ipAddress = '0.0.0.0';
     try{
+      self.loading();
+      ipAddress = '0.0.0.0';
       var PeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection;
       var pc = new PeerConnection();
       var firstCon = true;
@@ -137,21 +142,24 @@ var pcsync = {
     }
     debug('tcpServer: ' + tcpServer);
     tcpServer.onconnect = function(event) {
-      if (currentRegion == 'unconnect-region') {
+      if (!mainSocketConnected) {
         var server = new TCPSocketWrapper({
           socket: event,
           onmessage: handleMessage,
           onerror: function() {
-            if ( currentRegion != 'unconnect-region')
+            if (mainSocketConnected) {
+              mainSocketConnected = false;
               self.showRegionById('unconnect-region');
+            }
           },
           onclose: function() {
-            if ( currentRegion != 'unconnect-region')
+            if (mainSocketConnected){
+              mainSocketConnected = false;
               self.showRegionById('unconnect-region');
+            }
           }
         });
         socketWrappers[serverSocket] = server;
-        self.showRegionById('connected-region');
         var dataJson = {
           id: 0,
           type: CMD_TYPE.connected,
@@ -160,11 +168,14 @@ var pcsync = {
           datalength: 0
         };
         server.send(dataJson, null);
-      } else {
+        mainSocketConnected = true;
+      } else if (!listenSocketConnected){
+        listenSocketConnected = true;
         var listen = new TCPSocketWrapper({
           socket: event
         });
         socketWrappers[listenSocket] = listen;
+        self.showRegionById('connected-region');
       }
     };
     tcpServer.onerror = function(event) {
@@ -175,7 +186,6 @@ var pcsync = {
   },
 
   initUnconnectRegion: function() {
-    self.loading();
     self.disconnect();
     self.closeSocketServer();
     navigator.mozContacts.oncontactchange = null;
@@ -199,9 +209,8 @@ var pcsync = {
     }
     socketWrappers = {};
     self.createSocketServer();
-    self.getWifiCode();
-    debug('getWifiCode return');
     document.getElementById('button-restart-service').onclick = function () {
+      self.getWifiCode();
       self.showRegionById('unconnect-region');
     };
     if (navigator.mozL10n.language.code == 'zh-CN') {
@@ -236,8 +245,13 @@ var pcsync = {
       };
       socketWrappers[serverSocket].send(dataJson, null);
       socketWrappers[serverSocket].socket.close();
-      socketWrappers = {};
+      mainSocketConnected = false;
     }
+    if(socketWrappers[listenSocket]) {
+      socketWrappers[serverSocket].socket.close();
+      listenSocketConnected = false;
+    }
+    socketWrappers = {};
   }
 };
 
