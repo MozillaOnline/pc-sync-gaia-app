@@ -188,7 +188,6 @@ var pcsync = {
   initUnconnectRegion: function() {
     self.disconnect();
     self.closeSocketServer();
-    navigator.mozContacts.oncontactchange = null;
     if (photoDB) {
       photoDB.oncreated = null;
       photoDB.ondeleted = null;
@@ -250,6 +249,7 @@ var pcsync = {
     if(socketWrappers[listenSocket]) {
       socketWrappers[serverSocket].socket.close();
       listenSocketConnected = false;
+      navigator.mozContacts.oncontactchange = null;
     }
     socketWrappers = {};
   }
