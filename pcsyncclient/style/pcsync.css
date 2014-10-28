@@ -53,8 +53,7 @@ section[role="region"] > header {
   position: relative;
   z-index: 10;
   padding: 0;
-  height: 12.4rem;
-  background: -moz-radial-gradient(#fff, #e5ecef) repeat scroll 0 0 transparent;
+  height: 9.8rem;
   background-size: auto 100%;
   border: none;
   float: left;
@@ -83,7 +82,6 @@ section[role="region"] > header {
   position: relative;
   z-index: 10;
   padding: 0;
-  height: 60%;
   color: #f4f4f4;
   background-size: auto 100%;
   border: none;
@@ -92,39 +90,75 @@ section[role="region"] > header {
 }
 
 .view > header {
-  font-size: 2rem;
+  font-size: 2.4rem;
   margin-top: 2.6rem;
-  color: #333333;
+  color: #4a4a4a;
   text-align: center;
 }
 
+.wifi-number {
+  font-size: 3.4rem;
+  margin-top: 1rem;
+  color: #4a4a4a;
+  background-color: rgba(233, 246, 248, 0.38);
+  list-style-type: none;
+  text-align: center;
+  width: 80%;
+  height: 5rem;
+  margin-left: 10%;
+}
+
+.wifi-number > div {
+  padding-top: .8rem;
+}
+
 .view > ul {
-  font-size: 3rem;
-  margin-top: 1.4rem;
-  color: #333333;
+  font-size: 1.4rem;
+  margin-top: 1rem;
+  color: #b2b2b2;
   list-style-type: none;
   text-align: center;
 }
 
 .view > ul li {
   font-size: 1.4rem;
-  margin-top: 1.2rem;
-  margin-left: 5rem;
-  margin-right: 3.4rem;
-  color: #858585;
+  margin-top: 1.4rem;
+  margin-left: 5%;
+  width: 90%;
+  color: #4a4a4a;
   list-style-image: url("images/dot.png");
   list-style-type: circle;
 }
 
-.view > ul a {
+.view > ul p {
   font-size: 1.4rem;
+  margin-top: 2rem;
+  color: #4a4a4a;
+}
+
+.start {
   margin-top: 1.2rem;
-  color: #858585;
+  margin-left: 5%;
+  width: 90%;
+  height: 6rem;
+  background-image: url("images/start.png");
+  background-origin: content-box;
+  background-repeat: no-repeat;
+  background-size: 100%;
 }
 
 /* ----------------------------------
- * button: default
+ * bottom: default
  * ---------------------------------- */
+.bottom {
+  position: absolute;
+  bottom: 0rem;
+  background-color: #fbfbfb;
+  height: 9rem;
+  width: 100%;
+  float: left;
+}
+
 .button {
   border: none;
   margin-left: 3.4rem;
@@ -149,6 +183,90 @@ section[role="region"] > header {
 
 #connected-view > button {
   margin-top: 4.6rem;
+}
+
+/* help */
+.help-region {
+  position: fixed;
+  z-index: 20;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background-color: #FFFFFF;
+  margin-left: 0;
+  border: none;
+  border-radius: 0rem;
+}
+
+.help-header {
+  position: relative;
+  padding: 0;
+  height: 5rem;
+  background-color: #f37e21;
+  border: none;
+  width: 100%;
+}
+
+.help-back{
+  float: left;
+  position: relative;
+  padding: 0;
+  height: 5rem;
+  width: 15%;
+  background-position: 50% 50%;
+  background-repeat: no-repeat;
+  background-size: 50%;
+  background-origin: content-box;
+  background-image: url("images/back.png");
+}
+
+.touchover {
+  background-color: #aa6225;
+}
+
+.help-name{
+  float: left;
+  position: relative;
+  padding: 0;
+  height: 5rem;
+  width: 85%;
+  color: #fff;
+  text-align: left;
+  font-size: 2rem;
+  line-height: 5rem;
+  font-weight: lighter;
+}
+
+.help-title {
+  color: #b2b2b2;
+  text-align: left;
+  font-size: 1.4rem;
+  width: 90%;
+  margin-left: 5%;
+  margin-top: 2rem;
+}
+
+.help-info {
+  margin-top: 2rem;
+  color: #4a4a4a;
+  text-align: left;
+  font-size: 1.4rem;
+  width: 90%;
+  margin-left: 5%;
+}
+
+.help-usb {
+  color: #4a4a4a;
+  text-align: left;
+  font-size: 1.4rem;
+  width: 90%;
+  margin-left: 5%;
+  margin-top: 2rem;
+}
+
+.link {
+  color: #4a90e2;
 }
 
 /* loading */

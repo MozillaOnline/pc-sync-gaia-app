@@ -47,6 +47,33 @@
         <img id="loading-img" src="style/images/loading.png" class="loading"/>
       </div>
     </section>
+    <section id="modal-help-general" class="help-region hidden">
+      <div class="help-header">
+        <div id="help-general-back" class="help-back"></div>
+        <div class="help-name" data-l10n-id="help-general-header">Get Firefox OS Assistant</div>
+      </div>
+      <div class="help-title" data-l10n-id="help-general-title"></div>
+      <div class="help-info" data-l10n-id="help-general-info1">
+        <a class="link">https://www.mozilla.org/en-US/firefox/new</a>
+        <a data-l10n-id="help-general-info11"></a>
+      </div>
+      <div class="help-info" data-l10n-id="help-general-info2">
+        <a class="link">http://download.firefox.com.cn/ffosassistant.xpi</a>
+        <a data-l10n-id="help-general-info21"></a>
+      </div>
+      <div class="help-info" data-l10n-id="help-general-info3"></div>
+      <div class="start"></div>
+    </section>
+    <section id="modal-help-usb" class="help-region hidden">
+      <div class="help-header">
+        <div id="help-usb-back" class="help-back"></div>
+        <div class="help-name" data-l10n-id="help-usb-header">Connect via USB</div>
+      </div>
+      <div class="help-usb" data-l10n-id="help-usb-title">
+        <a class="link">http://firefox.com.cn/pcsync.html</a>
+        <a data-l10n-id="help-usb-title2"></a>
+      </div>
+    </section>
     <section role="region" id="unconnect-region" hidden>
       <header data-l10n-id="content-region-header">PC Sync</header>
       <div class="wifi-status-bar">
@@ -54,15 +81,20 @@
       </div>
       <div id="unconnect-view" class="view">
         <header data-l10n-id="unconnect-view-wifi">Connect to Computer</header>
-        <ul>
-          <li data-l10n-id="unconnect-view-info1">Open Firefox OS Assistant in firefox in your computer.</li>
-          <li data-l10n-id="unconnect-view-info2">Input the WiFi-Code below to connect your device.</li>
+        <div class="wifi-number">
+          <div id="wifi-connect-number">Unknown</div>
+        </div>
+        <ul data-l10n-id="unconnect-view-info1">Input this WiFi code in Firefox OS Assistant.
+          <p>
+            <a id="unconnect-view-help" data-l10n-id="unconnect-view-info2" class="link" href="#">How to get Firefox OS Assistant?</a>
+          </p>
+          <p>
+            <a id="unconnect-view-usb" data-l10n-id="unconnect-view-info3" class="link" href="#">Connect via USB</a>
+          </p>
         </ul>
-        <ul id="wifi-connect-number">Unknown</ul>
-        <button id="button-restart-service" data-l10n-id="button-restart-service" class="button">Restart</button>
-        <ul>
-          <a id="unconnect-view-help" data-l10n-id="unconnect-view-help" target="_blank" href="http://www.firefox.com.cn">Get Help</a>
-        </ul>
+      </div>
+      <div class="bottom">
+        <button id="button-restart-service" data-l10n-id="button-restart-service" class="button">Reconnect</button>
       </div>
     </section>
     <section role="region" id="connected-region" hidden>

@@ -36,6 +36,24 @@ var pcsync = {
   init: function() {
     self = this;
     self.getWifiCode();
+    document.getElementById("help-general-back").onmousedown =
+    document.getElementById("help-general-back").ontouchstart = function() {
+      this.classList.add('touchover');
+    };
+    document.getElementById("help-general-back").onmouseup =
+    document.getElementById("help-general-back").ontouchend = function() {
+      this.classList.remove('touchover');
+      document.getElementById('modal-help-general').classList.add('hidden');
+    };
+    document.getElementById("help-usb-back").onmousedown =
+    document.getElementById("help-usb-back").ontouchstart = function() {
+      this.classList.add('touchover');
+    };
+    document.getElementById("help-usb-back").onmouseup =
+    document.getElementById("help-usb-back").ontouchend = function() {
+      this.classList.remove('touchover');
+      document.getElementById('modal-help-usb').classList.add('hidden');
+    };
     self.showRegionById('unconnect-region');
   },
 
@@ -212,11 +230,12 @@ var pcsync = {
       self.getWifiCode();
       self.showRegionById('unconnect-region');
     };
-    if (navigator.mozL10n.language.code == 'zh-CN') {
-      document.getElementById("unconnect-view-help").href = "http://os.firefox.com.cn/project/ffos-assistant/help-cn.html";
-    } else {
-      document.getElementById("unconnect-view-help").href = "http://os.firefox.com.cn/project/ffos-assistant/help-en.html";
-    }
+    document.getElementById('unconnect-view-help').onclick = function () {
+      document.getElementById('modal-help-general').classList.remove('hidden');
+    };
+    document.getElementById('unconnect-view-usb').onclick = function () {
+      document.getElementById('modal-help-usb').classList.remove('hidden');
+    };
   },
 
   initConnectedRegion: function() {
@@ -249,7 +268,6 @@ var pcsync = {
     if(socketWrappers[listenSocket]) {
       socketWrappers[serverSocket].socket.close();
       listenSocketConnected = false;
-      navigator.mozContacts.oncontactchange = null;
     }
     socketWrappers = {};
   }
