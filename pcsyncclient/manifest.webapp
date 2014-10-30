@@ -34,8 +34,7 @@
     "device-storage:sdcard": {
       "description" : "Get media files from SD card.",
       "access": "readwrite"
-    },
-    "browser": {}
+    }
   },
   "type": "privileged",
   "locales": {
