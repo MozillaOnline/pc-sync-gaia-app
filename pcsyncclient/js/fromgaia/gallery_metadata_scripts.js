@@ -81,6 +81,12 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
         metadata.height = data.getUint16(5);
         metadata.width = data.getUint16(7);
 
+        if (type === 0xC2) {
+          // pjpeg files can't be efficiently downsampled while decoded
+          // so we need to distinguish them from regular jpegs
+          metadata.progressive = true;
+        }
+
         // We're done. All the EXIF data will come before this segment
         // So call the callback
         metadataCallback(metadata);
@@ -351,6 +357,7 @@ function parseJPEGMetadata(file, metadataCallback, metadataError) {
     return null;
   }
 }
+
 'use strict';
 
 //
@@ -494,6 +501,11 @@ function getVideoRotation(blob, rotationCallback) {
     }
   });
 }
+
+/* exported getImageSize */
+/* global BlobView */
+/* global parseJPEGMetadata */
+
 /*
  * Determine the pixel dimensions of an image without actually
  * decoding the image. Passes an object of metadata to the callback
@@ -513,6 +525,8 @@ function getVideoRotation(blob, rotationCallback) {
  * parseJPEGMetadata() function from shared/js/media/jpeg_metadata_parser.js
  */
 function getImageSize(blob, callback, error) {
+  'use strict';
+
   BlobView.get(blob, 0, Math.min(1024, blob.size), function(data) {
     // Make sure we are at least 8 bytes long before reading the first 8 bytes
     if (data.byteLength <= 8) {
@@ -547,7 +561,18 @@ function getImageSize(blob, callback, error) {
     else if (magic.substring(0, 2) === '\xFF\xD8') {
       parseJPEGMetadata(blob,
                         function(metadata) {
-                          metadata.type = 'jpeg';
+                          if (metadata.progressive) {
+                            // If the jpeg parser tells us that this is
+                            // a progressive jpeg, then treat that as a
+                            // distinct image type because pjpegs have
+                            // such different memory requirements than
+                            // regular jpegs.
+                            delete metadata.progressive;
+                            metadata.type = 'pjpeg';
+                          }
+                          else {
+                            metadata.type = 'jpeg';
+                          }
                           callback(metadata);
                         },
                         error);
@@ -557,6 +582,7 @@ function getImageSize(blob, callback, error) {
     }
   });
 }
+
 'use strict';
 
 //
@@ -569,126 +595,149 @@ function getImageSize(blob, callback, error) {
 var metadataParser = (function() {
   // If we generate our own thumbnails, aim for this size.
   // Calculate needed size from longer side of the screen.
-  var THUMBNAIL_WIDTH = Math.round(
-                          Math.max(window.innerWidth, window.innerHeight) *
-                            window.devicePixelRatio / 4);
+  var THUMBNAIL_WIDTH = computeThumbnailWidth();
   var THUMBNAIL_HEIGHT = THUMBNAIL_WIDTH;
+  var isPhone = false;
+  function computeThumbnailWidth() {
+    // Make sure this works regardless of current device orientation
+    var portraitWidth = Math.min(window.innerWidth, window.innerHeight);
+    var landscapeWidth = Math.max(window.innerWidth, window.innerHeight);
+    var thumbnailsPerRowPortrait = isPhone ? 3 : 4;
+    var thumbnailsPerRowLandscape = isPhone ? 4 : 6;
+    return Math.round(window.devicePixelRatio *
+             Math.max(portraitWidth / thumbnailsPerRowPortrait,
+                      landscapeWidth / thumbnailsPerRowLandscape));
+  }
+
+  var thumbnailSize = {
+    width: THUMBNAIL_WIDTH,
+    height: THUMBNAIL_HEIGHT
+  };
 
   // Don't try to decode image files of unknown type if bigger than this
   var MAX_UNKNOWN_IMAGE_FILE_SIZE = .5 * 1024 * 1024; // half a megabyte
-
 
   // An <img> element for loading images
   var offscreenImage = new Image();
 
   // The screen size. Preview images must be at least this big
-  var sw = window.innerWidth;
-  var sh = window.innerHeight;
+  // Note that we use screen.width instead of window.innerWidth because
+  // the window size is different when we are invoked for a pick activity
+  // (non-fullscreen) and when we are invoked normally (fullscreen).
+  var sw = screen.width * window.devicePixelRatio;
+  var sh = screen.height * window.devicePixelRatio;
 
   // Create a thumbnail size canvas, copy the <img> or <video> into it
   // cropping the edges as needed to make it fit, and then extract the
   // thumbnail image as a blob and pass it to the callback.
   // This utility function is used by both the image and video metadata parsers
   function createThumbnailFromElement(elt, video, rotation,
-                                      mirrored, callback)
-  {
-    // Create a thumbnail image
-    var canvas = document.createElement('canvas');
-    canvas.width = THUMBNAIL_WIDTH;
-    canvas.height = THUMBNAIL_HEIGHT;
-    var context = canvas.getContext('2d', { willReadFrequently: true });
-    var eltwidth = elt.width;
-    var eltheight = elt.height;
-    var scalex = canvas.width / eltwidth;
-    var scaley = canvas.height / eltheight;
+                                      mirrored, callback, error) {
+    try {
+      // Create a thumbnail image
+      var canvas = document.createElement('canvas');
+      canvas.width = THUMBNAIL_WIDTH;
+      canvas.height = THUMBNAIL_HEIGHT;
+      var context = canvas.getContext('2d', { willReadFrequently: true });
+      var eltwidth = elt.width;
+      var eltheight = elt.height;
+      var scalex = canvas.width / eltwidth;
+      var scaley = canvas.height / eltheight;
 
-    // Take the larger of the two scales: we crop the image to the thumbnail
-    var scale = Math.max(scalex, scaley);
+      // Take the larger of the two scales: we crop the image to the thumbnail
+      var scale = Math.max(scalex, scaley);
 
-    // Calculate the region of the image that will be copied to the
-    // canvas to create the thumbnail
-    var w = Math.round(THUMBNAIL_WIDTH / scale);
-    var h = Math.round(THUMBNAIL_HEIGHT / scale);
-    var x = Math.round((eltwidth - w) / 2);
-    var y = Math.round((eltheight - h) / 2);
+      // Calculate the region of the image that will be copied to the
+      // canvas to create the thumbnail
+      var w = Math.round(THUMBNAIL_WIDTH / scale);
+      var h = Math.round(THUMBNAIL_HEIGHT / scale);
+      var x = Math.round((eltwidth - w) / 2);
+      var y = Math.round((eltheight - h) / 2);
 
-    var centerX = Math.floor(THUMBNAIL_WIDTH / 2);
-    var centerY = Math.floor(THUMBNAIL_HEIGHT / 2);
+      var centerX = Math.floor(THUMBNAIL_WIDTH / 2);
+      var centerY = Math.floor(THUMBNAIL_HEIGHT / 2);
 
-    // If a orientation is specified, rotate/mirroring the canvas context.
-    if (rotation || mirrored) {
-      context.save();
-      // All transformation are applied to the center of the thumbnail.
-      context.translate(centerX, centerY);
-    }
-
-    if (mirrored) {
-      context.scale(-1, 1);
-    }
-    if (rotation) {
-      switch (rotation) {
-      case 90:
-        context.rotate(Math.PI / 2);
-        break;
-      case 180:
-        context.rotate(Math.PI);
-        break;
-      case 270:
-        context.rotate(-Math.PI / 2);
-        break;
+      // If a orientation is specified, rotate/mirroring the canvas context.
+      if (rotation || mirrored) {
+        context.save();
+        // All transformation are applied to the center of the thumbnail.
+        context.translate(centerX, centerY);
       }
+      if (mirrored) {
+        context.scale(-1, 1);
+      }
+      if (rotation) {
+        switch (rotation) {
+        case 90:
+          context.rotate(Math.PI / 2);
+          break;
+        case 180:
+          context.rotate(Math.PI);
+          break;
+        case 270:
+          context.rotate(-Math.PI / 2);
+          break;
+        }
+      }
+
+      if (rotation || mirrored) {
+        context.translate(-centerX, -centerY);
+      }
+
+      // Draw that region of the image into the canvas, scaling it down
+      context.drawImage(elt, x, y, w, h,
+                        0, 0, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
+
+      // Restore the default rotation so the play arrow comes out correctly
+      if (rotation || mirrored) {
+        context.restore();
+      }
+
+      // If this is a video, superimpose a translucent play button over
+      // the captured video frame to distinguish it from a still photo thumbnail
+      if (video) {
+        // First draw a transparent gray circle
+        context.fillStyle = 'rgba(0, 0, 0, .2)';
+        context.beginPath();
+        context.arc(THUMBNAIL_WIDTH / 2, THUMBNAIL_HEIGHT / 2,
+                    THUMBNAIL_HEIGHT / 5, 0, 2 * Math.PI, false);
+        context.fill();
+
+        // Now outline the circle in white
+        context.strokeStyle = 'rgba(255,255,255,.6)';
+        context.lineWidth = 2;
+        context.stroke();
+
+        // And add a white play arrow.
+        context.beginPath();
+        context.fillStyle = 'rgba(255,255,255,.6)';
+        // The height of an equilateral triangle is sqrt(3)/2 times the side
+        var side = THUMBNAIL_HEIGHT / 5;
+        var triangle_height = side * Math.sqrt(3) / 2;
+        context.moveTo(THUMBNAIL_WIDTH / 2 + triangle_height * 2 / 3,
+                       THUMBNAIL_HEIGHT / 2);
+        context.lineTo(THUMBNAIL_WIDTH / 2 - triangle_height / 3,
+                       THUMBNAIL_HEIGHT / 2 - side / 2);
+        context.lineTo(THUMBNAIL_WIDTH / 2 - triangle_height / 3,
+                       THUMBNAIL_HEIGHT / 2 + side / 2);
+        context.closePath();
+        context.fill();
+      }
+
+      canvas.toBlob(function(blob) {
+        context = null;
+        canvas.width = canvas.height = 0;
+        canvas = null;
+        callback(blob);
+      }, 'image/jpeg');
+    } catch (ex) {
+      // An error may be thrown when the drawImage decodes a broken/trancated
+      // image.
+      // The elt may be a offscreen image. So, the image metadata is parsed, and
+      // the image data is loaded but not decoded. The drawImage triggers the
+      // image decoder to decode the image data. And an error may be thrown.
+      error('createThumbnailFromElement:' + ex.message);
     }
-
-    if (rotation || mirrored) {
-      context.translate(-centerX, -centerY);
-    }
-
-    // Draw that region of the image into the canvas, scaling it down
-    context.drawImage(elt, x, y, w, h,
-                      0, 0, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT);
-
-    // Restore the default rotation so the play arrow comes out correctly
-    if (rotation || mirrored) {
-      context.restore();
-    }
-
-    // If this is a video, superimpose a translucent play button over
-    // the captured video frame to distinguish it from a still photo thumbnail
-    if (video) {
-      // First draw a transparent gray circle
-      context.fillStyle = 'rgba(0, 0, 0, .2)';
-      context.beginPath();
-      context.arc(THUMBNAIL_WIDTH / 2, THUMBNAIL_HEIGHT / 2,
-                  THUMBNAIL_HEIGHT / 5, 0, 2 * Math.PI, false);
-      context.fill();
-
-      // Now outline the circle in white
-      context.strokeStyle = 'rgba(255,255,255,.6)';
-      context.lineWidth = 2;
-      context.stroke();
-
-      // And add a white play arrow.
-      context.beginPath();
-      context.fillStyle = 'rgba(255,255,255,.6)';
-      // The height of an equilateral triangle is sqrt(3)/2 times the side
-      var side = THUMBNAIL_HEIGHT / 5;
-      var triangle_height = side * Math.sqrt(3) / 2;
-      context.moveTo(THUMBNAIL_WIDTH / 2 + triangle_height * 2 / 3,
-                     THUMBNAIL_HEIGHT / 2);
-      context.lineTo(THUMBNAIL_WIDTH / 2 - triangle_height / 3,
-                     THUMBNAIL_HEIGHT / 2 - side / 2);
-      context.lineTo(THUMBNAIL_WIDTH / 2 - triangle_height / 3,
-                     THUMBNAIL_HEIGHT / 2 + side / 2);
-      context.closePath();
-      context.fill();
-    }
-
-    canvas.toBlob(function(blob) {
-      context = null;
-      canvas.width = canvas.height = 0;
-      canvas = null;
-      callback(blob);
-    }, 'image/jpeg');
   }
 
   var VIDEOFILE = /DCIM\/\d{3}MZLLA\/VID_\d{4}\.jpg/;
@@ -738,13 +787,55 @@ var metadataParser = (function() {
     }
 
     function gotImageSize(metadata) {
+      //
       // If the image is too big, reject it now so we don't have
       // memory trouble later.
-      // CONFIG_MAX_IMAGE_PIXEL_SIZE is maximum image resolution we can handle.
-      // It's from config.js which is generated in build time, 5 megapixels by
-      // default (see build/application-data.js). It should be synced with
-      // Camera app and update carefully.
-      if (metadata.width * metadata.height > CONFIG_MAX_IMAGE_PIXEL_SIZE) {
+      //
+      // CONFIG_MAX_IMAGE_PIXEL_SIZE is maximum image resolution we
+      // can handle.  It's from config.js which is generated at build
+      // time (see build/application-data.js).
+      //
+      // For jpeg images we can downsample while decoding which means that
+      // we can handle images that are quite a bit larger.
+      //
+      // getImageSize() distinguishes pjpeg files from jpeg, because
+      // progressive jpeg files are quite different than regular jpegs.
+      // Not only do pjpegs not benefit from using #-moz-samplesize, they
+      // actually require more memory to decode than other images of the same
+      // resolution, so we actually need to reduce the image size limit for
+      // this image type.
+      //
+      var imagesizelimit = CONFIG_MAX_IMAGE_PIXEL_SIZE;
+      if (metadata.type === 'jpeg') {
+        imagesizelimit *= Downsample.MAX_AREA_REDUCTION;
+      }
+      else if (metadata.type === 'pjpeg') {
+        // As a semi-educated guess, we'll say that we can handle pjpegs
+        // 2/3rds the size of the largest PNG we can handle.
+        imagesizelimit *= 2 / 3;
+      }
+
+      //
+      // Even if we can downsample an image while decoding it, we still
+      // have to read the entire image file. If the file is particularly
+      // large we might also have memory problems. (See bug 1008834: a 20mb
+      // 80mp jpeg file will cause an OOM on Tarako even though we can
+      // decode it at < 2mp). Rather than adding another build-time config
+      // variable to specify the maximum file size, however, we'll just
+      // base the file size limit on CONFIG_MAX_IMAGE_PIXEL_SIZE.
+      // So if that variable is set to 2M, then we might use up to 12Mb of
+      // memory. 2 * 2M bytes for the image file and 4 bytes times 2M pixels
+      // for the decoded image. A 4mb file size limit should accomodate
+      // most JPEG files up to 12 or 16 megapixels.
+      //
+      // Note that this size limit is just a guess. If we continue to see
+      // OOMs with large files then we should change the number 2 below
+      // to something smaller.
+      //
+      var filesizelimit = 2 * CONFIG_MAX_IMAGE_PIXEL_SIZE;
+
+      if (metadata.width * metadata.height > imagesizelimit ||
+          file.size > filesizelimit) {
         metadataError('Ignoring high-resolution image ' + file.name);
         return;
       }
@@ -772,15 +863,40 @@ var metadataParser = (function() {
         useFullsizeImage();
       }
 
+      // If we can't find a valid embedded EXIF preview image then we come here
       function useFullsizeImage() {
-        // Since a number of different cases use the same fallback method
-        // define it in one place for easier code flow.
-        createThumbnailAndPreview(file,
-                                  metadataCallback,
-                                  metadataError,
-                                  false,
-                                  bigFile,
-                                  metadata);
+        // If the full size image is a JPEG then we'll just skip the
+        // preview generation because we can downsample and decode it
+        // at preview size when needed. So in this case, we just need
+        // to create a thumbnail for the image.  On the other hand, if
+        // this is not a JPEG image then we have to create both a
+        // thumbnail and an external preview image. Note that progressive
+        // jpegs will have a type 'pjpeg' and will be handled below
+        // like png images.
+        if (metadata.type === 'jpeg') {
+          cropResizeRotate(file, null, thumbnailSize, null, metadata,
+                           function gotThumbnail(error, thumbnailBlob) {
+                             if (error) {
+                               var msg = 'Failed to create thumbnail for' +
+                                 file.name;
+                               console.error(msg);
+                               metadataError(msg);
+                               return;
+                             }
+
+                             metadata.preview = null;
+                             metadata.thumbnail = thumbnailBlob;
+                             metadataCallback(metadata);
+                           });
+        }
+        else {
+          createThumbnailAndPreview(file,
+                                    metadataCallback,
+                                    metadataError,
+                                    false,
+                                    bigFile,
+                                    metadata);
+        }
       }
 
       function previewsuccess(previewmetadata) {
@@ -807,17 +923,35 @@ var metadataParser = (function() {
           bigenough = (pw >= sw || ph >= sh) && (pw >= sh || ph >= sw);
         }
 
-        // If the preview is big enough, use it to create a thumbnail.
-        if (bigenough) {
+        // Does the aspect ratio of the preview match the aspect ratio of
+        // the full-size image? If not we have to assume it is distorted
+        // and should not be used.
+        var aspectRatioMatches =
+          Math.abs(pw / ph - metadata.width / metadata.height) < 0.01;
+
+        // If the preview is good, use it to create a thumbnail.
+        if (bigenough && aspectRatioMatches) {
           metadata.preview.width = pw;
           metadata.preview.height = ph;
-          // The 4th argument true means don't actually create a preview
-          createThumbnailAndPreview(previewblob,
-                                    metadataCallback,
-                                    previewerror,
-                                    true,
-                                    bigFile,
-                                    metadata);
+
+          // This is the most common case. We've got a JPEG image with a
+          // JPEG preview. All we need is a thumbnail, and we can create that
+          // most efficiently with cropResizeRotate which will use
+          // #-moz-samplesize to save memory while decoding the image.
+          // Note that we apply the EXIF orientation information from
+          // the full size image to the preview image.
+          previewmetadata.rotation = metadata.rotation;
+          previewmetadata.mirrored = metadata.mirrored;
+          cropResizeRotate(previewblob, null, thumbnailSize, null,
+                           previewmetadata,
+                           function gotThumbnailBlob(error, thumbnailBlob) {
+                             if (error) {
+                               previewerror(error);
+                               return;
+                             }
+                             metadata.thumbnail = thumbnailBlob;
+                             metadataCallback(metadata);
+                           });
         } else {
           // Preview isn't big enough so get one the hard way
           useFullsizeImage();
@@ -831,6 +965,11 @@ var metadataParser = (function() {
   // a metadata object, and pass the object to the callback function.
   // If anything goes wrong, pass an error message to the error function.
   // If it is a large image, create and save a preview for it as well.
+  //
+  // We used to call this function for every image. Now that gecko supports
+  // the #-moz-samplesize media fragment, however, we handle jpeg images
+  // with cropResizeRotate() for memory efficiency, and this function is
+  // used only for non-jpeg files.
   function createThumbnailAndPreview(file, callback, error, nopreview,
                                      bigFile, metadata) {
     var url = URL.createObjectURL(file);
@@ -881,7 +1020,8 @@ var metadataParser = (function() {
           false,
           metadata.rotation || 0,
           metadata.mirrored || false,
-          gotThumbnail);
+          gotThumbnail,
+          error);
       }
 
       function gotThumbnail(thumbnail) {
@@ -906,7 +1046,9 @@ var metadataParser = (function() {
         // Make sure the size is big enough for both landscape and portrait
         var scale = Math.max(Math.min(sw / iw, sh / ih, 1),
                              Math.min(sh / iw, sw / ih, 1));
-        var pw = iw * scale, ph = ih * scale; // preview width and height;
+        // preview width and height
+        var pw = Math.round(iw * scale);
+        var ph = Math.round(ih * scale);
 
         // Create the preview in a canvas
         var canvas = document.createElement('canvas');
@@ -940,6 +1082,12 @@ var metadataParser = (function() {
             // a relative path.
             filename = '.gallery/previews/' + file.name;
           }
+
+          // Add a '.jpeg' extension to all preview files. This is necessary
+          // because all previews get saved as jpegs even if the original
+          // image is not a jpeg. But DeviceStorage uses the filename extension
+          // to determine the file type.
+          filename += '.jpeg';
 
           // Delete any existing preview by this name
           var delreq = storage.delete(filename);
@@ -1013,7 +1161,8 @@ var metadataParser = (function() {
                                      metadata.thumbnail = thumbnail;
                                      offscreenImage.src = '';
                                      metadataCallback(metadata);
-                                   });
+                                   },
+                                   errorCallback);
       };
     }
   }

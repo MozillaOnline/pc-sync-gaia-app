@@ -1,3 +1,5 @@
+/* exported LazyLoader */
+/* globals HtmlImports, Promise */
 'use strict';
 
 /**
@@ -54,29 +56,66 @@ var LazyLoader = (function() {
           break;
         }
       }
+
+      window.dispatchEvent(new CustomEvent('lazyload', {
+        detail: domNode
+      }));
+
       callback();
     },
 
+    /**
+     * Retrieves content of JSON file.
+     *
+     * @param {String} file Path to JSON file
+     * @return {Promise} A promise that resolves to the JSON content
+     * or null in case of invalid path. Rejects if an error occurs.
+     */
+    getJSON: function(file) {
+      return new Promise(function(resolve, reject) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', file, true);
+        xhr.responseType = 'json';
+
+        xhr.onerror = function(error) {
+          reject(error);
+        };
+        xhr.onload = function() {
+          if (xhr.response !== null) {
+            resolve(xhr.response);
+          } else {
+            reject(new Error('No valid JSON object was found (' + 
+			     xhr.status + ' ' + xhr.statusText + ')'));
+          }
+        };
+
+        xhr.send();
+      });
+    },
+
     load: function(files, callback) {
-      if (!Array.isArray(files))
+      if (!Array.isArray(files)) {
         files = [files];
+      }
 
       var loadsRemaining = files.length, self = this;
       function perFileCallback(file) {
-        if (self._isLoading[file])
+        if (self._isLoading[file]) {
           delete self._isLoading[file];
+        }
         self._loaded[file] = true;
 
         if (--loadsRemaining === 0) {
-          if (callback)
+          if (callback) {
             callback();
+          }
         }
       }
 
       for (var i = 0; i < files.length; i++) {
         var file = files[i];
 
-        if (this._loaded[file]) {
+        if (this._loaded[file.id || file]) {
           perFileCallback(file);
         } else if (this._isLoading[file]) {
           this._isLoading[file].addEventListener(

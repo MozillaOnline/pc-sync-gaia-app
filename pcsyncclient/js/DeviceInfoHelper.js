@@ -190,7 +190,6 @@ function getFreeSpace(name, sdcard, callback) {
 
 function getStorageFree(jsonCmd) {
   var storagesInfo = {};
-  var index = 0;
   var storages = navigator.getDeviceStorages('sdcard');
   if (!storages) {
     var storage = navigator.getDeviceStorage('sdcard');
@@ -207,18 +206,18 @@ function getStorageFree(jsonCmd) {
     return;
   }
   for(var i=0; i<storages.length; i++) {
+    if (!storages[i].default) {
+      continue;
+    }
     var name = storages[i].storageName;
-    getSpace(name, storages[i], function (rName, freeSpace){
-      index++;
+    getFreeSpace(name, storages[i], function (rName, freeSpace){
       storagesInfo[rName] = freeSpace;
-      if (index < storages.length) {
-        return;
-      }
       jsonCmd.result = RS_OK;
       var sendData = JSON.stringify(storagesInfo);
       if (socketWrappers[serverSocket]) {
         socketWrappers[serverSocket].send(jsonCmd, sendData);
       }
     });
+    break;
   }
 }
