@@ -33,6 +33,11 @@ function handleMessage(jsonCmd, recvData) {
       videoHelper(jsonCmd, recvData);
       break;
     }
+  case CMD_TYPE.file:
+    {
+      fileHelper(jsonCmd, recvData);
+      break;
+    }
   default:
     {
       debug('HandleMessage.js undefined type :' + jsonCmd.type);
