@@ -127,7 +127,8 @@ function getChangedMusicsInfo(jsonCmd) {
       type: CMD_TYPE.listen,
       command: LISTEN_COMMAND.listenMusic,
       result: RS_OK,
-      datalength: 0
+      datalength: 0,
+      subdatalength: 0
     };
     socketWrappers[listenSocket].send(listenJsonCmd, JSON.stringify(musicMessage));
   };
@@ -142,7 +143,7 @@ function deleteMusic(jsonCmd, recvData) {
       socketWrappers[serverSocket].send(jsonCmd, null);
     return;
   }
-  var fileName = recvData;
+  var fileName = array2String(recvData);
   musicDB.deleteFile(fileName);
   jsonCmd.result = RS_OK;
   if (socketWrappers[serverSocket])
@@ -170,7 +171,8 @@ function sendMusic(isListen, jsonCmd, music) {
       type: CMD_TYPE.listen,
       command: LISTEN_COMMAND.listenMusic,
       result: RS_OK,
-      datalength: 0
+      datalength: 0,
+      subdatalength: 0
     };
     socketWrappers[listenSocket].send(listenJsonCmd, JSON.stringify(musicMessage));
   } else {

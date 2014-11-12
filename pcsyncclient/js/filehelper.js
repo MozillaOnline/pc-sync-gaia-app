@@ -24,20 +24,20 @@ function fileHelper(jsonCmd, recvData) {
         debug('filehelper.js undefined command :' + jsonCmd.command);
         jsonCmd.result = RS_ERROR.COMMAND_UNDEFINED;
         if (socketWrappers[serverSocket])
-          socketWrappers[serverSocket].send(jsonCmd, null);
+          socketWrappers[serverSocket].send(jsonCmd);
         break;
       }
     }
   } catch (e) {
-    debug('ContactHelper.js contactHelper failed: ' + e);
+    debug('filehelper.js filehelper failed: ' + e);
     jsonCmd.result = RS_ERROR.UNKNOWEN;
     if (socketWrappers[serverSocket])
-      socketWrappers[serverSocket].send(jsonCmd, null);
+      socketWrappers[serverSocket].send(jsonCmd);
   }
 }
 
 function filePull(jsonCmd, recvData) {
-  var jsonFile = JSON.parse(recvData);
+  var jsonFile = JSON.parse(array2String(recvData));
   var storages = navigator.getDeviceStorages('sdcard');
   if (!storages) {
     var storage = navigator.getDeviceStorage('sdcard');
@@ -54,29 +54,31 @@ function filePull(jsonCmd, recvData) {
       request.onsuccess = function () {
         var file = this.result;
         var fileReader = new FileReader();
-        fileReader.readAsBinaryString(file);
+        fileReader.readAsArrayBuffer(file);
         fileReader.onload = function(e) {
-          var data = e.target.result;
           jsonCmd.result = RS_OK;
-          if (socketWrappers[serverSocket])
-            socketWrappers[serverSocket].send(jsonCmd, data);
+          if (socketWrappers[serverSocket]){
+            var buffer = e.target.result;
+            var uint8Array = new Uint8Array(buffer);
+            socketWrappers[serverSocket].send(jsonCmd, null, uint8Array);
+          }
         }
       };
       request.onerror = function () {
         jsonCmd.result = RS_ERROR.FILE_NOTEXIT;
         if (socketWrappers[serverSocket])
-          socketWrappers[serverSocket].send(jsonCmd, null);
+          socketWrappers[serverSocket].send(jsonCmd);
       };
       return;
     }
   }
   jsonCmd.result = RS_ERROR.FILE_NOTEXIT;
   if (socketWrappers[serverSocket])
-    socketWrappers[serverSocket].send(jsonCmd, null);
+    socketWrappers[serverSocket].send(jsonCmd);
 }
 
 function filePush(jsonCmd, recvData) {
-  var jsonFile = JSON.parse(recvData);
+  var jsonFile = JSON.parse(array2String(recvData.subarray(0, jsonCmd.subdatalength)));
   var storages = navigator.getDeviceStorages('sdcard');
   if (!storages) {
     var storage = navigator.getDeviceStorage('sdcard');
@@ -89,27 +91,22 @@ function filePush(jsonCmd, recvData) {
   }
   for(var i=0; i<storages.length; i++) {
     if (jsonFile.storageName == storages[i].storageName) {
-      var dataBuffer = new ArrayBuffer(jsonFile.data.length);
-      var dataArray = new Uint8Array(dataBuffer);
-      for (var j = 0; j < jsonFile.data.length; j++) {
-        dataArray[j] = jsonFile.data.charCodeAt(j);
-      }
-      var file = new Blob([dataBuffer], {type: jsonFile.fileType});
+      var file = new Blob([recvData.subarray(jsonCmd.subdatalength, jsonCmd.datalength - jsonCmd.subdatalength)], {type: jsonFile.fileType});
       var request = storages[i].addNamed(file, jsonFile.fileName);
       request.onsuccess = function () {
         jsonCmd.result = RS_OK;
         if (socketWrappers[serverSocket])
-          socketWrappers[serverSocket].send(jsonCmd, null);
+          socketWrappers[serverSocket].send(jsonCmd);
       };
       request.onerror = function () {
         jsonCmd.result = RS_ERROR.FILE_ADD;
         if (socketWrappers[serverSocket])
-          socketWrappers[serverSocket].send(jsonCmd, null);
+          socketWrappers[serverSocket].send(jsonCmd);
       };
       return;
     }
   }
   jsonCmd.result = RS_ERROR.FILE_NOTEXIT;
   if (socketWrappers[serverSocket])
-    socketWrappers[serverSocket].send(jsonCmd, null);
+    socketWrappers[serverSocket].send(jsonCmd);
 }

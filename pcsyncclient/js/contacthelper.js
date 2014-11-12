@@ -62,7 +62,7 @@ function contactHelper(jsonCmd, recvData) {
 }
 
 function addContact(jsonCmd, recvData) {
-  var contactData = recvData;
+  var contactData = array2String(recvData);
   var newContact = new mozContact();
   debug('ContactHelper.js addContact contactData is: ' + contactData);
   var jsonContact = JSON.parse(contactData);
@@ -107,7 +107,8 @@ function getAllContacts(jsonCmd) {
       type: CMD_TYPE.listen,
       command: LISTEN_COMMAND.listenContact,
       result: RS_OK,
-      datalength: 0
+      datalength: 0,
+      subdatalength: 0
     };
     var contactMessage = {
       type: 'contact',
@@ -185,7 +186,7 @@ function getContactById(jsonCmd, recvData) {
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
-    filterValue: recvData
+    filterValue: array2String(recvData)
   };
   var request = window.navigator.mozContacts.find(options);
   request.onsuccess = function(evt) {
@@ -249,7 +250,7 @@ function getContactByPhoneNumber(jsonCmd, recvData) {
   var options = {
     filterBy: ['tel'],
     filterOp: 'match',
-    filterValue: recvData.replace(/\s+/g, '')
+    filterValue: array2String(recvData).replace(/\s+/g, '')
   };
   var request = window.navigator.mozContacts.find(options);
   request.onsuccess = function(evt) {
@@ -313,7 +314,7 @@ function removeContactById(jsonCmd, recvData) {
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
-    filterValue: recvData
+    filterValue: array2String(recvData)
   };
   var findRequest = window.navigator.mozContacts.find(options);
   findRequest.onsuccess = function(e) {
@@ -344,7 +345,7 @@ function removeContactById(jsonCmd, recvData) {
 }
 
 function updateContactById(jsonCmd, recvData) {
-  var newContact = JSON.parse(recvData);
+  var newContact = JSON.parse(array2String(recvData));
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',

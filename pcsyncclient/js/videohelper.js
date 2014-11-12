@@ -157,7 +157,8 @@ function getChangedVideosInfo(jsonCmd) {
       type: CMD_TYPE.listen,
       command: LISTEN_COMMAND.listenVideo,
       result: RS_OK,
-      datalength: 0
+      datalength: 0,
+      subdatalength: 0
     };
     socketWrappers[listenSocket].send(listenJsonCmd, JSON.stringify(videoMessage));
   };
@@ -189,7 +190,8 @@ function sendVideo(isListen, jsonCmd, video, count) {
           type: CMD_TYPE.listen,
           command: LISTEN_COMMAND.listenVideo,
           result: 0,
-          datalength: 0
+          datalength: 0,
+          subdatalength: 0
         };
         if (count && !videosEnumerateDone) {
           listenJsonCmd.result = RS_MIDDLE;
@@ -221,7 +223,8 @@ function sendVideo(isListen, jsonCmd, video, count) {
           type: CMD_TYPE.listen,
           command: LISTEN_COMMAND.listenVideo,
           result: RS_OK,
-          datalength: 0
+          datalength: 0,
+          subdatalength: 0
         };
         if (count && !videosEnumerateDone) {
           listenJsonCmd.result = RS_MIDDLE;
@@ -254,7 +257,8 @@ function sendVideo(isListen, jsonCmd, video, count) {
             type: CMD_TYPE.listen,
             command: LISTEN_COMMAND.listenVideo,
             result: RS_OK,
-            datalength: 0
+            datalength: 0,
+            subdatalength: 0
           };
           if (count && !videosEnumerateDone) {
             listenJsonCmd.result = RS_MIDDLE;
@@ -284,7 +288,7 @@ function deleteVideo(jsonCmd, recvData) {
       socketWrappers[serverSocket].send(jsonCmd, null);
     return;
   }
-  var fileInfo = JSON.parse(recvData);
+  var fileInfo = JSON.parse(array2String(recvData));
   debug(fileInfo);
   debug(fileInfo.fileName);
   videoDB.deleteFile(fileInfo.fileName);

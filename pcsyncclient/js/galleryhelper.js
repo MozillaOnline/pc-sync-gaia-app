@@ -133,7 +133,8 @@ function sendPicture(isListen, jsonCmd, photo, count) {
           type: CMD_TYPE.listen,
           command: LISTEN_COMMAND.listenPicture,
           result: 0,
-          datalength: 0
+          datalength: 0,
+          subdatalength: 0
         };
         if (count && !picturesEnumerateDone) {
           listenJsonCmd.result = RS_MIDDLE;
@@ -166,7 +167,8 @@ function sendPicture(isListen, jsonCmd, photo, count) {
           type: CMD_TYPE.listen,
           command: LISTEN_COMMAND.listenPicture,
           result: RS_OK,
-          datalength: 0
+          datalength: 0,
+          subdatalength: 0
         };
         if (count && !picturesEnumerateDone) {
           listenJsonCmd.result = RS_MIDDLE;
@@ -223,7 +225,8 @@ function getChangedPicturesInfo(jsonCmd) {
       type: CMD_TYPE.listen,
       command: LISTEN_COMMAND.listenPicture,
       result: RS_OK,
-      datalength: 0
+      datalength: 0,
+      subdatalength: 0
     };
     socketWrappers[listenSocket].send(listenJsonCmd, JSON.stringify(pictureMessage));
   };
@@ -237,7 +240,7 @@ function deletePicture(jsonCmd, recvData) {
       socketWrappers[serverSocket].send(jsonCmd, null);
     return;
   }
-  var fileName = recvData;
+  var fileName = array2String(recvData);
   photoDB.deleteFile(fileName);
   jsonCmd.result = RS_OK;
   if (socketWrappers[serverSocket])

@@ -36,8 +36,9 @@ function getVersion(jsonCmd) {
   request.onsuccess = function() {
     if (request.result) {
       jsonCmd.result = RS_OK;
-      if (socketWrappers[serverSocket])
+      if (socketWrappers[serverSocket]){
         socketWrappers[serverSocket].send(jsonCmd, request.result.manifest.version);
+      }
     } else {
       jsonCmd.result = RS_ERROR.UNKNOWEN;
       if (socketWrappers[serverSocket])

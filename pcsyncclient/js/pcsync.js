@@ -183,7 +183,8 @@ var pcsync = {
           type: CMD_TYPE.connected,
           command: 0,
           result: 0,
-          datalength: 0
+          datalength: 0,
+          subdatalength: 0
         };
         server.send(dataJson, null);
         mainSocketConnected = true;
@@ -259,7 +260,8 @@ var pcsync = {
         type: CMD_TYPE.disconnect,
         command: 0,
         result: 0,
-        datalength: 0
+        datalength: 0,
+        subdatalength: 0
       };
       socketWrappers[serverSocket].send(dataJson, null);
       socketWrappers[serverSocket].socket.close();
