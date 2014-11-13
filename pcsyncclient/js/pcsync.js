@@ -5,7 +5,7 @@
  *Modified By:
  *Description:
  *----------------------------------------------------------------------------------------------------------*/
-let DEBUG = 1;
+let DEBUG = 0;
 function debug(s) {
   if (DEBUG) {
     console.log("-*- pcsyncclient: " + s + "\n");
