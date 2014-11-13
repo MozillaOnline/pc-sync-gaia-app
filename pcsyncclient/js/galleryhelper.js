@@ -131,7 +131,7 @@ function sendPicture(isListen, jsonCmd, photo, count) {
         var listenJsonCmd = {
           id: 0,
           type: CMD_TYPE.listen,
-          command: LISTEN_COMMAND.listenPicture,
+          command: 0,
           result: 0,
           datalength: 0,
           subdatalength: 0
@@ -165,7 +165,7 @@ function sendPicture(isListen, jsonCmd, photo, count) {
         var listenJsonCmd = {
           id: 0,
           type: CMD_TYPE.listen,
-          command: LISTEN_COMMAND.listenPicture,
+          command: 0,
           result: RS_OK,
           datalength: 0,
           subdatalength: 0
@@ -223,7 +223,7 @@ function getChangedPicturesInfo(jsonCmd) {
     var listenJsonCmd = {
       id: 0,
       type: CMD_TYPE.listen,
-      command: LISTEN_COMMAND.listenPicture,
+      command: 0,
       result: RS_OK,
       datalength: 0,
       subdatalength: 0

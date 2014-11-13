@@ -125,7 +125,7 @@ function getChangedMusicsInfo(jsonCmd) {
     var listenJsonCmd = {
       id: 0,
       type: CMD_TYPE.listen,
-      command: LISTEN_COMMAND.listenMusic,
+      command: 0,
       result: RS_OK,
       datalength: 0,
       subdatalength: 0
@@ -169,7 +169,7 @@ function sendMusic(isListen, jsonCmd, music) {
     var listenJsonCmd = {
       id: 0,
       type: CMD_TYPE.listen,
-      command: LISTEN_COMMAND.listenMusic,
+      command: 0,
       result: RS_OK,
       datalength: 0,
       subdatalength: 0

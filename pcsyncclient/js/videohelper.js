@@ -155,7 +155,7 @@ function getChangedVideosInfo(jsonCmd) {
     var listenJsonCmd = {
       id: 0,
       type: CMD_TYPE.listen,
-      command: LISTEN_COMMAND.listenVideo,
+      command: 0,
       result: RS_OK,
       datalength: 0,
       subdatalength: 0
@@ -188,7 +188,7 @@ function sendVideo(isListen, jsonCmd, video, count) {
         var listenJsonCmd = {
           id: 0,
           type: CMD_TYPE.listen,
-          command: LISTEN_COMMAND.listenVideo,
+          command: 0,
           result: 0,
           datalength: 0,
           subdatalength: 0
@@ -221,7 +221,7 @@ function sendVideo(isListen, jsonCmd, video, count) {
         var listenJsonCmd = {
           id: 0,
           type: CMD_TYPE.listen,
-          command: LISTEN_COMMAND.listenVideo,
+          command: 0,
           result: RS_OK,
           datalength: 0,
           subdatalength: 0
@@ -255,7 +255,7 @@ function sendVideo(isListen, jsonCmd, video, count) {
           var listenJsonCmd = {
             id: 0,
             type: CMD_TYPE.listen,
-            command: LISTEN_COMMAND.listenVideo,
+            command: 0,
             result: RS_OK,
             datalength: 0,
             subdatalength: 0

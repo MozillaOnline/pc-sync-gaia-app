@@ -105,7 +105,7 @@ function getAllContacts(jsonCmd) {
     var listenJsonCmd = {
       id: 0,
       type: CMD_TYPE.listen,
-      command: LISTEN_COMMAND.listenContact,
+      command: 0,
       result: RS_OK,
       datalength: 0,
       subdatalength: 0
