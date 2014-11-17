@@ -91,7 +91,8 @@ function filePush(jsonCmd, recvData) {
   }
   for(var i=0; i<storages.length; i++) {
     if (jsonFile.storageName == storages[i].storageName) {
-      var file = new Blob([recvData.subarray(jsonCmd.subdatalength, jsonCmd.datalength - jsonCmd.subdatalength)], {type: jsonFile.fileType});
+      var subdata = recvData.subarray(jsonCmd.subdatalength, jsonCmd.datalength);
+      var file = new Blob([subdata], {type: jsonFile.fileType});
       var request = storages[i].addNamed(file, jsonFile.fileName);
       request.onsuccess = function () {
         jsonCmd.result = RS_OK;
