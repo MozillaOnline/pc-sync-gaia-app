@@ -36,14 +36,18 @@
     <script type="text/javascript;version=1.8" src="js/fromgaia/music_metadata_scripts.js"></script>
     <script type="text/javascript;version=1.8" src="js/fromgaia/gallery_metadata_scripts.js"></script>
     <!-- Specific code -->
-    <script type="text/javascript;version=1.8" src="js/contacthelper.js"></script>
-    <script type="text/javascript;version=1.8" src="js/deviceinfohelper.js"></script>
-    <script type="text/javascript;version=1.8" src="js/galleryhelper.js"></script>
-    <script type="text/javascript;version=1.8" src="js/videohelper.js"></script>
-    <script type="text/javascript;version=1.8" src="js/musichelper.js"></script>
-    <script type="text/javascript;version=1.8" src="js/filehelper.js"></script>
-    <script type="text/javascript;version=1.8" src="js/handlemessage.js"></script>
-    <script type="text/javascript;version=1.8" src="js/pcsync.js"></script>
+    <script type="text/javascript;version=1.8" src="js/wifi_helper.js"></script>
+    <script type="text/javascript;version=1.8" src="js/contact_handler.js"></script>
+    <script type="text/javascript;version=1.8" src="js/device_handler.js"></script>
+    <script type="text/javascript;version=1.8" src="js/file_handler.js"></script>
+    <script type="text/javascript;version=1.8" src="js/video_handler.js"></script>
+    <script type="text/javascript;version=1.8" src="js/music_handler.js"></script>
+    <script type="text/javascript;version=1.8" src="js/picture_handler.js"></script>
+    <script type="text/javascript;version=1.8" src="js/server_manager.js"></script>
+    <script type="text/javascript;version=1.8" src="js/handlers_manager.js"></script>
+    <script type="text/javascript;version=1.8" src="js/ui_manager.js"></script>
+    <script type="text/javascript;version=1.8" src="js/app.js"></script>
+    <script type="text/javascript;version=1.8" src="js/main.js"></script>
   </head>
   <body class="main">
     <section id="modal-loading" class="modal hidden">
@@ -78,7 +82,7 @@
         <a data-l10n-id="help-usb-title2"></a>
       </div>
     </section>
-    <section role="region" id="unconnect-region" hidden>
+    <section role="region" id="unconnect-region">
       <header data-l10n-id="content-region-header">PC Sync</header>
       <div class="wifi-status-bar">
         <div id="wifi-status" class="wifi"></div>
@@ -104,7 +108,7 @@
         <button id="button-restart-service" data-l10n-id="button-restart-service" class="button">Reconnect</button>
       </div>
     </section>
-    <section role="region" id="connected-region" hidden>
+    <section role="region" id="connected-region">
       <header data-l10n-id="content-region-header">PC Sync</header>
       <div class="wifi-status-bar">
         <div class="wifi connected"></div>
