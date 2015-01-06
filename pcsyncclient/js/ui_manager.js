@@ -11,10 +11,10 @@ var UIManager = function(app) {
 UIManager.prototype.init = function() {
   var backButton = document.getElementById("help-general-back");
   backButton.onmousedown = ontouchstart = function() {
-    // this.classList.add('touchover');
+    this.classList.add('touchover');
   };
   backButton.onmouseup = backButton.ontouchend = function() {
-    // this.classList.remove('touchover');
+    this.classList.remove('touchover');
     document.getElementById('modal-help-general').classList.add('hidden');
   };
 
@@ -85,7 +85,7 @@ UIManager.prototype.showConnectedPage = function(flag) {
   }
 };
 
-UIManager.prototype.confirm = function(flag) {
+UIManager.prototype.confirm = function() {
   return window.confirm(navigator.mozL10n.get('access_confirm'));
 };
 

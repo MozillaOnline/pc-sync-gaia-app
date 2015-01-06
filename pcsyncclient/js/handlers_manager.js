@@ -1,5 +1,8 @@
 'use strict';
 
+/* global ContactHandler, DeviceHandler, MusicHandler, PictureHandler,
+ * VideoHandler, FileHandler */
+
 (function(exports) {
 
 var HandlersManager = function(app) {
@@ -9,7 +12,7 @@ var HandlersManager = function(app) {
 
 HandlersManager.prototype.start = function() {
   if (this.started) {
-    console.warn('HandlersManager is running.');
+    console.log('HandlersManager is running.');
     return;
   }
 
@@ -17,21 +20,26 @@ HandlersManager.prototype.start = function() {
 
   this.contactHandler = new ContactHandler(this.app);
   this.contactHandler.start();
+
   this.deviceHandler = new DeviceHandler(this.app);
   this.deviceHandler.start();
+
   this.musicHandler = new MusicHandler(this.app);
   this.musicHandler.start();
+
   this.pictureHandler = new PictureHandler(this.app);
   this.pictureHandler.start();
+
   this.videoHandler = new VideoHandler(this.app);
   this.videoHandler.start();
+
   this.fileHandler = new FileHandler(this.app);
   this.fileHandler.start();
 };
 
 HandlersManager.prototype.stop = function() {
   if (!this.started) {
-    console.warn('HandlersManager has been stopped.');
+    console.log('HandlersManager has been stopped.');
     return;
   }
 

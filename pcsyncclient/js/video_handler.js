@@ -248,9 +248,9 @@ VideoHandler.prototype.sendVideo = function(isListen, jsonCmd, video) {
       this.send(jsonCmd, videoData);
     }
   } else {
-    var fileReader = new FileReader();
-    fileReader.readAsDataURL(imageBlob);
-    fileReader.onload = function(e) {
+    var fr = new FileReader();
+    fr.readAsDataURL(imageBlob);
+    fr.onload = function(e) {
       videoMessage.detail.metadata.poster = e.target.result;
       this.videosIndex++;
       var videoData = JSON.stringify(videoMessage);

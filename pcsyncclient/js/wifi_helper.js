@@ -5,7 +5,7 @@
 var WifiHelper = function(app) {
   this.app = app;
   this.ipAddress = '0.0.0.0';
-  this.firstCon = true;
+  this.firstConn = true;
   this.wifiEnabled = true;
 };
 
@@ -16,8 +16,8 @@ WifiHelper.prototype.getWifiCode = function() {
     var pc = new PeerConnection();
 
     pc.onicecandidate = function(evt) {
-      if (evt.candidate && this.firstCon) {
-        this.firstCon = false;
+      if (evt.candidate && this.firstConn) {
+        this.firstConn = false;
         var strArray = evt.candidate.candidate.split(' ');
         switch(strArray.length) {
           case 8:
@@ -31,32 +31,32 @@ WifiHelper.prototype.getWifiCode = function() {
       this.app.uiManager.updateWifiCode(this.ipAddress);
     }.bind(this);
 
-    pc.oniceconnectionstatechange = function (e) {
+    pc.oniceconnectionstatechange = function(e) {
       this.wifiEnabled = false;
     }.bind(this);
 
     pc.createDataChannel('DataChannel');
     pc.createOffer(function(desc) {
       if (desc && desc.sdp && this.wifiEnabled) {
-        var startIndex = desc.sdp.indexOf('c=', 0);
-        var endIndex = desc.sdp.indexOf('\r\n', startIndex);
-        var tmpString = desc.sdp.substring(startIndex + 2, endIndex);
-        var ipString = tmpString.split(' ');
-        if (ipString[2] == '0.0.0.0') {
+        var startPos = desc.sdp.indexOf('c=', 0);
+        var endPos = desc.sdp.indexOf('\r\n', startPos);
+        var ipString = desc.sdp.substring(startPos + 2, endPos);
+        var array = ipString.split(' ');
+        if (array[2] == '0.0.0.0') {
           pc.setLocalDescription(desc);
         } else {
-          this.ipAddress = ipString[2];
-          this.app.uiManager.updateWifiCode(ipAddress);
+          this.ipAddress = array[2];
+          this.app.uiManager.updateWifiCode(this.ipAddress);
         }
       } else {
-        this.app.uiManager.updateWifiCode(ipAddress);
+        this.app.uiManager.updateWifiCode(this.ipAddress);
       }
-    }.bind(this), function(error){
-      this.app.uiManager.updateWifiCode(ipAddress);
-    });
+    }.bind(this), function(error) {
+      this.app.uiManager.updateWifiCode(this.ipAddress);
+    }.bind(this));
   } catch (e) {
     this.wifiEnabled = false;
-    this.app.uiManager.updateWifiCode(ipAddress);
+    this.app.uiManager.updateWifiCode(this.ipAddress);
   }
 };
 
