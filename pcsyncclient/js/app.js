@@ -1,6 +1,6 @@
 'use strict';
 
-/* global ServerManager, HandlersManager */
+/* global WifiHelper, UIManager, ServerManager, HandlersManager */
 
 // Global variables for video_metadata_scripts.js
 // Initialized in video_handler.js

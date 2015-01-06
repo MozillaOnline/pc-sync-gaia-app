@@ -4,6 +4,8 @@
 
 var ContactHandler = function(app) {
   this.app = app;
+
+  // After editing some contact, whether notify app on PC side.
   this.enableListening = false;
   this.started = false;
 };
@@ -42,7 +44,7 @@ ContactHandler.prototype.start = function() {
 
 ContactHandler.prototype.stop = function() {
   if (!this.started) {
-    console.warn('ContactHandler has been stopped.');
+    console.log('ContactHandler has been stopped.');
     return;
   }
 
@@ -88,12 +90,12 @@ ContactHandler.prototype.handleMessage = function(cmd, data) {
 
 ContactHandler.prototype.addContact = function(cmd, data) {
   var contact = new mozContact();
-  var jsonContact = JSON.parse(array2String(data));
+  var contactObj = JSON.parse(array2String(data));
 
-  if (jsonContact.photo.length > 0) {
-    jsonContact.photo = [dataUri2Blob(jsonContact.photo)];
+  if (contactObj.photo.length > 0) {
+    contactObj.photo = [dataUri2Blob(contactObj.photo)];
   }
-  contact.init(jsonContact);
+  contact.init(contactObj);
 
   var req = window.navigator.mozContacts.save(contact);
   req.onsuccess = function() {
@@ -123,18 +125,18 @@ ContactHandler.prototype.clearAllContacts = function(cmd) {
 
 ContactHandler.prototype.getAllContacts = function(cmd) {
   this.enableListening = true;
-  var chunk = [];
+  var contacts = [];
+
   var request = window.navigator.mozContacts.getAll({});
   request.onsuccess = function(evt) {
     var contact = evt.target.result;
     if (!contact) {
       cmd.result = RS_OK;
-      var contactsData = JSON.stringify(chunk);
-      this.send(cmd, contactsData);
+      this.send(cmd, JSON.stringify(contacts));
       return;
     }
 
-   var contactJson = {
+   var contactObj = {
       id: contact.id,
       photo: [],
       name: contact.name,
@@ -159,16 +161,16 @@ ContactHandler.prototype.getAllContacts = function(cmd) {
       genderIdentity: contact.genderIdentity
     };
 
-    if (evt.target.result.photo != null && evt.target.result.photo.length > 0) {
+    if (contact.photo != null && contact.photo.length > 0) {
       var fr = new FileReader();
-      fr.readAsDataURL(evt.target.result.photo[0]);
+      fr.readAsDataURL(contact.photo[0]);
       fr.onload = function(e) {
-        contactJson.photo = e.target.result;
-        chunk.push(contactJson);
+        contactObj.photo = e.target.result;
+        contacts.push(contactObj);
         request.continue();
       }.bind(this);
     } else {
-      chunk.push(contactJson);
+      contacts.push(contactObj);
       request.continue();
     }
   }.bind(this);
@@ -194,7 +196,7 @@ ContactHandler.prototype.getContactById = function(cmd, data) {
       return;
     }
     var contact = evt.target.result[0];
-    var contactJson = {
+    var contactObj = {
       id: contact.id,
       photo: [],
       name: contact.name,
@@ -218,21 +220,20 @@ ContactHandler.prototype.getContactById = function(cmd, data) {
       sex: contact.sex,
       genderIdentity: contact.genderIdentity
     };
-    if (evt.target.result[0].photo != null &&
-        evt.target.result[0].photo.length > 0) {
+
+    if (contact.photo != null && contact.photo.length > 0) {
       var fr = new FileReader();
-      fr.readAsDataURL(evt.target.result[0].photo[0]);
+      fr.readAsDataURL(contact.photo[0]);
       fr.onload = function(e) {
-        contactJson.photo = e.target.result;
+        contactObj.photo = e.target.result;
         cmd.result = RS_OK;
-        var contactData = JSON.stringify(contactJson);
-        this.send(cmd, contactData);
+        this.send(cmd, JSON.stringify(contactObj));
       }.bind(this);
-    } else {
-      cmd.result = RS_OK;
-      var contactData = JSON.stringify(contactJson);
-      this.send(cmd, contactData);
+      return;
     }
+
+    cmd.result = RS_OK;
+    this.send(cmd, JSON.stringify(contactObj));
   }.bind(this);
 
   request.onerror = function() {
@@ -255,8 +256,9 @@ ContactHandler.prototype.getContactByPhoneNumber = function(cmd, data) {
       this.send(cmd, null);
       return;
     }
+
     var contact = evt.target.result[0];
-    var contactJson = {
+    var contactObj = {
       id: contact.id,
       photo: [],
       name: contact.name,
@@ -281,21 +283,19 @@ ContactHandler.prototype.getContactByPhoneNumber = function(cmd, data) {
       genderIdentity: contact.genderIdentity
     };
 
-    if (evt.target.result[0].photo != null &&
-        evt.target.result[0].photo.length > 0) {
-      var fileReader = new FileReader();
-      fileReader.readAsDataURL(evt.target.result[0].photo[0]);
-      fileReader.onload = function(e) {
-        contactJson.photo = e.target.result;
+    if (contact.photo != null && contact.photo.length > 0) {
+      var fr = new FileReader();
+      fr.readAsDataURL(contact.photo[0]);
+      fr.onload = function(e) {
+        contactObj.photo = e.target.result;
         cmd.result = RS_OK;
-        var contactData = JSON.stringify(contactJson);
-        this.send(cmd, contactData);
+        this.send(cmd, JSON.stringify(contactObj));
       }.bind(this);
-    } else {
-      cmd.result = RS_OK;
-      var contactData = JSON.stringify(contactJson);
-      this.send(cmd, contactData);
+      return;
     }
+
+    cmd.result = RS_OK;
+    this.send(cmd, JSON.stringify(contactObj));
   }.bind(this);
 
   request.onerror = function() {
@@ -351,20 +351,19 @@ ContactHandler.prototype.updateContactById = function(cmd, data) {
       this.send(cmd, null);
       return;
     }
-    var updateContact = e.target.result[0];
-    for (var uname in newContact) {
-      if (uname == 'photo' && newContact.photo.length > 0) {
-        updateContact.photo = [dataUri2Blob(newContact.photo)];
-      } else if (uname in updateContact) {
-        updateContact[uname] = newContact[uname];
+    var contact = e.target.result[0];
+    for (var prop in newContact) {
+      if (prop == 'photo' && newContact.photo.length > 0) {
+        contact.photo = [dataUri2Blob(newContact.photo)];
+      } else if (prop in contact) {
+        contact[prop] = newContact[prop];
       }
     }
 
-    var req = window.navigator.mozContacts.save(updateContact);
+    var req = window.navigator.mozContacts.save(contact);
     req.onsuccess = function() {
       cmd.result = RS_OK;
-      var savedContact = JSON.stringify(updateContact);
-      this.send(cmd, savedContact);
+      this.send(cmd, JSON.stringify(contact));
     }.bind(this);
 
     req.onerror = function() {

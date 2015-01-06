@@ -1,5 +1,7 @@
 'use strict';
 
+/* global App */
+
 (function() {
 
 var Main = {
