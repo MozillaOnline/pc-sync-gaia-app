@@ -59,17 +59,11 @@ ContactHandler.prototype.handleMessage = function(cmd, data) {
       case CONTACT_COMMAND.addContact:
         this.addContact(cmd, data);
         break;
-      case CONTACT_COMMAND.clearAllContacts:
-        this.clearAllContacts(cmd);
-        break;
       case CONTACT_COMMAND.getAllContacts:
         this.getAllContacts(cmd);
         break;
       case CONTACT_COMMAND.getContactById:
         this.getContactById(cmd, data);
-        break;
-      case CONTACT_COMMAND.getContactByPhoneNumber:
-        this.getContactByPhoneNumber(cmd, data);
         break;
       case CONTACT_COMMAND.removeContactById:
         this.removeContactById(cmd, data);
@@ -106,19 +100,6 @@ ContactHandler.prototype.addContact = function(cmd, data) {
 
   req.onerror = function() {
     cmd.result = RS_ERROR.CONTACT_ADDCONTACT;
-    this.send(cmd, null);
-  }.bind(this);
-};
-
-ContactHandler.prototype.clearAllContacts = function(cmd) {
-  var req = window.navigator.mozContacts.clear();
-  req.onsuccess = function() {
-    cmd.result = RS_OK;
-    this.send(cmd, null);
-  }.bind(this);
-
-  req.onerror = function() {
-    cmd.result = RS_ERROR.CONTACT_CLEARALLCONTACTS;
     this.send(cmd, null);
   }.bind(this);
 };
