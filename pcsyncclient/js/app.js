@@ -25,9 +25,6 @@ App.prototype.start = function() {
 
   this.started = true;
 
-  this.wifiHelper = new WifiHelper(this);
-  this.wifiHelper.getWifiCode();
-
   this.uiManager = new UIManager(this);
   this.uiManager.init();
 
@@ -36,6 +33,11 @@ App.prototype.start = function() {
 
   this.handlersManager = new HandlersManager(this);
   this.handlersManager.start();
+
+  // WifiHelper will invoke uiManager, make sure initialize it
+  // after uiManager.
+  this.wifiHelper = new WifiHelper(this);
+  this.wifiHelper.getWifiCode();
 };
 
 App.prototype.stop = function() {

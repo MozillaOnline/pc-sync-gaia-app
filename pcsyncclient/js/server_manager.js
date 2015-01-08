@@ -79,16 +79,13 @@ ServerManager.prototype.createServer = function() {
           console.log('Error occured in main socket.');
           this.mainSocketWrapper = null;
           this.app.uiManager.showConnectedPage(false);
-          this.app.stop();
+          this.reset();
         }.bind(this),
         onclose: function() {
           console.log('Main socket closed.');
           this.mainSocketWrapper = null;
           this.app.uiManager.showConnectedPage(false);
-          if (this.dataSocketWrapper) {
-            this.dataSocketWrapper.socket.close();
-            this.dataSocketWrapper = null;
-          }
+          this.reset();
         }.bind(this)
       });
 
@@ -116,11 +113,11 @@ ServerManager.prototype.createServer = function() {
         onerror: function() {
           console.log('Error occured in data socket.');
           this.dataSocketWrapper = null;
-        },
+        }.bind(this),
         onclose: function() {
           console.log('Data socket closed.');
           this.dataSocketWrapper = null;
-        },
+        }.bind(this),
         onmessage:
           this.app.handlersManager.handleMessage.bind(this.app.handlersManager)
       });
@@ -142,17 +139,29 @@ ServerManager.prototype.createServer = function() {
   }.bind(this);
 };
 
-// Send data from dataSocket.
-ServerManager.prototype.send = function(cmd, data) {
+ServerManager.prototype.reset = function() {
   if (this.dataSocketWrapper) {
-    this.dataSocketWrapper.send(cmd, data);
+    this.dataSocketWrapper.socket.close();
+    this.dataSocketWrapper = null;
+  }
+
+  if (this.mainSocketWrapper) {
+    this.mainSocketWrapper.socket.close();
+    this.mainSocketWrapper = null;
+  }
+};
+
+// Send data from dataSocket.
+ServerManager.prototype.send = function(cmd, dataStr, dataArray) {
+  if (this.dataSocketWrapper) {
+    this.dataSocketWrapper.send(cmd, dataStr, dataArray);
   }
 };
 
 // Send data from mainSocket.
-ServerManager.prototype.update = function(cmd, data) {
+ServerManager.prototype.update = function(cmd, dataStr, dataArray) {
   if (this.mainSocketWrapper) {
-    this.mainSocketWrapper.send(cmd, data);
+    this.mainSocketWrapper.send(cmd, dataStr, dataArray);
   }
 };
 

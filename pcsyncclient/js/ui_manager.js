@@ -29,14 +29,12 @@ UIManager.prototype.init = function() {
 
   var disconnectButton = document.getElementById('button-disconnect');
   disconnectButton.onclick = function(event) {
-    this.app.stop();
-    this.app.start();
+    this.app.serverManager.reset();
   }.bind(this);
 
   var reconnectButton = document.getElementById('button-restart-service');
   reconnectButton.onclick = function() {
-    this.app.stop();
-    this.app.start();
+    this.app.serverManager.reset();
   }.bind(this);
 
   document.getElementById('unconnect-view-help').onclick = function () {
