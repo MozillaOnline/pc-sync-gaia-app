@@ -64,13 +64,13 @@ FileHandler.prototype.pull = function(cmd, data) {
   var fileObj = JSON.parse(array2String(data));
 
   for (var i = 0; i < this.storages.length; i++) {
-    if (fileObj.storageName != storages[i].storageName) {
+    if (fileObj.storageName != this.storages[i].storageName) {
       continue;
     }
 
-    var request = storages[i].get(fileObj.fileName);
+    var request = this.storages[i].get(fileObj.fileName);
     request.onsuccess = function() {
-      var file = this.result;
+      var file = request.result;
       var fr = new FileReader();
       fr.readAsArrayBuffer(file);
       fr.onload = function(e) {
@@ -102,14 +102,14 @@ FileHandler.prototype.push = function(cmd, data) {
   var fileObj = JSON.parse(array2String(data.subarray(0, cmd.subdatalength)));
 
   for (var i = 0; i < this.storages.length; i++) {
-    if (fileObj.storageName != storages[i].storageName) {
+    if (fileObj.storageName != this.storages[i].storageName) {
       continue;
     }
 
     var subdata = data.subarray(cmd.subdatalength, cmd.datalength);
     var file = new Blob([subdata], {type: fileObj.fileType});
 
-    var request = storages[i].addNamed(file, fileObj.fileName);
+    var request = this.storages[i].addNamed(file, fileObj.fileName);
     request.onsuccess = function() {
       cmd.result = RS_OK;
       this.app.serverManager.send(cmd);
