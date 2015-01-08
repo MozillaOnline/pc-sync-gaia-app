@@ -37,7 +37,7 @@ ContactHandler.prototype.start = function() {
 
     var responseData = JSON.stringify(contactMessage);
     if (this.enableListening) {
-      this.sendUpdated(responseCmd, responseData);
+      this.app.serverManager.update(responseCmd, responseData);
     }
   }.bind(this);
 };
@@ -73,12 +73,12 @@ ContactHandler.prototype.handleMessage = function(cmd, data) {
         break;
       default:
         cmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        this.send(cmd, null);
+        this.app.serverManager.send(cmd, null);
         break;
     }
   } catch(e) {
     cmd.result = RS_ERROR.UNKNOWEN;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }
 };
 
@@ -95,12 +95,12 @@ ContactHandler.prototype.addContact = function(cmd, data) {
   req.onsuccess = function() {
     cmd.result = RS_OK;
     var id = JSON.stringify(contact.id);
-    this.send(cmd, id);
+    this.app.serverManager.send(cmd, id);
   }.bind(this);
 
   req.onerror = function() {
     cmd.result = RS_ERROR.CONTACT_ADDCONTACT;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }.bind(this);
 };
 
@@ -113,7 +113,7 @@ ContactHandler.prototype.getAllContacts = function(cmd) {
     var contact = evt.target.result;
     if (!contact) {
       cmd.result = RS_OK;
-      this.send(cmd, JSON.stringify(contacts));
+      this.app.serverManager.send(cmd, JSON.stringify(contacts));
       return;
     }
 
@@ -158,7 +158,7 @@ ContactHandler.prototype.getAllContacts = function(cmd) {
 
   request.onerror = function() {
     cmd.result = RS_ERROR.CONTACT_GETALLCONTACTS;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }.bind(this);
 };
 
@@ -173,7 +173,7 @@ ContactHandler.prototype.getContactById = function(cmd, data) {
   request.onsuccess = function(evt) {
     if (evt.target.result.length == 0) {
       cmd.result = RS_OK;
-      this.send(cmd, null);
+      this.app.serverManager.send(cmd, null);
       return;
     }
     var contact = evt.target.result[0];
@@ -208,18 +208,18 @@ ContactHandler.prototype.getContactById = function(cmd, data) {
       fr.onload = function(e) {
         contactObj.photo = e.target.result;
         cmd.result = RS_OK;
-        this.send(cmd, JSON.stringify(contactObj));
+        this.app.serverManager.send(cmd, JSON.stringify(contactObj));
       }.bind(this);
       return;
     }
 
     cmd.result = RS_OK;
-    this.send(cmd, JSON.stringify(contactObj));
+    this.app.serverManager.send(cmd, JSON.stringify(contactObj));
   }.bind(this);
 
   request.onerror = function() {
     cmd.result = RS_ERROR.CONTACT_GETCONTACT;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }.bind(this);
 };
 
@@ -234,7 +234,7 @@ ContactHandler.prototype.getContactByPhoneNumber = function(cmd, data) {
   request.onsuccess = function(evt) {
     if (evt.target.result.length == 0) {
       cmd.result = RS_OK;
-      this.send(cmd, null);
+      this.app.serverManager.send(cmd, null);
       return;
     }
 
@@ -270,18 +270,18 @@ ContactHandler.prototype.getContactByPhoneNumber = function(cmd, data) {
       fr.onload = function(e) {
         contactObj.photo = e.target.result;
         cmd.result = RS_OK;
-        this.send(cmd, JSON.stringify(contactObj));
+        this.app.serverManager.send(cmd, JSON.stringify(contactObj));
       }.bind(this);
       return;
     }
 
     cmd.result = RS_OK;
-    this.send(cmd, JSON.stringify(contactObj));
+    this.app.serverManager.send(cmd, JSON.stringify(contactObj));
   }.bind(this);
 
   request.onerror = function() {
     cmd.result = RS_ERROR.CONTACT_GETCONTACT;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }.bind(this);
 };
 
@@ -296,24 +296,24 @@ ContactHandler.prototype.removeContactById = function(cmd, data) {
   req.onsuccess = function(e) {
     if (e.target.result.length == 0) {
       cmd.result = RS_OK;
-      this.send(cmd, null);
+      this.app.serverManager.send(cmd, null);
       return;
     }
     var request = window.navigator.mozContacts.remove(e.target.result[0]);
     request.onsuccess = function(e) {
       cmd.result = RS_OK;
-      this.send(cmd, null);
+      this.app.serverManager.send(cmd, null);
     }.bind(this);
 
     request.onerror = function() {
       cmd.result = RS_ERROR.CONTACT_REMOVECONTACT;
-      this.send(cmd, null);
+      this.app.serverManager.send(cmd, null);
     }.bind(this);
   }.bind(this);
 
   req.onerror = function() {
     cmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }.bind(this);
 };
 
@@ -329,7 +329,7 @@ ContactHandler.prototype.updateContactById = function(cmd, data) {
   request.onsuccess = function(e) {
     if (e.target.result.length == 0) {
       cmd.result = RS_OK;
-      this.send(cmd, null);
+      this.app.serverManager.send(cmd, null);
       return;
     }
     var contact = e.target.result[0];
@@ -344,33 +344,19 @@ ContactHandler.prototype.updateContactById = function(cmd, data) {
     var req = window.navigator.mozContacts.save(contact);
     req.onsuccess = function() {
       cmd.result = RS_OK;
-      this.send(cmd, JSON.stringify(contact));
+      this.app.serverManager.send(cmd, JSON.stringify(contact));
     }.bind(this);
 
     req.onerror = function() {
       cmd.result = RS_ERROR.CONTACT_SAVECONTACT;
-      this.send(cmd, null);
+      this.app.serverManager.send(cmd, null);
     }.bind(this);
   }.bind(this);
 
   request.onerror = function() {
     cmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }.bind(this);
-};
-
-// Send data from dataSocket.
-ContactHandler.prototype.send = function(cmd, data) {
-  if (this.app.serverManager.dataSocketWrapper) {
-    this.app.serverManager.dataSocketWrapper.send(cmd, data);
-  }
-};
-
-// Send data from mainSocket.
-ContactHandler.prototype.sendUpdated = function(cmd, data) {
-  if (this.app.serverManager.mainSocketWrapper) {
-    this.app.serverManager.mainSocketWrapper.send(cmd, data);
-  }
 };
 
 exports.ContactHandler = ContactHandler;

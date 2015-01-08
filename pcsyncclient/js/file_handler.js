@@ -47,12 +47,12 @@ FileHandler.prototype.handleMessage = function(cmd, data) {
         break;
       default:
         cmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        this.send(cmd);
+        this.app.serverManager.send(cmd);
         break;
     }
   } catch (e) {
     cmd.result = RS_ERROR.UNKNOWEN;
-    this.send(cmd);
+    this.app.serverManager.send(cmd);
   }
 };
 
@@ -77,13 +77,13 @@ FileHandler.prototype.pull = function(cmd, data) {
         cmd.result = RS_OK;
         var buffer = e.target.result;
         var uint8Array = new Uint8Array(buffer);
-        this.send(cmd, null, uint8Array);
+        this.app.serverManager.send(cmd, null, uint8Array);
       }.bind(this);
     }.bind(this);
 
     request.onerror = function() {
       cmd.result = RS_ERROR.FILE_NOTEXIT;
-      this.send(cmd);
+      this.app.serverManager.send(cmd);
     }.bind(this);
 
     return;
@@ -91,7 +91,7 @@ FileHandler.prototype.pull = function(cmd, data) {
 
   // File not exist.
   cmd.result = RS_ERROR.FILE_NOTEXIT;
-  this.send(cmd);
+  this.app.serverManager.send(cmd);
 };
 
 FileHandler.prototype.push = function(cmd, data) {
@@ -112,12 +112,12 @@ FileHandler.prototype.push = function(cmd, data) {
     var request = storages[i].addNamed(file, fileObj.fileName);
     request.onsuccess = function() {
       cmd.result = RS_OK;
-      this.send(cmd);
+      this.app.serverManager.send(cmd);
     }.bind(this);
 
     request.onerror = function() {
       cmd.result = RS_ERROR.FILE_ADD;
-      this.send(cmd);
+      this.app.serverManager.send(cmd);
     }.bind(this);
 
     return;
@@ -125,13 +125,7 @@ FileHandler.prototype.push = function(cmd, data) {
 
   // File not exist.
   cmd.result = RS_ERROR.FILE_NOTEXIT;
-  this.send(cmd);
-};
-
-FileHandler.prototype.send = function() {
-  if (this.app.serverManager.dataSocketWrapper) {
-    this.app.serverManager.dataSocketWrapper.send(cmd);
-  }
+  this.app.serverManager.send(cmd);
 };
 
 exports.FileHandler = FileHandler;

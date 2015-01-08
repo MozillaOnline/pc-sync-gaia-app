@@ -56,7 +56,9 @@ ServerManager.prototype.createServer = function() {
     window.navigator.mozTCPSocket.listen(this.port, {binaryType: 'arraybuffer'},
                                          this.backlog);
     if (!server) {
-      console.log('server is empty.');
+      console.log('Create TCP server socket failed.');
+      window.close();
+      return;
     }
 
   server.onconnect = function(event) {
@@ -70,17 +72,17 @@ ServerManager.prototype.createServer = function() {
     };
 
     if (!this.mainSocketWrapper) {
-      console.log('create main socket');
+      console.log('Create main socket.');
       this.mainSocketWrapper = new TCPSocketWrapper({
         socket: event,
         onerror: function() {
-          console.log('error occured in main socket.');
+          console.log('Error occured in main socket.');
           this.mainSocketWrapper = null;
           this.app.uiManager.showConnectedPage(false);
           this.app.stop();
         }.bind(this),
         onclose: function() {
-          console.log('main socket closed.');
+          console.log('Main socket closed.');
           this.mainSocketWrapper = null;
           this.app.uiManager.showConnectedPage(false);
           if (this.dataSocketWrapper) {
@@ -108,14 +110,19 @@ ServerManager.prototype.createServer = function() {
 
       this.app.uiManager.showConnectedPage(true);
     } else if (!this.dataSocketWrapper) {
-      console.log('create data socket');
+      console.log('Create data socket');
       this.dataSocketWrapper = new TCPSocketWrapper({
         socket: event,
+        onerror: function() {
+          console.log('Error occured in data socket.');
+          this.dataSocketWrapper = null;
+        },
         onclose: function() {
-          console.log('data socket closed.');
+          console.log('Data socket closed.');
+          this.dataSocketWrapper = null;
         },
         onmessage:
-          this.app.handlersManager.handleMessage.bind(this.app.handlersManager),
+          this.app.handlersManager.handleMessage.bind(this.app.handlersManager)
       });
 
       this.dataSocketWrapper.send(dataJson, null);
@@ -124,10 +131,29 @@ ServerManager.prototype.createServer = function() {
 
   // Error occured in tcp server.
   server.onerror = function(event) {
-    console.log('Error occured when creating server in ServerManager.');
-    this.app.stop();
+    console.log('Error occured in tcp server socket.');
+
+    server.close();
+    this.dataSocketWrapper = null;
+    this.mainSocketWrapper = null;
+
     this.app.uiManager.showConnectedPage(false);
+    this.createServer();
   }.bind(this);
+};
+
+// Send data from dataSocket.
+ServerManager.prototype.send = function(cmd, data) {
+  if (this.dataSocketWrapper) {
+    this.dataSocketWrapper.send(cmd, data);
+  }
+};
+
+// Send data from mainSocket.
+ServerManager.prototype.update = function(cmd, data) {
+  if (this.mainSocketWrapper) {
+    this.mainSocketWrapper.send(cmd, data);
+  }
 };
 
 exports.ServerManager = ServerManager;

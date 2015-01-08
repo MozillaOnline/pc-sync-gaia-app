@@ -68,12 +68,12 @@ MusicHandler.prototype.handleMessage = function(cmd, data) {
         break;
       default:
         cmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        this.send(cmd, null);
+        this.app.serverManager.send(cmd, null);
         break;
     }
   } catch (e) {
     cmd.result = RS_ERROR.UNKNOWEN;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }
 };
 
@@ -84,7 +84,7 @@ MusicHandler.prototype.getMusicsInfo = function(cmd) {
       break;
     case RS_ERROR.MUSIC_INIT:
       cmd.result = RS_ERROR.MUSIC_INIT;
-      this.send(cmd, null);
+      this.app.serverManager.send(cmd, null);
       break;
     default:
       this.cachedCmd = cmd;
@@ -102,7 +102,7 @@ MusicHandler.prototype.sendCachedCmd = function() {
   if (this.musicDBStatus == RS_OK) {
     this.sendScanResult(this.cachedCmd);
   } else {
-    this.send(this.cachedCmd, null);
+    this.app.serverManager.send(this.cachedCmd, null);
   }
 };
 
@@ -122,7 +122,7 @@ MusicHandler.prototype.sendScanResult = function(cmd) {
       };
 
       cmd.result = RS_OK;
-      this.send(cmd, JSON.stringify(musicMessage));
+      this.app.serverManager.send(cmd, JSON.stringify(musicMessage));
       return;
     }
 
@@ -135,13 +135,13 @@ MusicHandler.prototype.sendScanResult = function(cmd) {
 MusicHandler.prototype.getChangedMusicsInfo = function(cmd) {
   if (!this.musicDB || this.musicDBStatus != RS_OK) {
     cmd.result = RS_ERROR.MUSIC_INIT;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
     return;
   }
 
   this.musicDB.onscanend = function() {
     cmd.result = RS_OK;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }.bind(this);
 
   this.musicDB.oncreated = function(event) {
@@ -166,7 +166,7 @@ MusicHandler.prototype.getChangedMusicsInfo = function(cmd) {
       subdatalength: 0
     };
 
-    this.sendUpdated(listenJsonCmd, JSON.stringify(musicMessage));
+    this.app.serverManager.update(listenJsonCmd, JSON.stringify(musicMessage));
   }.bind(this);
 
   this.musicDB.scan();
@@ -175,14 +175,14 @@ MusicHandler.prototype.getChangedMusicsInfo = function(cmd) {
 MusicHandler.prototype.deleteMusic = function(cmd, data) {
   if (this.musicDBStatus != RS_OK) {
     cmd.result = RS_ERROR.MUSIC_INIT;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
     return;
   }
 
   var fileName = array2String(data);
   this.musicDB.deleteFile(fileName);
   cmd.result = RS_OK;
-  this.send(cmd, null);
+  this.app.serverManager.send(cmd, null);
 };
 
 MusicHandler.prototype.sendMusic = function(isListen, cmd, music) {
@@ -201,7 +201,7 @@ MusicHandler.prototype.sendMusic = function(isListen, cmd, music) {
   };
 
   if (!isListen) {
-    this.send(cmd, JSON.stringify(musicMessage));
+    this.app.serverManager.send(cmd, JSON.stringify(musicMessage));
     return;
   }
 
@@ -213,21 +213,7 @@ MusicHandler.prototype.sendMusic = function(isListen, cmd, music) {
     datalength: 0,
     subdatalength: 0
   };
-  this.sendUpdated(listenJsonCmd, JSON.stringify(musicMessage));
-};
-
-// Send data from dataSocket.
-MusicHandler.prototype.send = function(cmd, data) {
-  if (this.app.serverManager.dataSocketWrapper) {
-    this.app.serverManager.dataSocketWrapper.send(cmd, data);
-  }
-};
-
-// Send data from mainSocket.
-MusicHandler.prototype.sendUpdated = function(cmd, data) {
-  if (this.app.serverManager.mainSocketWrapper) {
-    this.app.serverManager.mainSocketWrapper.send(cmd, data);
-  }
+  this.app.serverManager.update(listenJsonCmd, JSON.stringify(musicMessage));
 };
 
 exports.MusicHandler = MusicHandler;

@@ -68,12 +68,12 @@ PictureHandler.prototype.handleMessage = function(cmd, data) {
         break;
       default:
         cmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        this.send(cmd, null);
+        this.app.serverManager.send(cmd, null);
         break;
     }
   } catch (e) {
     cmd.result = RS_ERROR.UNKNOWEN;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }
 };
 
@@ -87,7 +87,7 @@ PictureHandler.prototype.sendCachedCmd = function() {
   if (this.photoDBStatus == RS_OK) {
     this.sendScanResult(this.cachedCmd);
   } else {
-    this.send(this.cachedCmd, null);
+    this.app.serverManager.send(this.cachedCmd, null);
   }
 };
 
@@ -98,7 +98,7 @@ PictureHandler.prototype.getPicturesInfo = function(cmd) {
       break;
     case RS_ERROR.PICTURE_INIT:
       cmd.result = RS_ERROR.PICTURE_INIT;
-      this.send(cmd, null);
+      this.app.serverManager.send(cmd, null);
       break;
     default:
       this.cachedCmd = cmd;
@@ -125,7 +125,7 @@ PictureHandler.prototype.sendScanResult = function(cmd) {
       };
       this.picturesEnumerateDone = true;
       cmd.result = picturesCount == this.picturesIndex ? RS_OK : RS_MIDDLE;
-      this.send(cmd, JSON.stringify(pictureMessage));
+      this.app.serverManager.send(cmd, JSON.stringify(pictureMessage));
       return;
     }
     if (photo.metadata.video) {
@@ -167,10 +167,10 @@ PictureHandler.prototype.sendPicture = function(isListen, cmd, photo, count) {
     this.picturesIndex++;
     if (isListen) {
       listenJsonCmd.result = this.picturesEnumeratedDone ? RS_OK : RS_MIDDLE;
-      this.sendUpdated(listenJsonCmd, JSON.stringify(pictureMessage));
+      this.app.serverManager.update(listenJsonCmd, JSON.stringify(pictureMessage));
     } else {
       cmd.result = this.picturesEnumerateDone ? RS_OK : RS_MIDDLE;
-      this.send(cmd, JSON.stringify(pictureMessage));
+      this.app.serverManager.send(cmd, JSON.stringify(pictureMessage));
     }
     return;
   }
@@ -182,10 +182,10 @@ PictureHandler.prototype.sendPicture = function(isListen, cmd, photo, count) {
     this.picturesIndex++;
     if (isListen) {
       listenJsonCmd.result = this.picturesEnumeratedDone ? RS_OK : RS_MIDDLE;
-      this.sendUpdated(listenJsonCmd, JSON.stringify(pictureMessage));
+      this.app.serverManager.update(listenJsonCmd, JSON.stringify(pictureMessage));
     } else {
       cmd.result = this.picturesEnumerateDone ? RS_OK : RS_MIDDLE;
-      this.send(cmd, JSON.stringify(pictureMessage));
+      this.app.serverManager.send(cmd, JSON.stringify(pictureMessage));
     }
   }.bind(this);
 };
@@ -193,13 +193,13 @@ PictureHandler.prototype.sendPicture = function(isListen, cmd, photo, count) {
 PictureHandler.prototype.getChangedPicturesInfo = function(cmd) {
   if (!this.photoDB || this.photoDBStatus != RS_OK) {
     cmd.result = RS_ERROR.PICTURE_INIT;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
     return;
   }
 
   this.photoDB.onscanend = function onscanend() {
     cmd.result = RS_OK;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }.bind(this);
 
   this.photoDB.oncreated = function(event) {
@@ -225,7 +225,7 @@ PictureHandler.prototype.getChangedPicturesInfo = function(cmd) {
       datalength: 0,
       subdatalength: 0
     };
-    this.sendUpdated(listenJsonCmd, JSON.stringify(pictureMessage));
+    this.app.serverManager.update(listenJsonCmd, JSON.stringify(pictureMessage));
   }.bind(this);
   this.photoDB.scan();
 };
@@ -233,27 +233,13 @@ PictureHandler.prototype.getChangedPicturesInfo = function(cmd) {
 PictureHandler.prototype.deletePicture = function(cmd, data) {
   if (this.photoDBStatus != RS_OK) {
     cmd.result = RS_ERROR.PICTURE_INIT;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
     return;
   }
   var fileName = array2String(data);
   this.photoDB.deleteFile(fileName);
   cmd.result = RS_OK;
-  this.send(cmd, null);
-};
-
-// Send data from dataSocket.
-PictureHandler.prototype.send = function(cmd, data) {
-  if (this.app.serverManager.dataSocketWrapper) {
-    this.app.serverManager.dataSocketWrapper.send(cmd, data);
-  }
-};
-
-// Send data from mainSocket.
-PictureHandler.prototype.sendUpdated = function(cmd, data) {
-  if (this.app.serverManager.mainSocketWrapper) {
-    this.app.serverManager.mainSocketWrapper.send(cmd, data);
-  }
+  this.app.serverManager.send(cmd, null);
 };
 
 exports.PictureHandler = PictureHandler;
