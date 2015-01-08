@@ -50,12 +50,12 @@ DeviceHandler.prototype.handleMessage = function(cmd, data) {
         break;
       default:
         cmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        this.send(cmd, null);
+        this.app.serverManager.send(cmd, null);
         break;
     }
   } catch (e) {
     cmd.result = RS_ERROR.UNKNOWEN;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }
 };
 
@@ -64,16 +64,16 @@ DeviceHandler.prototype.getVersion = function(cmd) {
   request.onsuccess = function() {
     if (request.result) {
       cmd.result = RS_OK;
-      this.send(cmd, request.result.manifest.version);
+      this.app.serverManager.send(cmd, request.result.manifest.version);
     } else {
       cmd.result = RS_ERROR.UNKNOWEN;
-      this.send(cmd, null);
+      this.app.serverManager.send(cmd, null);
     }
   }.bind(this);
 
   request.onerror = function() {
     cmd.result = RS_ERROR.UNKNOWEN;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }.bind(this);
 };
 
@@ -177,7 +177,7 @@ DeviceHandler.prototype.getStorage = function(cmd) {
   if (storagesCount == 0) {
     cmd.result = RS_OK;
     var sendData = JSON.stringify(storagesInfo);
-    this.send(cmd, sendData);
+    this.app.serverManager.send(cmd, sendData);
     return;
   }
 
@@ -190,7 +190,7 @@ DeviceHandler.prototype.getStorage = function(cmd) {
       }
       cmd.result = RS_OK;
       var sendData = JSON.stringify(storagesInfo);
-      this.send(cmd, sendData);
+      this.app.serverManager.send(cmd, sendData);
     }.bind(this));
   }
 };
@@ -229,7 +229,7 @@ DeviceHandler.prototype.getStorageFree = function(cmd) {
   if (!this.storages) {
     cmd.result = RS_OK;
     var sendData = JSON.stringify(storagesInfo);
-    this.send(cmd, sendData);
+    this.app.serverManager.send(cmd, sendData);
     return;
   }
 
@@ -242,15 +242,9 @@ DeviceHandler.prototype.getStorageFree = function(cmd) {
       storagesInfo[rName] = freeSpace;
       cmd.result = RS_OK;
       var sendData = JSON.stringify(storagesInfo);
-      this.send(cmd, sendData);
+      this.app.serverManager.send(cmd, sendData);
     }.bind(this));
     break;
-  }
-};
-
-DeviceHandler.prototype.send = function(cmd, data) {
-  if (this.app.serverManager.dataSocketWrapper) {
-    this.app.serverManager.dataSocketWrapper.send(cmd, data);
   }
 };
 

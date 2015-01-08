@@ -77,12 +77,12 @@ VideoHandler.prototype.handleMessage = function(cmd, data) {
         break;
       default:
         cmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        this.send(cmd, null);
+        this.app.serverManager.send(cmd, null);
         break;
     }
   } catch (e) {
     cmd.result = RS_ERROR.UNKNOWEN;
-    this.send(cmd, null); }
+    this.app.serverManager.send(cmd, null); }
 };
 
 VideoHandler.prototype.sendCachedCmd = function() {
@@ -95,7 +95,7 @@ VideoHandler.prototype.sendCachedCmd = function() {
   if (this.videoDBStatus == RS_OK) {
     this.sendScanResult(this.cachedCmd);
   } else {
-    this.send(this.cachedCmd, null);
+    this.app.serverManager.send(this.cachedCmd, null);
   }
 };
 
@@ -106,7 +106,7 @@ VideoHandler.prototype.getVideosInfo = function(cmd) {
       break;
     case RS_ERROR.VIDEO_INIT:
       cmd.result = RS_ERROR.VIDEO_INIT;
-      this.send(cmd, null);
+      this.app.serverManager.send(cmd, null);
       break;
     default:
       this.cachedCmd = cmd;
@@ -135,7 +135,7 @@ VideoHandler.prototype.sendScanResult = function(cmd) {
       this.videosEnumerateDone = true;
 
       cmd.result = videosCount == this.videosIndex ? RS_OK : RS_MIDDLE;
-      this.send(cmd, JSON.stringify(videoMessage));
+      this.app.serverManager.send(cmd, JSON.stringify(videoMessage));
       return;
     }
 
@@ -163,13 +163,13 @@ VideoHandler.prototype.sendScanResult = function(cmd) {
 VideoHandler.prototype.getChangedVideosInfo = function(cmd) {
   if (!videoDB || this.videoDBStatus != RS_OK) {
     cmd.result = RS_ERROR.VIDEO_INIT;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
     return;
   }
 
   videoDB.onscanend = function onscanend() {
     cmd.result = RS_OK;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
   }.bind(this);
 
   videoDB.oncreated = function(event) {
@@ -192,7 +192,7 @@ VideoHandler.prototype.getChangedVideosInfo = function(cmd) {
       datalength: 0,
       subdatalength: 0
     };
-    this.sendUpdated(listenJsonCmd, JSON.stringify(videoMessage));
+    this.app.serverManager.update(listenJsonCmd, JSON.stringify(videoMessage));
   }.bind(this);
   videoDB.scan();
 };
@@ -228,10 +228,10 @@ VideoHandler.prototype.sendVideo = function(isListen, jsonCmd, video) {
     var videoData = JSON.stringify(videoMessage);
     if (isListen) {
       listenJsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-      this.sendUpdated(listenJsonCmd, videoData);
+      this.app.serverManager.update(listenJsonCmd, videoData);
     } else {
       jsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-      this.send(jsonCmd, videoData);
+      this.app.serverManager.send(jsonCmd, videoData);
     }
     return;
   }
@@ -242,10 +242,10 @@ VideoHandler.prototype.sendVideo = function(isListen, jsonCmd, video) {
     var videoData = JSON.stringify(videoMessage);
     if (isListen) {
       listenJsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-      this.sendUpdated(listenJsonCmd, videoData);
+      this.app.serverManager.update(listenJsonCmd, videoData);
     } else {
       jsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-      this.send(jsonCmd, videoData);
+      this.app.serverManager.send(jsonCmd, videoData);
     }
   } else {
     var fr = new FileReader();
@@ -256,10 +256,10 @@ VideoHandler.prototype.sendVideo = function(isListen, jsonCmd, video) {
       var videoData = JSON.stringify(videoMessage);
       if (isListen) {
         listenJsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-        this.sendUpdated(listenJsonCmd, videoData);
+        this.app.serverManager.update(listenJsonCmd, videoData);
       } else {
         jsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-        this.send(jsonCmd, videoData);
+        this.app.serverManager.send(jsonCmd, videoData);
       }
     }.bind(this);
   }
@@ -268,7 +268,7 @@ VideoHandler.prototype.sendVideo = function(isListen, jsonCmd, video) {
 VideoHandler.prototype.deleteVideo = function(cmd, data) {
   if (this.videoDBStatus != RS_OK) {
     cmd.result = RS_ERROR.VIDEO_INIT;
-    this.send(cmd, null);
+    this.app.serverManager.send(cmd, null);
     return;
   }
 
@@ -282,7 +282,7 @@ VideoHandler.prototype.deleteVideo = function(cmd, data) {
   }
 
   cmd.result = RS_OK;
-  this.send(cmd, null);
+  this.app.serverManager.send(cmd, null);
 };
 
 VideoHandler.prototype.addVideo = function(video) {
@@ -290,20 +290,6 @@ VideoHandler.prototype.addVideo = function(video) {
     return;
   }
   this.sendVideo(true, null, video);
-};
-
-// Send data from dataSocket.
-VideoHandler.prototype.send = function(cmd, data) {
-  if (this.app.serverManager.dataSocketWrapper) {
-    this.app.serverManager.dataSocketWrapper.send(cmd, data);
-  }
-};
-
-// Send data from mainSocket.
-VideoHandler.prototype.sendUpdated = function(cmd, data) {
-  if (this.app.serverManager.mainSocketWrapper) {
-    this.app.serverManager.mainSocketWrapper.send(cmd, data);
-  }
 };
 
 exports.VideoHandler = VideoHandler;
