@@ -46,6 +46,10 @@
       "name": "PC Sync",
       "description": "Connect to computer via WiFi or USB cable, and manage contacts, pictures, musics and videos on it"
     }
+    "es": {
+      "name": "PC Sync",
+      "description": "Conéctate con tu equipo vía WiFi o cable USB, y administra los contactos, fotografías, música y videos de tu dispositivo móvil."
+    }
   },
   "icons": {
     "48": "/style/icons/icon48.png",
