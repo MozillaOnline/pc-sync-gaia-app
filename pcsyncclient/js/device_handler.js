@@ -4,76 +4,41 @@
 
 var DeviceHandler = function(app) {
   this.app = app;
-  this.started = false;
-};
-
-DeviceHandler.prototype.start = function() {
-  if (this.started) {
-    console.log('DeviceHandler is running.');
-    return;
-  }
-
-  this.started = true;
-
+  document.addEventListener(CMD_TYPE.device_getVersion,
+                            this.getVersion.bind(this));
+  document.addEventListener(CMD_TYPE.device_getstorageInfo,
+                            this.getStorage.bind(this));
+  document.addEventListener(CMD_TYPE.device_getstorageFree,
+                            this.getStorageFree.bind(this));
   this.storages = navigator.getDeviceStorages('sdcard');
   if (this.storages) {
     return;
   }
-
   var storage = navigator.getDeviceStorage('sdcard');
   if (storage) {
     this.storages.push(storage);
   }
 };
 
-DeviceHandler.prototype.stop = function() {
-  if (!this.started) {
-    console.log('DeviceHandler has been stopped.');
-    return;
-  }
-
-  this.started = false;
-  this.storages = [];
-};
-
-DeviceHandler.prototype.handleMessage = function(cmd, data) {
-  try {
-    switch (cmd.command) {
-      case DEVICEINFO_COMMAND.getVersion:
-        this.getVersion(cmd);
-        break;
-      case DEVICEINFO_COMMAND.getStorage:
-        this.getStorage(cmd);
-        break;
-      case DEVICEINFO_COMMAND.getStorageFree:
-        this.getStorageFree(cmd);
-        break;
-      default:
-        cmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        this.app.serverManager.send(cmd, null);
-        break;
-    }
-  } catch (e) {
-    cmd.result = RS_ERROR.UNKNOWEN;
-    this.app.serverManager.send(cmd, null);
-  }
-};
-
-DeviceHandler.prototype.getVersion = function(cmd) {
+DeviceHandler.prototype.getVersion = function(e) {
+  var cmd = {
+    id: e.detail.id,
+    flag: CMD_TYPE.device_getVersion,
+    datalength: 0
+  };
   var request = window.navigator.mozApps.getSelf();
   request.onsuccess = function() {
     if (request.result) {
-      cmd.result = RS_OK;
-      this.app.serverManager.send(cmd, request.result.manifest.version);
+      var version = request.result.manifest.version;
+      this.app.serverManager.send(cmd,
+                                  string2Array(version));
     } else {
-      cmd.result = RS_ERROR.UNKNOWEN;
-      this.app.serverManager.send(cmd, null);
+      this.app.serverManager.send(cmd, int2Array(RS_ERROR.UNKNOWEN));
     }
   }.bind(this);
 
   request.onerror = function() {
-    cmd.result = RS_ERROR.UNKNOWEN;
-    this.app.serverManager.send(cmd, null);
+    this.app.serverManager.send(cmd, int2Array(RS_ERROR.UNKNOWEN));
   }.bind(this);
 };
 
@@ -141,12 +106,16 @@ DeviceHandler.prototype.getSpace = function(name, types, callback) {
   };
 };
 
-DeviceHandler.prototype.getStorage = function(cmd) {
+DeviceHandler.prototype.getStorage = function(e) {
   var mediaTypes = ['sdcard', 'pictures', 'music', 'videos'];
   var storagesInfo = {};
   var storagesType = {};
   var storagesCount = 0;
-
+  var cmd = {
+    id: e.detail.id,
+    flag: CMD_TYPE.device_getstorageInfo,
+    datalength: 0
+  };
   mediaTypes.forEach(function(aType) {
     var storages = navigator.getDeviceStorages(aType);
     if (!storages) {
@@ -175,9 +144,8 @@ DeviceHandler.prototype.getStorage = function(cmd) {
   });
 
   if (storagesCount == 0) {
-    cmd.result = RS_OK;
     var sendData = JSON.stringify(storagesInfo);
-    this.app.serverManager.send(cmd, sendData);
+    this.app.serverManager.send(cmd, string2Array(sendData));
     return;
   }
 
@@ -188,9 +156,8 @@ DeviceHandler.prototype.getStorage = function(cmd) {
       if (storagesCount > 0) {
         return;
       }
-      cmd.result = RS_OK;
       var sendData = JSON.stringify(storagesInfo);
-      this.app.serverManager.send(cmd, sendData);
+      this.app.serverManager.send(cmd, string2Array(sendData));
     }.bind(this));
   }
 };
@@ -223,13 +190,16 @@ DeviceHandler.prototype.getFreeSpace = function(name, sdcard, callback) {
   };
 };
 
-DeviceHandler.prototype.getStorageFree = function(cmd) {
+DeviceHandler.prototype.getStorageFree = function(e) {
   var storagesInfo = {};
-
+  var cmd = {
+    id: e.detail.id,
+    flag: CMD_TYPE.device_getstorageFree,
+    datalength: 0
+  };
   if (!this.storages) {
-    cmd.result = RS_OK;
     var sendData = JSON.stringify(storagesInfo);
-    this.app.serverManager.send(cmd, sendData);
+    this.app.serverManager.send(cmd, string2Array(sendData));
     return;
   }
 
@@ -240,9 +210,8 @@ DeviceHandler.prototype.getStorageFree = function(cmd) {
     var name = this.storages[i].storageName;
     this.getFreeSpace(name, this.storages[i], function(rName, freeSpace) {
       storagesInfo[rName] = freeSpace;
-      cmd.result = RS_OK;
       var sendData = JSON.stringify(storagesInfo);
-      this.app.serverManager.send(cmd, sendData);
+      this.app.serverManager.send(cmd, string2Array(sendData));
     }.bind(this));
     break;
   }

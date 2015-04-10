@@ -4,17 +4,6 @@
 
 var FileHandler = function(app) {
   this.app = app;
-  this.started = false;
-};
-
-FileHandler.prototype.start = function() {
-  if (this.started) {
-    console.log('FileHandler is running.');
-    return;
-  }
-
-  this.started = true;
-
   this.storages = navigator.getDeviceStorages('sdcard');
   if (this.storages) {
     return;
@@ -24,44 +13,20 @@ FileHandler.prototype.start = function() {
   if (storage) {
     this.storages.push(storage);
   }
+  document.addEventListener(CMD_TYPE.file_pull, this.pull);
+  document.addEventListener(CMD_TYPE.file_push, this.push);
 };
 
-FileHandler.prototype.stop = function() {
-  if (!this.started) {
-    console.log('FileHandler has been stopped.');
-    return;
-  }
-
-  this.started = false;
-  this.storages = [];
-};
-
-FileHandler.prototype.handleMessage = function(cmd, data) {
-  try {
-    switch (cmd.command) {
-      case FILE_COMMAND.filePull:
-        this.pull(cmd, data);
-        break;
-      case FILE_COMMAND.filePush:
-        this.push(cmd, data);
-        break;
-      default:
-        cmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        this.app.serverManager.send(cmd);
-        break;
-    }
-  } catch (e) {
-    cmd.result = RS_ERROR.UNKNOWEN;
-    this.app.serverManager.send(cmd);
-  }
-};
-
-FileHandler.prototype.pull = function(cmd, data) {
+FileHandler.prototype.pull = function(e) {
   if (!this.storages) {
     return;
   }
-
-  var fileObj = JSON.parse(array2String(data));
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.file_pull,
+    datalength: 0
+  };
+  var fileObj = JSON.parse(array2String(e.data));
 
   for (var i = 0; i < this.storages.length; i++) {
     if (fileObj.storageName != this.storages[i].storageName) {
@@ -74,58 +39,57 @@ FileHandler.prototype.pull = function(cmd, data) {
       var fr = new FileReader();
       fr.readAsArrayBuffer(file);
       fr.onload = function(e) {
-        cmd.result = RS_OK;
         var buffer = e.target.result;
         var uint8Array = new Uint8Array(buffer);
-        this.app.serverManager.send(cmd, null, uint8Array);
+        this.app.serverManager.send(cmd, uint8Array);
       }.bind(this);
     }.bind(this);
 
     request.onerror = function() {
-      cmd.result = RS_ERROR.FILE_NOTEXIT;
-      this.app.serverManager.send(cmd);
+      this.app.serverManager.send(cmd, int2Array(RS_ERROR.FILE_NOTEXIT));
     }.bind(this);
 
     return;
   }
 
   // File not exist.
-  cmd.result = RS_ERROR.FILE_NOTEXIT;
-  this.app.serverManager.send(cmd);
+  this.app.serverManager.send(cmd, int2Array(RS_ERROR.FILE_NOTEXIT));
 };
 
-FileHandler.prototype.push = function(cmd, data) {
+FileHandler.prototype.push = function(e) {
   if (!this.storages) {
     return;
   }
-
-  var fileObj = JSON.parse(array2String(data.subarray(0, cmd.subdatalength)));
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.file_push,
+    datalength: 0
+  };
+  var sublen = array2Int(e.data.subarray(0, 4));
+  var fileObj = JSON.parse(array2String(e.data.subarray(4, sublen)));
 
   for (var i = 0; i < this.storages.length; i++) {
     if (fileObj.storageName != this.storages[i].storageName) {
       continue;
     }
 
-    var subdata = data.subarray(cmd.subdatalength, cmd.datalength);
+    var subdata = e.data.subarray(sublen + 4, cmd.datalength);
     var file = new Blob([subdata], {type: fileObj.fileType});
 
     var request = this.storages[i].addNamed(file, fileObj.fileName);
     request.onsuccess = function() {
-      cmd.result = RS_OK;
-      this.app.serverManager.send(cmd);
+      this.app.serverManager.send(cmd, int2Array(RS_OK));
     }.bind(this);
 
     request.onerror = function() {
-      cmd.result = RS_ERROR.FILE_ADD;
-      this.app.serverManager.send(cmd);
+      this.app.serverManager.send(cmd, int2Array(RS_ERROR.FILE_ADD));
     }.bind(this);
 
     return;
   }
 
   // File not exist.
-  cmd.result = RS_ERROR.FILE_NOTEXIT;
-  this.app.serverManager.send(cmd);
+  this.app.serverManager.send(cmd, int2Array(RS_ERROR.FILE_NOTEXIT));
 };
 
 exports.FileHandler = FileHandler;

@@ -1,3 +1,0 @@
-[submodule "pcsyncclient/js/common"]
-	path = pcsyncclient/js/common
-	url = https://github.com/MozillaOnline/common.git

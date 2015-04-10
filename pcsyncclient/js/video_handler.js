@@ -7,17 +7,8 @@ var VideoHandler = function(app) {
   this.videoDBStatus = null;
   this.videosIndex = 0;
   this.videosEnumerateDone = false;
-};
-
-VideoHandler.prototype.start = function() {
-  if (this.started) {
-    console.log('Video handler has been started!');
-    return;
-  }
-
-  this.started = true;
   this.cachedCmd = null;
-
+  this.enableListening = false;
   // Initialize global variable videoDB which is used in
   // video_metadata_scripts.js
   videoDB = new MediaDB('videos', null, {
@@ -27,17 +18,14 @@ VideoHandler.prototype.start = function() {
 
   videoDB.onunavailable = function(event) {
     this.videoDBStatus = RS_ERROR.VIDEO_INIT;
-    this.sendCachedCmd();
   }.bind(this);
 
   videoDB.oncardremoved = function() {
     this.videoDBStatus = RS_ERROR.VIDEO_INIT;
-    this.sendCachedCmd();
   }.bind(this);
 
   videoDB.onready = function() {
     this.videoDBStatus = RS_OK;
-    this.sendCachedCmd();
   }.bind(this);
 
   // Initialize global variable videostorage which is used in
@@ -47,69 +35,35 @@ VideoHandler.prototype.start = function() {
   // Initialize global variable addVideo which is used in
   // video_metadata_scripts.js
   addVideo = this.addVideo.bind(this);
+
+  document.addEventListener(CMD_TYPE.app_disconnect,
+                            this.reset);
+  document.addEventListener(CMD_TYPE.video_getOld,
+                            this.getVideosInfo);
+  document.addEventListener(CMD_TYPE.video_getChanged,
+                            this.getChangedVideosInfo);
+  document.addEventListener(CMD_TYPE.video_delete,
+                            this.deleteVideo);
 };
 
-VideoHandler.prototype.stop = function() {
-  if (!this.started) {
-    console.log('Video handler has been stopped!');
-    return;
-  }
-
-  this.started = false;
-  this.cachedCmd = null;
-
-  videoDB = null;
-  addVideo = null;
-  videostorage = null;
+VideoHandler.prototype.reset = function() {
+  this.enableListening = false;
 };
 
-VideoHandler.prototype.handleMessage = function(cmd, data) {
-  try {
-    switch (cmd.command) {
-      case VIDEO_COMMAND.getOldVideosInfo:
-        this.getVideosInfo(cmd);
-        break;
-      case VIDEO_COMMAND.getChangedVideosInfo:
-        this.getChangedVideosInfo(cmd);
-        break;
-      case VIDEO_COMMAND.deleteVideo:
-        this.deleteVideo(cmd, data);
-        break;
-      default:
-        cmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        this.app.serverManager.send(cmd, null);
-        break;
-    }
-  } catch (e) {
-    cmd.result = RS_ERROR.UNKNOWEN;
-    this.app.serverManager.send(cmd, null); }
-};
-
-VideoHandler.prototype.sendCachedCmd = function() {
-  if (!this.cachedCmd) {
-    return;
-  }
-
-  this.cachedCmd.result = this.videoDBStatus;
-
-  if (this.videoDBStatus == RS_OK) {
-    this.sendScanResult(this.cachedCmd);
-  } else {
-    this.app.serverManager.send(this.cachedCmd, null);
-  }
-};
-
-VideoHandler.prototype.getVideosInfo = function(cmd) {
+VideoHandler.prototype.getVideosInfo = function(e) {
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.video_getOld,
+    datalength: 0
+  };
   switch (this.videoDBStatus) {
     case RS_OK:
       this.sendScanResult(cmd);
       break;
     case RS_ERROR.VIDEO_INIT:
-      cmd.result = RS_ERROR.VIDEO_INIT;
-      this.app.serverManager.send(cmd, null);
+      this.app.serverManager.send(cmd, int2Array(RS_ERROR.VIDEO_INIT));
       break;
     default:
-      this.cachedCmd = cmd;
       break;
   }
 };
@@ -118,24 +72,16 @@ VideoHandler.prototype.sendScanResult = function(cmd) {
   var videosCount = 0;
   this.videosEnumerateDone = false;
   this.videosIndex = 0;
-
+  this.enableListening = false;
   var handle = videoDB.enumerate('date', null, 'prev', function(video) {
-    if (!this.app.started) {
+    if (!enableListening) {
       this.videoDB.cancelEnumeration(handle);
       return;
     }
 
     if (video === null) {
-      var videoMessage = {
-        type: 'video',
-        callbackID: 'enumerate-done',
-        detail: videosCount
-      };
-
       this.videosEnumerateDone = true;
-
-      cmd.result = videosCount == this.videosIndex ? RS_OK : RS_MIDDLE;
-      this.app.serverManager.send(cmd, JSON.stringify(videoMessage));
+      this.app.serverManager.send(cmd, int2Array(RS_OK));
       return;
     }
 
@@ -154,22 +100,24 @@ VideoHandler.prototype.sendScanResult = function(cmd) {
     // If we've parsed the metadata and know this is a video, display it.
     if (isVideo === true) {
       videosCount++;
-      cmd.result = RS_MIDDLE;
-      this.sendVideo(false, cmd, video, videosCount);
+      this.sendVideo(false, cmd, video);
     }
   }.bind(this));
 };
 
-VideoHandler.prototype.getChangedVideosInfo = function(cmd) {
+VideoHandler.prototype.getChangedVideosInfo = function(e) {
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.video_getChanged,
+    datalength: 0
+  };
   if (!videoDB || this.videoDBStatus != RS_OK) {
-    cmd.result = RS_ERROR.VIDEO_INIT;
-    this.app.serverManager.send(cmd, null);
+    this.app.serverManager.send(cmd, int2Array(RS_ERROR.VIDEO_INIT));
     return;
   }
 
   videoDB.onscanend = function onscanend() {
-    cmd.result = RS_OK;
-    this.app.serverManager.send(cmd, null);
+    this.app.serverManager.send(cmd, int2Array(RS_OK));
   }.bind(this);
 
   videoDB.oncreated = function(event) {
@@ -179,25 +127,13 @@ VideoHandler.prototype.getChangedVideosInfo = function(cmd) {
   };
 
   videoDB.ondeleted = function(event) {
-    var videoMessage = {
-      type: 'video',
-      callbackID: 'ondeleted',
-      detail: event.detail
-    };
-    var listenJsonCmd = {
-      id: 0,
-      type: CMD_TYPE.listen,
-      command: 0,
-      result: RS_OK,
-      datalength: 0,
-      subdatalength: 0
-    };
-    this.app.serverManager.update(listenJsonCmd, JSON.stringify(videoMessage));
+    this.app.serverManager.update(cmd,
+                                  string2Array(JSON.stringify(event.detail)));
   }.bind(this);
   videoDB.scan();
 };
 
-VideoHandler.prototype.sendVideo = function(isListen, jsonCmd, video) {
+VideoHandler.prototype.sendVideo = function(isListen, cmd, video) {
   var fileInfo = {
     'name': video.name,
     'type': video.type,
@@ -206,73 +142,56 @@ VideoHandler.prototype.sendVideo = function(isListen, jsonCmd, video) {
     'metadata': video.metadata
   };
 
-  var videoMessage = {
-    type: 'video',
-    callbackID: 'enumerate',
-    detail: fileInfo
-  };
-
-  var listenJsonCmd = {
-    id: 0,
-    type: CMD_TYPE.listen,
-    command: 0,
-    result: 0,
-    datalength: 0,
-    subdatalength: 0
-  };
-
   var imageBlob = video.metadata.bookmark || video.metadata.poster;
 
   if (imageBlob == null) {
     this.videosIndex++;
-    var videoData = JSON.stringify(videoMessage);
+    var videoData = JSON.stringify(fileInfo);
     if (isListen) {
-      listenJsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-      this.app.serverManager.update(listenJsonCmd, videoData);
+      this.app.serverManager.update(cmd, string2Array(videoData));
     } else {
-      jsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-      this.app.serverManager.send(jsonCmd, videoData);
+      this.app.serverManager.send(cmd, string2Array(videoData));
     }
     return;
   }
 
   if (typeof(imageBlob) == 'string') {
-    videoMessage.detail.metadata.poster = imageBlob;
+    fileInfo.metadata.poster = imageBlob;
     this.videosIndex++;
-    var videoData = JSON.stringify(videoMessage);
+    var videoData = JSON.stringify(fileInfo);
     if (isListen) {
-      listenJsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-      this.app.serverManager.update(listenJsonCmd, videoData);
+      this.app.serverManager.update(cmd, string2Array(videoData));
     } else {
-      jsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-      this.app.serverManager.send(jsonCmd, videoData);
+      this.app.serverManager.send(cmd, string2Array(videoData));
     }
   } else {
     var fr = new FileReader();
     fr.readAsDataURL(imageBlob);
     fr.onload = function(e) {
-      videoMessage.detail.metadata.poster = e.target.result;
+      fileInfo.metadata.poster = e.target.result;
       this.videosIndex++;
-      var videoData = JSON.stringify(videoMessage);
+      var videoData = JSON.stringify(fileInfo);
       if (isListen) {
-        listenJsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-        this.app.serverManager.update(listenJsonCmd, videoData);
+        this.app.serverManager.update(cmd, string2Array(videoData));
       } else {
-        jsonCmd.result = this.videosEnumerateDone ? RS_OK : RS_MIDDLE;
-        this.app.serverManager.send(jsonCmd, videoData);
+        this.app.serverManager.send(cmd, string2Array(videoData));
       }
     }.bind(this);
   }
 };
 
-VideoHandler.prototype.deleteVideo = function(cmd, data) {
+VideoHandler.prototype.deleteVideo = function(e) {
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.video_delete,
+    datalength: 0
+  };
   if (this.videoDBStatus != RS_OK) {
-    cmd.result = RS_ERROR.VIDEO_INIT;
-    this.app.serverManager.send(cmd, null);
+    this.app.serverManager.send(cmd, int2Array(this.videoDBStatus));
     return;
   }
 
-  var fileInfo = JSON.parse(array2String(data));
+  var fileInfo = JSON.parse(array2String(e.data));
   videoDB.deleteFile(fileInfo.fileName);
   if (!!fileInfo.previewName) {
     // We use raw device storage here instead of MediaDB because that is
@@ -281,15 +200,19 @@ VideoHandler.prototype.deleteVideo = function(cmd, data) {
     picStorage.delete(fileInfo.previewName);
   }
 
-  cmd.result = RS_OK;
-  this.app.serverManager.send(cmd, null);
+  this.app.serverManager.send(cmd, int2Array(RS_OK));
 };
 
 VideoHandler.prototype.addVideo = function(video) {
   if (!video || !video.metadata.isVideo) {
     return;
   }
-  this.sendVideo(true, null, video);
+  var responseCmd = {
+    id: CMD_ID.listen_video,
+    flag: CMD_TYPE.video_getChanged,
+    datalength: 0
+  };
+  this.sendVideo(true, responseCmd, video);
 };
 
 exports.VideoHandler = VideoHandler;

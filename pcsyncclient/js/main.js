@@ -23,11 +23,12 @@ window.addEventListener('localized', function localized() {
   document.documentElement.dir = navigator.mozL10n.language.direction;
 
   // Look for any iframes and localize them - mozL10n doesn't do this
-  Array.prototype.forEach.call(document.querySelectorAll('iframe'), function forEachIframe(iframe) {
-    var doc = iframe.contentDocument;
-    doc.documentElement.lang = navigator.mozL10n.language.code;
-    doc.documentElement.dir = navigator.mozL10n.language.direction;
-    navigator.mozL10n.translate(doc.body);
+  Array.prototype.forEach.call(document.querySelectorAll('iframe'),
+    function forEachIframe(iframe) {
+      var doc = iframe.contentDocument;
+      doc.documentElement.lang = navigator.mozL10n.language.code;
+      doc.documentElement.dir = navigator.mozL10n.language.direction;
+      navigator.mozL10n.translate(doc.body);
   });
 
   // Also look for not-downloaded-message and re-translate the date message.
@@ -35,7 +36,9 @@ window.addEventListener('localized', function localized() {
   // date using l10n.
   Array.prototype.forEach.call(
   document.getElementsByClassName('not-downloaded-message'), function(element) {
-    if (!(element.dataset.l10nArgs && element.dataset.l10nId && element.dataset.l10nDate)) {
+    if (!(element.dataset.l10nArgs &&
+          element.dataset.l10nId &&
+          element.dataset.l10nDate)) {
       return;
     }
     var args = JSON.parse(element.dataset.l10nArgs);

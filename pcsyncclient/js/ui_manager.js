@@ -9,6 +9,9 @@ var UIManager = function(app) {
 };
 
 UIManager.prototype.init = function() {
+  document.addEventListener(CMD_TYPE.app_connected,
+                            this.accceptDialog.bind(this));
+
   var backButton = document.getElementById("help-general-back");
   backButton.onmousedown = ontouchstart = function() {
     this.classList.add('touchover');
@@ -29,12 +32,12 @@ UIManager.prototype.init = function() {
 
   var disconnectButton = document.getElementById('button-disconnect');
   disconnectButton.onclick = function(event) {
-    this.app.serverManager.reset();
+    this.app.reset();
   }.bind(this);
 
   var reconnectButton = document.getElementById('button-restart-service');
   reconnectButton.onclick = function() {
-    this.app.serverManager.reset();
+    this.app.reset();
   }.bind(this);
 
   document.getElementById('unconnect-view-help').onclick = function () {
@@ -47,7 +50,30 @@ UIManager.prototype.init = function() {
   this.showConnectedPage(false);
 };
 
-UIManager.prototype.loading = function() {
+UIManager.prototype.accceptDialog = function() {
+  var dataJson = {
+    id: CMD_ID.app_accepted,
+    flag: CMD_TYPE.app_accepted,
+    datalength: 0
+  };
+  if (!window.confirm(navigator.mozL10n.get('access_confirm'))) {
+    // Main socket connecting rejected
+    dataJson.id = CMD_ID.app_rejected;
+    dataJson.flag = CMD_TYPE.app_rejected;
+    this.app.serverManager.mainSocketWrapper.send(dataJson, null);
+    this.app.serverManager.reset();
+  } else {
+    // Main socket connecting accepted.
+    this.app.serverManager.mainSocketWrapper.send(dataJson, null);
+    this.app.uiManager.showConnectedPage(true);
+  }
+};
+
+UIManager.prototype.loading = function(isStart) {
+  if (isStart == false) {
+    document.getElementById('modal-loading').classList.add('hidden');
+    return;
+  }
   document.getElementById('modal-loading').classList.remove('hidden');
   document.getElementById('modal-loading').style.marginTop = 0 + 'px';
   document.getElementById('loading-container').style.marginTop =
@@ -70,7 +96,6 @@ UIManager.prototype.updateWifiCode = function(ipAddress) {
     document.getElementById('wifi-connect-number').textContent = int32Array[0];
     document.getElementById('wifi-status').classList.add('connected');
   }
-  document.getElementById('modal-loading').classList.add('hidden');
 };
 
 UIManager.prototype.showConnectedPage = function(flag) {
@@ -81,10 +106,6 @@ UIManager.prototype.showConnectedPage = function(flag) {
     this.connectedPage.classList.remove('hidden');
     this.unconnectedPage.classList.add('hidden');
   }
-};
-
-UIManager.prototype.confirm = function() {
-  return window.confirm(navigator.mozL10n.get('access_confirm'));
 };
 
 exports.UIManager = UIManager;
