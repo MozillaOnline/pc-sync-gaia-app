@@ -4,87 +4,61 @@
 
 var ContactHandler = function(app) {
   this.app = app;
+  navigator.mozContacts.oncontactchange = null;
+  document.addEventListener(CMD_TYPE.app_disconnect,
+                            this.reset);
+  document.addEventListener(CMD_TYPE.contact_add,
+                            this.addContact);
+  document.addEventListener(CMD_TYPE.contact_getAll,
+                            this.getAllContacts);
+  document.addEventListener(CMD_TYPE.contact_getById,
+                            this.getContactById);
+  document.addEventListener(CMD_TYPE.contact_removeById,
+                            this.removeContactById);
+  document.addEventListener(CMD_TYPE.contact_updateById,
+                            this.updateContactById);
 
   // After editing some contact, whether notify app on PC side.
   this.enableListening = false;
-  this.started = false;
-};
-
-ContactHandler.prototype.start = function() {
-  if (this.started) {
-    console.log('ContactHandler is running.');
-    return;
-  }
-
-  this.started = true;
-
   // Listening for contact changing.
   navigator.mozContacts.oncontactchange = function(event) {
     var responseCmd = {
-      id: 0,
-      type: CMD_TYPE.listen,
-      command: 0,
-      result: RS_OK,
-      datalength: 0,
-      subdatalength: 0
+      id: CMD_ID.listen_contact,
+      flag: 0,
+      datalength: 0
     };
-
-    var contactMessage = {
-      type: 'contact',
-      contactID: event.contactID,
-      reason: event.reason
-    };
-
-    var responseData = JSON.stringify(contactMessage);
+    switch (event.reason) {
+      case 'remove':
+        responseCmd.flag = CMD_TYPE.contact_removeById;
+        break;
+      case 'update':
+        responseCmd.flag = CMD_TYPE.contact_updateById;
+        break;
+      case 'create':
+        responseCmd.flag = CMD_TYPE.contact_add;
+        break;
+      default:
+        break;
+    }
+    var responseData = JSON.stringify(event.contactID);
     if (this.enableListening) {
-      this.app.serverManager.update(responseCmd, responseData);
+      this.app.serverManager.update(responseCmd, string2Array(responseData));
     }
   }.bind(this);
 };
 
-ContactHandler.prototype.stop = function() {
-  if (!this.started) {
-    console.log('ContactHandler has been stopped.');
-    return;
-  }
-
-  this.started = false;
-  navigator.mozContacts.oncontactchange = null;
+ContactHandler.prototype.reset = function() {
   this.enableListening = false;
 };
 
-ContactHandler.prototype.handleMessage = function(cmd, data) {
-  try {
-    switch (cmd.command) {
-      case CONTACT_COMMAND.addContact:
-        this.addContact(cmd, data);
-        break;
-      case CONTACT_COMMAND.getAllContacts:
-        this.getAllContacts(cmd);
-        break;
-      case CONTACT_COMMAND.getContactById:
-        this.getContactById(cmd, data);
-        break;
-      case CONTACT_COMMAND.removeContactById:
-        this.removeContactById(cmd, data);
-        break;
-      case CONTACT_COMMAND.updateContactById:
-        this.updateContactById(cmd, data);
-        break;
-      default:
-        cmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        this.app.serverManager.send(cmd, null);
-        break;
-    }
-  } catch(e) {
-    cmd.result = RS_ERROR.UNKNOWEN;
-    this.app.serverManager.send(cmd, null);
-  }
-};
-
-ContactHandler.prototype.addContact = function(cmd, data) {
+ContactHandler.prototype.addContact = function(e) {
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.contact_add,
+    datalength: 0
+  };
   var contact = new mozContact();
-  var contactObj = JSON.parse(array2String(data));
+  var contactObj = JSON.parse(array2String(e.data));
 
   if (contactObj.photo.length > 0) {
     contactObj.photo = [dataUri2Blob(contactObj.photo)];
@@ -93,18 +67,21 @@ ContactHandler.prototype.addContact = function(cmd, data) {
 
   var req = window.navigator.mozContacts.save(contact);
   req.onsuccess = function() {
-    cmd.result = RS_OK;
     var id = JSON.stringify(contact.id);
-    this.app.serverManager.send(cmd, id);
+    this.app.serverManager.send(cmd, string2Array(id));
   }.bind(this);
 
   req.onerror = function() {
-    cmd.result = RS_ERROR.CONTACT_ADDCONTACT;
-    this.app.serverManager.send(cmd, null);
+    this.app.serverManager.send(cmd, int2Array(RS_ERROR.CONTACT_ADDCONTACT));
   }.bind(this);
 };
 
-ContactHandler.prototype.getAllContacts = function(cmd) {
+ContactHandler.prototype.getAllContacts = function(e) {
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.contact_getAll,
+    datalength: 0
+  };
   this.enableListening = true;
   var contacts = [];
 
@@ -112,8 +89,7 @@ ContactHandler.prototype.getAllContacts = function(cmd) {
   request.onsuccess = function(evt) {
     var contact = evt.target.result;
     if (!contact) {
-      cmd.result = RS_OK;
-      this.app.serverManager.send(cmd, JSON.stringify(contacts));
+      this.app.serverManager.send(cmd, string2Array(JSON.stringify(contacts)));
       return;
     }
 
@@ -157,23 +133,26 @@ ContactHandler.prototype.getAllContacts = function(cmd) {
   }.bind(this);
 
   request.onerror = function() {
-    cmd.result = RS_ERROR.CONTACT_GETALLCONTACTS;
-    this.app.serverManager.send(cmd, null);
+    this.app.serverManager.send(cmd,
+                                int2Array(RS_ERROR.CONTACT_GETALLCONTACTS));
   }.bind(this);
 };
 
-ContactHandler.prototype.getContactById = function(cmd, data) {
+ContactHandler.prototype.getContactById = function(e) {
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
-    filterValue: array2String(data)
+    filterValue: array2String(e.data)
   };
-
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.contact_getById,
+    datalength: 0
+  };
   var request = window.navigator.mozContacts.find(options);
   request.onsuccess = function(evt) {
     if (evt.target.result.length == 0) {
-      cmd.result = RS_OK;
-      this.app.serverManager.send(cmd, null);
+      this.app.serverManager.send(cmd, int2Array(RS_ERROR.CONTACT_GETCONTACT));
       return;
     }
     var contact = evt.target.result[0];
@@ -207,129 +186,69 @@ ContactHandler.prototype.getContactById = function(cmd, data) {
       fr.readAsDataURL(contact.photo[0]);
       fr.onload = function(e) {
         contactObj.photo = e.target.result;
-        cmd.result = RS_OK;
-        this.app.serverManager.send(cmd, JSON.stringify(contactObj));
+        this.app.serverManager.send(cmd,
+                                    string2Array(JSON.stringify(contactObj)));
       }.bind(this);
       return;
     }
-
-    cmd.result = RS_OK;
-    this.app.serverManager.send(cmd, JSON.stringify(contactObj));
+    this.app.serverManager.send(cmd, string2Array(JSON.stringify(contactObj)));
   }.bind(this);
 
   request.onerror = function() {
-    cmd.result = RS_ERROR.CONTACT_GETCONTACT;
-    this.app.serverManager.send(cmd, null);
+    this.app.serverManager.send(cmd, int2Array(RS_ERROR.CONTACT_GETCONTACT));
   }.bind(this);
 };
 
-ContactHandler.prototype.getContactByPhoneNumber = function(cmd, data) {
-  var options = {
-    filterBy: ['tel'],
-    filterOp: 'match',
-    filterValue: array2String(data).replace(/\s+/g, '')
-  };
-
-  var request = window.navigator.mozContacts.find(options);
-  request.onsuccess = function(evt) {
-    if (evt.target.result.length == 0) {
-      cmd.result = RS_OK;
-      this.app.serverManager.send(cmd, null);
-      return;
-    }
-
-    var contact = evt.target.result[0];
-    var contactObj = {
-      id: contact.id,
-      photo: [],
-      name: contact.name,
-      honorificPrefix: contact.honorificPrefix,
-      givenName: contact.givenName,
-      familyName: contact.familyName,
-      additionalName: contact.additionalName,
-      honorificSuffix: contact.honorificSuffix,
-      nickname: contact.nickname,
-      email: contact.email,
-      url: contact.url,
-      category: contact.category,
-      adr: contact.adr,
-      tel: contact.tel,
-      org: contact.org,
-      jobTitle: contact.jobTitle,
-      bday: contact.bday,
-      note: contact.note,
-      impp: contact.impp,
-      anniversary: contact.anniversary,
-      sex: contact.sex,
-      genderIdentity: contact.genderIdentity
-    };
-
-    if (contact.photo != null && contact.photo.length > 0) {
-      var fr = new FileReader();
-      fr.readAsDataURL(contact.photo[0]);
-      fr.onload = function(e) {
-        contactObj.photo = e.target.result;
-        cmd.result = RS_OK;
-        this.app.serverManager.send(cmd, JSON.stringify(contactObj));
-      }.bind(this);
-      return;
-    }
-
-    cmd.result = RS_OK;
-    this.app.serverManager.send(cmd, JSON.stringify(contactObj));
-  }.bind(this);
-
-  request.onerror = function() {
-    cmd.result = RS_ERROR.CONTACT_GETCONTACT;
-    this.app.serverManager.send(cmd, null);
-  }.bind(this);
-};
-
-ContactHandler.prototype.removeContactById = function(cmd, data) {
+ContactHandler.prototype.removeContactById = function(e) {
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
-    filterValue: array2String(data)
+    filterValue: array2String(e.data)
   };
-
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.contact_removeById,
+    datalength: 0
+  };
   var req = window.navigator.mozContacts.find(options);
   req.onsuccess = function(e) {
     if (e.target.result.length == 0) {
-      cmd.result = RS_OK;
-      this.app.serverManager.send(cmd, null);
+      this.app.serverManager.send(cmd, int2Array(RS_OK));
       return;
     }
     var request = window.navigator.mozContacts.remove(e.target.result[0]);
     request.onsuccess = function(e) {
-      cmd.result = RS_OK;
-      this.app.serverManager.send(cmd, null);
+      this.app.serverManager.send(cmd, int2Array(RS_OK));
     }.bind(this);
 
     request.onerror = function() {
-      cmd.result = RS_ERROR.CONTACT_REMOVECONTACT;
-      this.app.serverManager.send(cmd, null);
+      this.app.serverManager.send(cmd,
+                                  int2Array(RS_ERROR.CONTACT_REMOVECONTACT));
     }.bind(this);
   }.bind(this);
 
   req.onerror = function() {
-    cmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-    this.app.serverManager.send(cmd, null);
+    this.app.serverManager.send(cmd,
+                                int2Array(RS_ERROR.CONTACT_CONTACT_NOTFOUND));
   }.bind(this);
 };
 
-ContactHandler.prototype.updateContactById = function(cmd, data) {
-  var newContact = JSON.parse(array2String(data));
+ContactHandler.prototype.updateContactById = function(e) {
+  var newContact = JSON.parse(array2String(e.data));
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
     filterValue: newContact.id
   };
-
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.contact_updateById,
+    datalength: 0
+  };
   var request = window.navigator.mozContacts.find(options);
   request.onsuccess = function(e) {
     if (e.target.result.length == 0) {
-      cmd.result = RS_OK;
-      this.app.serverManager.send(cmd, null);
+      this.app.serverManager.send(cmd, int2Array(RS_OK));
       return;
     }
     var contact = e.target.result[0];
@@ -343,19 +262,17 @@ ContactHandler.prototype.updateContactById = function(cmd, data) {
 
     var req = window.navigator.mozContacts.save(contact);
     req.onsuccess = function() {
-      cmd.result = RS_OK;
-      this.app.serverManager.send(cmd, JSON.stringify(contact));
+      this.app.serverManager.send(cmd, string2Array(JSON.stringify(contact)));
     }.bind(this);
 
     req.onerror = function() {
-      cmd.result = RS_ERROR.CONTACT_SAVECONTACT;
-      this.app.serverManager.send(cmd, null);
+      this.app.serverManager.send(cmd, int2Array(RS_ERROR.CONTACT_SAVECONTACT));
     }.bind(this);
   }.bind(this);
 
   request.onerror = function() {
-    cmd.result = RS_ERROR.CONTACT_CONTACT_NOTFOUND;
-    this.app.serverManager.send(cmd, null);
+    this.app.serverManager.send(cmd,
+                                int2Array(RS_ERROR.CONTACT_CONTACT_NOTFOUND));
   }.bind(this);
 };
 

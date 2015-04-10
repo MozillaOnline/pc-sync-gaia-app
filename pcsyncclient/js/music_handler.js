@@ -4,19 +4,9 @@
 
 var MusicHandler = function(app) {
   this.app = app;
-  this.musicDB = null;
-  this.started = false;
-};
-
-MusicHandler.prototype.start = function() {
-  if (this.started) {
-    console.log('MusicHandler is running.');
-    return;
-  }
-
-  this.started = true;
   this.musicDBStatus = null;
   this.cachedCmd = null;
+  this.enableListening = false;
 
   this.musicDB = new MediaDB('music', parseAudioMetadata, {
     indexes: ['metadata.album', 'metadata.artist', 'metadata.title',
@@ -28,161 +18,119 @@ MusicHandler.prototype.start = function() {
 
   this.musicDB.onunavailable = function(event) {
     this.musicDBStatus = RS_ERROR.MUSIC_INIT;
-    this.sendCachedCmd();
   }.bind(this);
 
   this.musicDB.oncardremoved = function oncardremoved() {
     this.musicDBStatus = RS_ERROR.MUSIC_INIT;
-    this.sendCachedCmd();
   }.bind(this);
 
   this.musicDB.onready = function() {
     this.musicDBStatus = RS_OK;
-    this.sendCachedCmd();
   }.bind(this);
+  document.addEventListener(CMD_TYPE.app_disconnect,
+                            this.reset);
+  document.addEventListener(CMD_TYPE.music_getOld,
+                            this.getMusicsInfo);
+  document.addEventListener(CMD_TYPE.music_getChanged,
+                            this.getChangedMusicsInfo);
+  document.addEventListener(CMD_TYPE.music_delete,
+                            this.deleteMusic);
 };
 
-MusicHandler.prototype.stop = function() {
-  if (!this.started) {
-    console.log('MusicHandler has been stopped.');
-    return;
-  }
-
-  this.started = false;
-
-  this.musicDB = null;
-  this.musicDBStatus = null;
+ContactHandler.prototype.reset = function() {
+  this.enableListening = false;
 };
 
-MusicHandler.prototype.handleMessage = function(cmd, data) {
-  try {
-    switch (cmd.command) {
-      case MUSIC_COMMAND.getOldMusicsInfo:
-        this.getMusicsInfo(cmd);
-        break;
-      case MUSIC_COMMAND.getChangedMusicsInfo:
-        this.getChangedMusicsInfo(cmd);
-        break;
-      case MUSIC_COMMAND.deleteMusic:
-        this.deleteMusic(cmd, data);
-        break;
-      default:
-        cmd.result = RS_ERROR.COMMAND_UNDEFINED;
-        this.app.serverManager.send(cmd, null);
-        break;
-    }
-  } catch (e) {
-    cmd.result = RS_ERROR.UNKNOWEN;
-    this.app.serverManager.send(cmd, null);
-  }
-};
-
-MusicHandler.prototype.getMusicsInfo = function(cmd) {
+MusicHandler.prototype.getMusicsInfo = function(e) {
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.music_getOld,
+    datalength: 0
+  };
   switch (this.musicDBStatus) {
     case RS_OK:
       this.sendScanResult(cmd);
       break;
     case RS_ERROR.MUSIC_INIT:
-      cmd.result = RS_ERROR.MUSIC_INIT;
-      this.app.serverManager.send(cmd, null);
+      this.app.serverManager.send(cmd, int2Array(RS_ERROR.MUSIC_INIT));
       break;
     default:
-      this.cachedCmd = cmd;
       break;
-  }
-};
-
-MusicHandler.prototype.sendCachedCmd = function() {
-  if (!this.cachedCmd) {
-    return;
-  }
-
-  this.cachedCmd.result = this.musicDBStatus;
-
-  if (this.musicDBStatus == RS_OK) {
-    this.sendScanResult(this.cachedCmd);
-  } else {
-    this.app.serverManager.send(this.cachedCmd, null);
   }
 };
 
 MusicHandler.prototype.sendScanResult = function(cmd) {
   var musicsCount = 0;
+  this.enableListening = true;
   var handle = this.musicDB.enumerate('metadata.title', function(music) {
-    if (!this.app.started) {
+    if (!enableListening) {
       this.musicDB.cancelEnumeration(handle);
       return;
     }
 
     if (!music) {
-      var musicMessage = {
-        type: 'music',
-        callbackID: 'enumerate-done',
-        detail: musicsCount
-      };
-
-      cmd.result = RS_OK;
-      this.app.serverManager.send(cmd, JSON.stringify(musicMessage));
+      this.app.serverManager.send(cmd, int2Array(RS_OK));
       return;
     }
 
     musicsCount++;
-    cmd.result = RS_MIDDLE;
     this.sendMusic(false, cmd, music);
   }.bind(this));
 };
 
-MusicHandler.prototype.getChangedMusicsInfo = function(cmd) {
+MusicHandler.prototype.getChangedMusicsInfo = function(e) {
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.music_getChanged,
+    datalength: 0
+  };
   if (!this.musicDB || this.musicDBStatus != RS_OK) {
-    cmd.result = RS_ERROR.MUSIC_INIT;
-    this.app.serverManager.send(cmd, null);
+    this.app.serverManager.send(cmd, int2Array(RS_ERROR.MUSIC_INIT));
     return;
   }
 
   this.musicDB.onscanend = function() {
-    cmd.result = RS_OK;
-    this.app.serverManager.send(cmd, null);
+    cmd.flag = RS_OK;
+    this.app.serverManager.send(cmd, int2Array(RS_OK));
   }.bind(this);
 
   this.musicDB.oncreated = function(event) {
+    var responseCmd = {
+      id: CMD_ID.listen_music,
+      flag: CMD_TYPE.music_getChanged,
+      datalength: 0
+    };
     event.detail.forEach(function(music) {
-      this.sendMusic(true, null, music);
+      this.sendMusic(true, responseCmd, music);
     }.bind(this));
   }.bind(this);
 
   this.musicDB.ondeleted = function(event) {
-    var musicMessage = {
-      type: 'music',
-      callbackID: 'ondeleted',
-      detail: event.detail
+    var responseCmd = {
+      id: CMD_ID.listen_music,
+      flag: CMD_TYPE.music_delete,
+      datalength: 0
     };
-
-    var listenJsonCmd = {
-      id: 0,
-      type: CMD_TYPE.listen,
-      command: 0,
-      result: RS_OK,
-      datalength: 0,
-      subdatalength: 0
-    };
-
-    this.app.serverManager.update(listenJsonCmd, JSON.stringify(musicMessage));
+    this.app.serverManager.update(responseCmd, string2Array(JSON.stringify(event.detail)));
   }.bind(this);
 
   this.musicDB.scan();
 };
 
-MusicHandler.prototype.deleteMusic = function(cmd, data) {
+MusicHandler.prototype.deleteMusic = function(e) {
+  var cmd = {
+    id: e.id,
+    flag: CMD_TYPE.music_delete,
+    datalength: 0
+  };
   if (this.musicDBStatus != RS_OK) {
-    cmd.result = RS_ERROR.MUSIC_INIT;
-    this.app.serverManager.send(cmd, null);
+    this.app.serverManager.send(cmd, int2Array(RS_ERROR.MUSIC_INIT));
     return;
   }
 
-  var fileName = array2String(data);
+  var fileName = array2String(e.data);
   this.musicDB.deleteFile(fileName);
-  cmd.result = RS_OK;
-  this.app.serverManager.send(cmd, null);
+  this.app.serverManager.send(cmd, int2Array(RS_OK));
 };
 
 MusicHandler.prototype.sendMusic = function(isListen, cmd, music) {
@@ -194,26 +142,12 @@ MusicHandler.prototype.sendMusic = function(isListen, cmd, music) {
     'metadata': music.metadata
   };
 
-  var musicMessage = {
-    type: 'music',
-    callbackID: 'enumerate',
-    detail: fileInfo
-  };
-
   if (!isListen) {
-    this.app.serverManager.send(cmd, JSON.stringify(musicMessage));
+    this.app.serverManager.send(cmd, string2Array(JSON.stringify(fileInfo)));
     return;
   }
 
-  var listenJsonCmd = {
-    id: 0,
-    type: CMD_TYPE.listen,
-    command: 0,
-    result: RS_OK,
-    datalength: 0,
-    subdatalength: 0
-  };
-  this.app.serverManager.update(listenJsonCmd, JSON.stringify(musicMessage));
+  this.app.serverManager.update(cmd, string2Array(JSON.stringify(fileInfo)));
 };
 
 exports.MusicHandler = MusicHandler;

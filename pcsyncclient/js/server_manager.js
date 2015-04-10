@@ -12,63 +12,37 @@ var ServerManager = function(app) {
   this.options = {
     binaryType: 'arraybuffer'
   };
-
-  this.started = false;
 };
 
-ServerManager.prototype.start = function() {
-  if (this.started) {
-    console.warn('Server manager is running.');
-    return;
-  }
-
-  this.started = true;
-
+ServerManager.prototype.init = function() {
   this.createServer();
 };
 
-ServerManager.prototype.stop = function() {
-  if (!this.started) {
-    console.warn('Server manager has been stopped.');
-    return;
-  }
-
-  this.started = false;
-
-  if (this.dataSocketWrapper) {
-    this.dataSocketWrapper.socket.close();
-    this.dataSocketWrapper = null;
-  }
-
-  if (this.mainSocketWrapper) {
-    this.mainSocketWrapper.socket.close();
-    this.mainSocketWrapper = null;
-  }
+ServerManager.prototype.restart = function() {
+  this.reset();
 
   if (this.server) {
     this.server.close();
     this.server = null;
   }
+  this.createServer();
 };
 
 ServerManager.prototype.createServer = function() {
   var server = this.server =
     window.navigator.mozTCPSocket.listen(this.port, {binaryType: 'arraybuffer'},
                                          this.backlog);
-    if (!server) {
-      console.log('Create TCP server socket failed.');
-      window.close();
-      return;
-    }
+  if (!server) {
+    console.log('Create TCP server socket failed.');
+    window.close();
+    return;
+  }
 
   server.onconnect = function(event) {
     var dataJson = {
-      id: 0,
-      type: CMD_TYPE.connected,
-      command: 0,
-      result: 0,
-      datalength: 0,
-      subdatalength: 0
+      id: CMD_ID.app_connected,
+      flag: CMD_TYPE.app_connected,
+      datalength: 0
     };
 
     if (!this.mainSocketWrapper) {
@@ -77,14 +51,10 @@ ServerManager.prototype.createServer = function() {
         socket: event,
         onerror: function() {
           console.log('Error occured in main socket.');
-          this.mainSocketWrapper = null;
-          this.app.uiManager.showConnectedPage(false);
           this.reset();
         }.bind(this),
         onclose: function() {
           console.log('Main socket closed.');
-          this.mainSocketWrapper = null;
-          this.app.uiManager.showConnectedPage(false);
           this.reset();
         }.bind(this)
       });
@@ -92,20 +62,14 @@ ServerManager.prototype.createServer = function() {
       // Main socket connected
       this.mainSocketWrapper.send(dataJson, null);
 
-      // Main socket connecting rejected
-      if (!this.app.uiManager.confirm()) {
-        dataJson.type = CMD_TYPE.rejected;
-        this.mainSocketWrapper.send(dataJson, null);
-        this.mainSocketWrapper.socket.close();
-        this.mainSocketWrapper = null;
-        return;
-      }
+      var evt = new CustomEvent(CMD_TYPE.app_connected, {
+        'detail': {
+          'id': CMD_ID.app_connected,
+          'data': null
+        }
+      });
+      document.dispatchEvent(evt);
 
-      // Main socket connecting accepted.
-      dataJson.type = CMD_TYPE.accepted;
-      this.mainSocketWrapper.send(dataJson, null);
-
-      this.app.uiManager.showConnectedPage(true);
     } else if (!this.dataSocketWrapper) {
       console.log('Create data socket');
       this.dataSocketWrapper = new TCPSocketWrapper({
@@ -121,21 +85,13 @@ ServerManager.prototype.createServer = function() {
         onmessage:
           this.app.handlersManager.handleMessage.bind(this.app.handlersManager)
       });
-
-      this.dataSocketWrapper.send(dataJson, null);
     }
   }.bind(this);
 
   // Error occured in tcp server.
   server.onerror = function(event) {
     console.log('Error occured in tcp server socket.');
-
-    server.close();
-    this.dataSocketWrapper = null;
-    this.mainSocketWrapper = null;
-
-    this.app.uiManager.showConnectedPage(false);
-    this.createServer();
+    this.restart();
   }.bind(this);
 };
 
@@ -144,24 +100,25 @@ ServerManager.prototype.reset = function() {
     this.dataSocketWrapper.socket.close();
     this.dataSocketWrapper = null;
   }
-
   if (this.mainSocketWrapper) {
     this.mainSocketWrapper.socket.close();
     this.mainSocketWrapper = null;
   }
+  this.app.uiManager.showConnectedPage(false);
+  this.app.handlersManager.reset();
 };
 
 // Send data from dataSocket.
-ServerManager.prototype.send = function(cmd, dataStr, dataArray) {
+ServerManager.prototype.send = function(cmd, dataArray) {
   if (this.dataSocketWrapper) {
-    this.dataSocketWrapper.send(cmd, dataStr, dataArray);
+    this.dataSocketWrapper.send(cmd, dataArray);
   }
 };
 
 // Send data from mainSocket.
-ServerManager.prototype.update = function(cmd, dataStr, dataArray) {
+ServerManager.prototype.update = function(cmd, dataArray) {
   if (this.mainSocketWrapper) {
-    this.mainSocketWrapper.send(cmd, dataStr, dataArray);
+    this.mainSocketWrapper.send(cmd, dataArray);
   }
 };
 
