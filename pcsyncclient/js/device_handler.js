@@ -4,6 +4,7 @@
 
 var DeviceHandler = function(app) {
   this.app = app;
+  console.log("DeviceHandler init!");
   document.addEventListener(CMD_TYPE.device_getVersion,
                             this.getVersion.bind(this));
   document.addEventListener(CMD_TYPE.device_getstorageInfo,

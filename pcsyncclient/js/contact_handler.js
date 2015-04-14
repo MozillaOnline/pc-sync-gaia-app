@@ -4,41 +4,45 @@
 
 var ContactHandler = function(app) {
   this.app = app;
+  console.log("ContactHandler init!");
   navigator.mozContacts.oncontactchange = null;
   document.addEventListener(CMD_TYPE.app_disconnect,
-                            this.reset);
+                            this.reset.bind(this));
   document.addEventListener(CMD_TYPE.contact_add,
-                            this.addContact);
+                            this.addContact.bind(this));
   document.addEventListener(CMD_TYPE.contact_getAll,
-                            this.getAllContacts);
+                            this.getAllContacts.bind(this));
   document.addEventListener(CMD_TYPE.contact_getById,
-                            this.getContactById);
+                            this.getContactById.bind(this));
   document.addEventListener(CMD_TYPE.contact_removeById,
-                            this.removeContactById);
+                            this.removeContactById.bind(this));
   document.addEventListener(CMD_TYPE.contact_updateById,
-                            this.updateContactById);
+                            this.updateContactById.bind(this));
 
   // After editing some contact, whether notify app on PC side.
   this.enableListening = false;
   // Listening for contact changing.
   navigator.mozContacts.oncontactchange = function(event) {
     var responseCmd = {
-      id: CMD_ID.listen_contact,
+      id: 0,
       flag: 0,
       datalength: 0
     };
     switch (event.reason) {
       case 'remove':
+        responseCmd.id = CMD_ID.listen_contact_delete;
         responseCmd.flag = CMD_TYPE.contact_removeById;
         break;
       case 'update':
+        responseCmd.id = CMD_ID.listen_contact_update;
         responseCmd.flag = CMD_TYPE.contact_updateById;
         break;
       case 'create':
+        responseCmd.id = CMD_ID.listen_contact_create;
         responseCmd.flag = CMD_TYPE.contact_add;
         break;
       default:
-        break;
+        return;
     }
     var responseData = JSON.stringify(event.contactID);
     if (this.enableListening) {
@@ -53,12 +57,12 @@ ContactHandler.prototype.reset = function() {
 
 ContactHandler.prototype.addContact = function(e) {
   var cmd = {
-    id: e.id,
+    id: e.detail.id,
     flag: CMD_TYPE.contact_add,
     datalength: 0
   };
   var contact = new mozContact();
-  var contactObj = JSON.parse(array2String(e.data));
+  var contactObj = JSON.parse(array2String(e.detail.data));
 
   if (contactObj.photo.length > 0) {
     contactObj.photo = [dataUri2Blob(contactObj.photo)];
@@ -78,7 +82,7 @@ ContactHandler.prototype.addContact = function(e) {
 
 ContactHandler.prototype.getAllContacts = function(e) {
   var cmd = {
-    id: e.id,
+    id: e.detail.id,
     flag: CMD_TYPE.contact_getAll,
     datalength: 0
   };
@@ -142,10 +146,10 @@ ContactHandler.prototype.getContactById = function(e) {
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
-    filterValue: array2String(e.data)
+    filterValue: array2String(e.detail.data)
   };
   var cmd = {
-    id: e.id,
+    id: e.detail.id,
     flag: CMD_TYPE.contact_getById,
     datalength: 0
   };
@@ -203,10 +207,10 @@ ContactHandler.prototype.removeContactById = function(e) {
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
-    filterValue: array2String(e.data)
+    filterValue: array2String(e.detail.data)
   };
   var cmd = {
-    id: e.id,
+    id: e.detail.id,
     flag: CMD_TYPE.contact_removeById,
     datalength: 0
   };
@@ -234,14 +238,14 @@ ContactHandler.prototype.removeContactById = function(e) {
 };
 
 ContactHandler.prototype.updateContactById = function(e) {
-  var newContact = JSON.parse(array2String(e.data));
+  var newContact = JSON.parse(array2String(e.detail.data));
   var options = {
     filterBy: ['id'],
     filterOp: 'equals',
     filterValue: newContact.id
   };
   var cmd = {
-    id: e.id,
+    id: e.detail.id,
     flag: CMD_TYPE.contact_updateById,
     datalength: 0
   };

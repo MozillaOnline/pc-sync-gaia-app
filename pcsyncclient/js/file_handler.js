@@ -4,6 +4,9 @@
 
 var FileHandler = function(app) {
   this.app = app;
+  console.log("FileHandler init!");
+  document.addEventListener(CMD_TYPE.file_pull, this.pull.bind(this));
+  document.addEventListener(CMD_TYPE.file_push, this.push.bind(this));
   this.storages = navigator.getDeviceStorages('sdcard');
   if (this.storages) {
     return;
@@ -13,8 +16,6 @@ var FileHandler = function(app) {
   if (storage) {
     this.storages.push(storage);
   }
-  document.addEventListener(CMD_TYPE.file_pull, this.pull);
-  document.addEventListener(CMD_TYPE.file_push, this.push);
 };
 
 FileHandler.prototype.pull = function(e) {
@@ -22,11 +23,11 @@ FileHandler.prototype.pull = function(e) {
     return;
   }
   var cmd = {
-    id: e.id,
+    id: e.detail.id,
     flag: CMD_TYPE.file_pull,
     datalength: 0
   };
-  var fileObj = JSON.parse(array2String(e.data));
+  var fileObj = JSON.parse(array2String(e.detail.data));
 
   for (var i = 0; i < this.storages.length; i++) {
     if (fileObj.storageName != this.storages[i].storageName) {
@@ -57,31 +58,38 @@ FileHandler.prototype.pull = function(e) {
 };
 
 FileHandler.prototype.push = function(e) {
+  console.log("FileHandler push!");
   if (!this.storages) {
     return;
   }
   var cmd = {
-    id: e.id,
+    id: e.detail.id,
     flag: CMD_TYPE.file_push,
     datalength: 0
   };
-  var sublen = array2Int(e.data.subarray(0, 4));
-  var fileObj = JSON.parse(array2String(e.data.subarray(4, sublen)));
+  console.log(e.detail.data.subarray(0, 4));
+  var sublen = array2Int(e.detail.data.subarray(0, 4));
+  console.log(sublen);
+  console.log(array2String(e.detail.data.subarray(4, sublen + 4)));
+  var fileObj = JSON.parse(array2String(e.detail.data.subarray(4, sublen + 4)));
 
   for (var i = 0; i < this.storages.length; i++) {
     if (fileObj.storageName != this.storages[i].storageName) {
       continue;
     }
-
-    var subdata = e.data.subarray(sublen + 4, cmd.datalength);
+    var subDataLen = e.detail.data.byteLength !== undefined ? e.detail.data.byteLength : e.detail.data.length;
+    var subdata = e.detail.data.subarray(sublen + 8, subDataLen);
+    console.log(subdata.byteLength);
     var file = new Blob([subdata], {type: fileObj.fileType});
 
     var request = this.storages[i].addNamed(file, fileObj.fileName);
     request.onsuccess = function() {
+      console.log("FileHandler push success!");
       this.app.serverManager.send(cmd, int2Array(RS_OK));
     }.bind(this);
 
     request.onerror = function() {
+      console.log("FileHandler push error!");
       this.app.serverManager.send(cmd, int2Array(RS_ERROR.FILE_ADD));
     }.bind(this);
 
