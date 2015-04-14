@@ -4,6 +4,7 @@
 
 var PictureHandler = function(app) {
   this.app = app;
+  console.log("PictureHandler init!");
   this.picturesIndex = 0;
   this.picturesEnumerateDone = false;
   this.photoDBStatus = null;
@@ -29,13 +30,13 @@ var PictureHandler = function(app) {
   }.bind(this);
 
   document.addEventListener(CMD_TYPE.app_disconnect,
-                            this.reset);
+                            this.reset.bind(this));
   document.addEventListener(CMD_TYPE.picture_getOld,
-                            this.getPicturesInfo);
+                            this.getPicturesInfo.bind(this));
   document.addEventListener(CMD_TYPE.picture_getChanged,
-                            this.getChangedPicturesInfo);
+                            this.getChangedPicturesInfo.bind(this));
   document.addEventListener(CMD_TYPE.picture_delete,
-                            this.deletePicture);
+                            this.deletePicture.bind(this));
 };
 
 PictureHandler.prototype.reset = function() {
@@ -44,7 +45,7 @@ PictureHandler.prototype.reset = function() {
 
 PictureHandler.prototype.getPicturesInfo = function(e) {
   var cmd = {
-    id: e.id,
+    id: e.detail.id,
     flag: CMD_TYPE.picture_getOld,
     datalength: 0
   };
@@ -53,9 +54,8 @@ PictureHandler.prototype.getPicturesInfo = function(e) {
       this.sendScanResult(cmd);
       break;
     case RS_ERROR.PICTURE_INIT:
-      this.app.serverManager.send(cmd, int2Array(RS_ERROR.PICTURE_INIT));
-      break;
     default:
+      this.app.serverManager.send(cmd, int2Array(RS_ERROR.PICTURE_INIT));
       break;
   }
 };
@@ -66,7 +66,7 @@ PictureHandler.prototype.sendScanResult = function(cmd) {
   this.picturesIndex = 0;
   this.enableListening = true;
   var handle = this.photoDB.enumerate('date', null, 'prev', function(photo) {
-    if (!enableListening) {
+    if (!this.enableListening) {
       this.photoDB.cancelEnumeration(handle);
       return;
     }
@@ -120,7 +120,7 @@ PictureHandler.prototype.sendPicture = function(isListen, cmd, photo) {
 
 PictureHandler.prototype.getChangedPicturesInfo = function(e) {
   var cmd = {
-    id: e.id,
+    id: e.detail.id,
     flag: CMD_TYPE.picture_getChanged,
     datalength: 0
   };
@@ -138,11 +138,13 @@ PictureHandler.prototype.getChangedPicturesInfo = function(e) {
       if (photo.metadata.video) {
         return;
       }
+      cmd.id = CMD_ID.listen_pcture_create;
       this.sendPicture(true, cmd, photo);
     }.bind(this));
   }.bind(this);
 
   this.photoDB.ondeleted = function(event) {
+    cmd.id = CMD_ID.listen_picture_delete;
     this.app.serverManager.update(cmd, string2Array(JSON.stringify(event.detail)));
   }.bind(this);
   this.photoDB.scan();
@@ -150,7 +152,7 @@ PictureHandler.prototype.getChangedPicturesInfo = function(e) {
 
 PictureHandler.prototype.deletePicture = function(e) {
   var cmd = {
-    id: e.id,
+    id: e.detail.id,
     flag: CMD_TYPE.picture_delete,
     datalength: 0
   };
@@ -158,7 +160,7 @@ PictureHandler.prototype.deletePicture = function(e) {
     this.app.serverManager.send(cmd, int2Array(RS_ERROR.PICTURE_INIT));
     return;
   }
-  var fileName = array2String(e.data);
+  var fileName = array2String(e.detail.data);
   this.photoDB.deleteFile(fileName);
   this.app.serverManager.send(cmd, int2Array(RS_OK));
 };

@@ -118,6 +118,7 @@ ServerManager.prototype.send = function(cmd, dataArray) {
 // Send data from mainSocket.
 ServerManager.prototype.update = function(cmd, dataArray) {
   if (this.mainSocketWrapper) {
+    console.log("ServerManager mainSocketWrapper update!");
     this.mainSocketWrapper.send(cmd, dataArray);
   }
 };

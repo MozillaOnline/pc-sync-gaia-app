@@ -14,6 +14,7 @@ var videostorage = null;
 (function(exports) {
 
 var App = function() {
+  console.log("App init!");
   this.serverManager = new ServerManager(this);
   this.handlersManager = new HandlersManager(this);
   this.uiManager = new UIManager(this);

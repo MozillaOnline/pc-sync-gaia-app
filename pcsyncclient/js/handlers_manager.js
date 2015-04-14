@@ -7,6 +7,7 @@
 
 var HandlersManager = function(app) {
   this.app = app;
+  console.log("HandlersManager init!");
   this.contactHandler = new ContactHandler(this.app);
   this.deviceHandler = new DeviceHandler(this.app);
   this.musicHandler = new MusicHandler(this.app);
