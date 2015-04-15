@@ -119,6 +119,8 @@ ServerManager.prototype.send = function(cmd, dataArray) {
 ServerManager.prototype.update = function(cmd, dataArray) {
   if (this.mainSocketWrapper) {
     console.log("ServerManager mainSocketWrapper update!");
+    console.log(cmd);
+    console.log(dataArray);
     this.mainSocketWrapper.send(cmd, dataArray);
   }
 };

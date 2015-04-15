@@ -124,28 +124,41 @@ PictureHandler.prototype.getChangedPicturesInfo = function(e) {
     flag: CMD_TYPE.picture_getChanged,
     datalength: 0
   };
+  console.log(cmd);
   if (!this.photoDB || this.photoDBStatus != RS_OK) {
     this.app.serverManager.send(cmd, int2Array(RS_ERROR.PICTURE_INIT));
     return;
   }
 
   this.photoDB.onscanend = function onscanend() {
+    console.log("onscanend");
+    console.log(cmd);
     this.app.serverManager.send(cmd, int2Array(RS_OK));
   }.bind(this);
 
   this.photoDB.oncreated = function(event) {
+    console.log("oncreated");
+    console.log(cmd);
     event.detail.forEach(function(photo) {
       if (photo.metadata.video) {
         return;
       }
-      cmd.id = CMD_ID.listen_pcture_create;
-      this.sendPicture(true, cmd, photo);
+      var responseCmd = {
+        id: CMD_ID.listen_picture_create,
+        flag: CMD_TYPE.picture_getChanged,
+        datalength: 0
+      };
+      this.sendPicture(true, responseCmd, photo);
     }.bind(this));
   }.bind(this);
 
   this.photoDB.ondeleted = function(event) {
-    cmd.id = CMD_ID.listen_picture_delete;
-    this.app.serverManager.update(cmd, string2Array(JSON.stringify(event.detail)));
+    var responseCmd = {
+      id: CMD_ID.listen_picture_delete,
+      flag: CMD_TYPE.picture_getChanged,
+      datalength: 0
+    };
+    this.app.serverManager.update(responseCmd, string2Array(JSON.stringify(event.detail)));
   }.bind(this);
   this.photoDB.scan();
 };
