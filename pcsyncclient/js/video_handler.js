@@ -127,8 +127,12 @@ VideoHandler.prototype.getChangedVideosInfo = function(e) {
   };
 
   videoDB.ondeleted = function(event) {
-    cmd.id = CMD_ID.listen_video_delete;
-    this.app.serverManager.update(cmd,
+    var responseCmd = {
+      id: CMD_ID.listen_video_delete,
+      flag: CMD_TYPE.video_getChanged,
+      datalength: 0
+    };
+    this.app.serverManager.update(responseCmd,
                                   string2Array(JSON.stringify(event.detail)));
   }.bind(this);
   videoDB.scan();
