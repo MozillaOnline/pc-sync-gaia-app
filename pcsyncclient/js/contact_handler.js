@@ -44,9 +44,8 @@ var ContactHandler = function(app) {
       default:
         return;
     }
-    var responseData = JSON.stringify(event.contactID);
     if (this.enableListening) {
-      this.app.serverManager.update(responseCmd, string2Array(responseData));
+      this.app.serverManager.update(responseCmd, string2Array(event.contactID));
     }
   }.bind(this);
 };
@@ -62,9 +61,10 @@ ContactHandler.prototype.addContact = function(e) {
     datalength: 0
   };
   var contact = new mozContact();
-  var contactObj = JSON.parse(array2String(e.detail.data));
+  var contactData = array2String(e.detail.data);
+  var contactObj = JSON.parse(contactData);
 
-  if (contactObj.photo.length > 0) {
+  if (contactObj.photo != null && contactObj.photo.length > 0) {
     contactObj.photo = [dataUri2Blob(contactObj.photo)];
   }
   contact.init(contactObj);

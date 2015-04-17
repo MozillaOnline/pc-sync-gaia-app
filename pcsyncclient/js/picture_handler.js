@@ -6,6 +6,7 @@ var PictureHandler = function(app) {
   this.app = app;
   console.log("PictureHandler init!");
   this.picturesIndex = 0;
+  this.picturesCount = 0;
   this.picturesEnumerateDone = false;
   this.photoDBStatus = null;
   this.cachedCmd = null;
@@ -61,9 +62,9 @@ PictureHandler.prototype.getPicturesInfo = function(e) {
 };
 
 PictureHandler.prototype.sendScanResult = function(cmd) {
-  var picturesCount = 0;
   this.picturesEnumerateDone = false;
   this.picturesIndex = 0;
+  this.picturesCount = 0;
   this.enableListening = true;
   var handle = this.photoDB.enumerate('date', null, 'prev', function(photo) {
     if (!this.enableListening) {
@@ -72,15 +73,18 @@ PictureHandler.prototype.sendScanResult = function(cmd) {
     }
 
     if (!photo) {
-      this.picturesEnumerateDone = true;
-      this.app.serverManager.send(cmd, int2Array(RS_OK));
+      if (this.picturesCount == this.picturesIndex) {
+        this.app.serverManager.send(cmd, int2Array(RS_OK));
+      } else {
+        this.picturesEnumerateDone = true;
+      }
       return;
     }
     if (photo.metadata.video) {
       return;
     }
 
-    picturesCount++;
+    this.picturesCount++;
     this.sendPicture(false, cmd, photo);
   }.bind(this));
 };
@@ -114,6 +118,10 @@ PictureHandler.prototype.sendPicture = function(isListen, cmd, photo) {
       this.app.serverManager.update(cmd, string2Array(JSON.stringify(fileInfo)));
     } else {
       this.app.serverManager.send(cmd, string2Array(JSON.stringify(fileInfo)));
+      if (this.picturesEnumerateDone && this.picturesIndex == this.picturesCount) {
+        this.app.serverManager.send(cmd, int2Array(RS_OK));
+        this.picturesEnumerateDone = false;
+      }
     }
   }.bind(this);
 };
