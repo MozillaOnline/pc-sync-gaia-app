@@ -7,6 +7,7 @@ var VideoHandler = function(app) {
   console.log("VideoHandler init!");
   this.videoDBStatus = null;
   this.videosIndex = 0;
+  this.videosCount = 0;
   this.videosEnumerateDone = false;
   this.cachedCmd = null;
   this.enableListening = false;
@@ -69,10 +70,10 @@ VideoHandler.prototype.getVideosInfo = function(e) {
 };
 
 VideoHandler.prototype.sendScanResult = function(cmd) {
-  var videosCount = 0;
   this.videosEnumerateDone = false;
   this.videosIndex = 0;
-  this.enableListening = false;
+  this.videosCount = 0;
+  this.enableListening = true;
   var handle = videoDB.enumerate('date', null, 'prev', function(video) {
     if (!this.enableListening) {
       this.videoDB.cancelEnumeration(handle);
@@ -80,8 +81,11 @@ VideoHandler.prototype.sendScanResult = function(cmd) {
     }
 
     if (video === null) {
-      this.videosEnumerateDone = true;
-      this.app.serverManager.send(cmd, int2Array(RS_OK));
+      if (this.videosCount == this.videosIndex) {
+        this.app.serverManager.send(cmd, int2Array(RS_OK));
+      } else {
+        this.videosEnumerateDone = true;
+      }
       return;
     }
 
@@ -99,7 +103,7 @@ VideoHandler.prototype.sendScanResult = function(cmd) {
     }
     // If we've parsed the metadata and know this is a video, display it.
     if (isVideo === true) {
-      videosCount++;
+      this.videosCount++;
       this.sendVideo(false, cmd, video);
     }
   }.bind(this));
@@ -180,6 +184,10 @@ VideoHandler.prototype.sendVideo = function(isListen, cmd, video) {
         this.app.serverManager.update(cmd, string2Array(videoData));
       } else {
         this.app.serverManager.send(cmd, string2Array(videoData));
+        if (this.videosEnumerateDone && this.videosCount == this.videosIndex) {
+          this.app.serverManager.send(cmd, int2Array(RS_OK));
+          this.videosEnumerateDone = false;
+        }
       }
     }.bind(this);
   }
