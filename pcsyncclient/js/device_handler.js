@@ -51,7 +51,7 @@ DeviceHandler.prototype.getSpace = function(name, types, callback) {
   req.onsuccess = function(evt) {
     var state = evt.target.result;
     if (state != 'available') {
-      callback(storageName, info).bind(this);
+      callback(storageName, info);
       return;
     }
 
@@ -143,7 +143,7 @@ DeviceHandler.prototype.getStorage = function(e) {
       storagesType[name][aType] = storages[i];
     }
   });
-
+  console.log(storagesCount);
   if (storagesCount == 0) {
     var sendData = JSON.stringify(storagesInfo);
     this.app.serverManager.send(cmd, string2Array(sendData));

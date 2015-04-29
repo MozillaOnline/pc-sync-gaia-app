@@ -96,16 +96,14 @@ ContactHandler.prototype.getAllContacts = function(e) {
       this.app.serverManager.send(cmd, string2Array(JSON.stringify(contacts)));
       return;
     }
-
-   var contactObj = {
+    
+    var contactObj = {
       id: contact.id,
       photo: [],
       name: contact.name,
-      honorificPrefix: contact.honorificPrefix,
       givenName: contact.givenName,
       familyName: contact.familyName,
       additionalName: contact.additionalName,
-      honorificSuffix: contact.honorificSuffix,
       nickname: contact.nickname,
       email: contact.email,
       url: contact.url,
@@ -114,12 +112,8 @@ ContactHandler.prototype.getAllContacts = function(e) {
       tel: contact.tel,
       org: contact.org,
       jobTitle: contact.jobTitle,
-      bday: contact.bday,
       note: contact.note,
-      impp: contact.impp,
-      anniversary: contact.anniversary,
-      sex: contact.sex,
-      genderIdentity: contact.genderIdentity
+      sex: contact.sex
     };
 
     if (contact.photo != null && contact.photo.length > 0) {
@@ -164,11 +158,9 @@ ContactHandler.prototype.getContactById = function(e) {
       id: contact.id,
       photo: [],
       name: contact.name,
-      honorificPrefix: contact.honorificPrefix,
       givenName: contact.givenName,
       familyName: contact.familyName,
       additionalName: contact.additionalName,
-      honorificSuffix: contact.honorificSuffix,
       nickname: contact.nickname,
       email: contact.email,
       url: contact.url,
@@ -177,12 +169,8 @@ ContactHandler.prototype.getContactById = function(e) {
       tel: contact.tel,
       org: contact.org,
       jobTitle: contact.jobTitle,
-      bday: contact.bday,
       note: contact.note,
-      impp: contact.impp,
-      anniversary: contact.anniversary,
-      sex: contact.sex,
-      genderIdentity: contact.genderIdentity
+      sex: contact.sex
     };
 
     if (contact.photo != null && contact.photo.length > 0) {
@@ -256,11 +244,16 @@ ContactHandler.prototype.updateContactById = function(e) {
       return;
     }
     var contact = e.target.result[0];
-    for (var prop in newContact) {
-      if (prop == 'photo' && newContact.photo.length > 0) {
+    var itemList = ['id', 'photo', 'name',
+                    'givenName', 'familyName', 'additionalName',
+                    'nickname', 'email', 'url',
+                    'category', 'adr', 'tel',
+                    'org', 'jobTitle', 'note', 'sex'];
+    for (var i = 0; i < itemList.length; i ++) {
+      if (itemList[i] == 'photo' && newContact.photo.length > 0) {
         contact.photo = [dataUri2Blob(newContact.photo)];
-      } else if (prop in contact) {
-        contact[prop] = newContact[prop];
+      } else {
+        contact[itemList[i]] = newContact[itemList[i]];
       }
     }
 

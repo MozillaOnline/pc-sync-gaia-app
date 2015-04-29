@@ -13,7 +13,7 @@ UIManager.prototype.init = function() {
                             this.accceptDialog.bind(this));
 
   var backButton = document.getElementById("help-general-back");
-  backButton.onmousedown = ontouchstart = function() {
+  backButton.onmousedown = backButton.ontouchstart = function() {
     this.classList.add('touchover');
   };
   backButton.onmouseup = backButton.ontouchend = function() {
@@ -61,7 +61,7 @@ UIManager.prototype.accceptDialog = function() {
     dataJson.id = CMD_ID.app_rejected;
     dataJson.flag = CMD_TYPE.app_rejected;
     this.app.serverManager.mainSocketWrapper.send(dataJson, null);
-    this.app.serverManager.reset();
+    this.app.serverManager.restart();
   } else {
     // Main socket connecting accepted.
     this.app.serverManager.mainSocketWrapper.send(dataJson, null);
