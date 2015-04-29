@@ -19,13 +19,21 @@ ServerManager.prototype.init = function() {
 };
 
 ServerManager.prototype.restart = function() {
-  this.reset();
-
+  if (this.dataSocketWrapper) {
+    this.dataSocketWrapper.socket.close();
+    this.dataSocketWrapper = null;
+  }
+  if (this.mainSocketWrapper) {
+    this.mainSocketWrapper.socket.close();
+    this.mainSocketWrapper = null;
+  }
   if (this.server) {
     this.server.close();
     this.server = null;
   }
   this.createServer();
+  this.app.uiManager.showConnectedPage(false);
+  this.app.handlersManager.reset();
 };
 
 ServerManager.prototype.createServer = function() {
@@ -51,11 +59,13 @@ ServerManager.prototype.createServer = function() {
         socket: event,
         onerror: function() {
           console.log('Error occured in main socket.');
-          this.reset();
+          this.mainSocketWrapper = null;
+          this.restart();
         }.bind(this),
         onclose: function() {
           console.log('Main socket closed.');
-          this.reset();
+          this.mainSocketWrapper = null;
+          this.restart();
         }.bind(this)
       });
 
@@ -70,17 +80,19 @@ ServerManager.prototype.createServer = function() {
       });
       document.dispatchEvent(evt);
 
-    } else if (!this.dataSocketWrapper) {
+    } else {
       console.log('Create data socket');
       this.dataSocketWrapper = new TCPSocketWrapper({
         socket: event,
         onerror: function() {
           console.log('Error occured in data socket.');
           this.dataSocketWrapper = null;
+          this.restart();
         }.bind(this),
         onclose: function() {
           console.log('Data socket closed.');
           this.dataSocketWrapper = null;
+          this.restart();
         }.bind(this),
         onmessage:
           this.app.handlersManager.handleMessage.bind(this.app.handlersManager)
@@ -93,19 +105,6 @@ ServerManager.prototype.createServer = function() {
     console.log('Error occured in tcp server socket.');
     this.restart();
   }.bind(this);
-};
-
-ServerManager.prototype.reset = function() {
-  if (this.dataSocketWrapper) {
-    this.dataSocketWrapper.socket.close();
-    this.dataSocketWrapper = null;
-  }
-  if (this.mainSocketWrapper) {
-    this.mainSocketWrapper.socket.close();
-    this.mainSocketWrapper = null;
-  }
-  this.app.uiManager.showConnectedPage(false);
-  this.app.handlersManager.reset();
 };
 
 // Send data from dataSocket.

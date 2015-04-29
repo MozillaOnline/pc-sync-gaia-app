@@ -19,6 +19,7 @@ var FileHandler = function(app) {
 };
 
 FileHandler.prototype.pull = function(e) {
+  console.log("FileHandler pull!");
   if (!this.storages) {
     return;
   }
