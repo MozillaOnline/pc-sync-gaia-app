@@ -47,26 +47,32 @@ UIManager.prototype.init = function() {
     document.getElementById('modal-help-usb').classList.remove('hidden');
   };
 
+  document.getElementById('accept-button').onclick = function () {
+    document.getElementById('custom-confirm').classList.add('hidden');
+    var dataJson = {
+      id: CMD_ID.app_accepted,
+      flag: CMD_TYPE.app_accepted,
+      datalength: 0
+    };
+    this.app.serverManager.mainSocketWrapper.send(dataJson, null);
+    this.app.uiManager.showConnectedPage(true);
+  }.bind(this);
+  document.getElementById('reject-button').onclick = function () {
+    document.getElementById('custom-confirm').classList.add('hidden');
+    var dataJson = {
+      id: CMD_ID.app_rejected,
+      flag: CMD_TYPE.app_rejected,
+      datalength: 0
+    };
+    this.app.serverManager.mainSocketWrapper.send(dataJson, null);
+    this.app.serverManager.restart();
+  }.bind(this);
+
   this.showConnectedPage(false);
 };
 
 UIManager.prototype.accceptDialog = function() {
-  var dataJson = {
-    id: CMD_ID.app_accepted,
-    flag: CMD_TYPE.app_accepted,
-    datalength: 0
-  };
-  if (!window.confirm(navigator.mozL10n.get('access_confirm'))) {
-    // Main socket connecting rejected
-    dataJson.id = CMD_ID.app_rejected;
-    dataJson.flag = CMD_TYPE.app_rejected;
-    this.app.serverManager.mainSocketWrapper.send(dataJson, null);
-    this.app.serverManager.restart();
-  } else {
-    // Main socket connecting accepted.
-    this.app.serverManager.mainSocketWrapper.send(dataJson, null);
-    this.app.uiManager.showConnectedPage(true);
-  }
+  document.getElementById('custom-confirm').classList.remove('hidden');
 };
 
 UIManager.prototype.loading = function(isStart) {
@@ -102,9 +108,11 @@ UIManager.prototype.showConnectedPage = function(flag) {
   if (!flag) {
     this.connectedPage.classList.add('hidden');
     this.unconnectedPage.classList.remove('hidden');
+    document.getElementById('custom-confirm').classList.add('hidden');
   } else {
     this.connectedPage.classList.remove('hidden');
     this.unconnectedPage.classList.add('hidden');
+    document.getElementById('custom-confirm').classList.add('hidden');
   }
 };
 
