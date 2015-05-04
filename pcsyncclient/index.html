@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link rel="stylesheet" type="text/css" href="style/buttons.css"/>
+    <link rel="stylesheet" type="text/css" href="style/confirm.css"/>
     <link rel="stylesheet" type="text/css" href="style/pcsync.css"/>
 
     <!-- Localization -->
@@ -53,6 +54,20 @@
       <div id="loading-container" class="loading-container">
         <img id="loading-img" src="style/images/loading.png" class="loading"/>
       </div>
+    </section>
+    <section id="custom-confirm" class="hidden">
+      <form role="dialog" data-type="confirm">
+        <section>
+          <h1 data-l10n-id="content-region-header"></h1>
+          <p>
+            <span data-l10n-id="access_confirm"></span><br />
+          </p>
+        </section>
+        <menu>
+          <button id="accept-button" type="button" data-l10n-id="accept"></button>
+          <button id="reject-button" type="button" data-l10n-id="reject"></button>
+        </menu>
+      </form>
     </section>
     <section id="modal-help-general" class="help-region hidden">
       <div class="help-header">
