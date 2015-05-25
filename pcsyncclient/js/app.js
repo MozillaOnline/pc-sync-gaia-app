@@ -38,6 +38,7 @@ App.prototype.getWifiCode = function() {
     this.ipAddress = '0.0.0.0';
     this.firstConn = true;
     this.wifiEnabled = true;
+    this.wifiTimer = undefined;
     var PeerConnection =
       window.RTCPeerConnection || window.mozRTCPeerConnection;
     var pc = new PeerConnection();
@@ -54,6 +55,10 @@ App.prototype.getWifiCode = function() {
             this.ipAddress = strArray[9];
             break;
         }
+      }
+      if (this.wifiTimer) {
+        window.clearInterval(this.wifiTimer);
+        this.wifiTimer = undefined;
       }
       this.uiManager.updateWifiCode(this.ipAddress);
       this.uiManager.loading(false);
@@ -75,21 +80,42 @@ App.prototype.getWifiCode = function() {
         } else {
           this.ipAddress = array[2];
           this.uiManager.updateWifiCode(this.ipAddress);
+          if (this.wifiTimer) {
+            window.clearInterval(this.wifiTimer);
+            this.wifiTimer = undefined;
+          }
           this.uiManager.loading(false);
         }
       } else {
         this.uiManager.updateWifiCode(this.ipAddress);
+        if (this.wifiTimer) {
+          window.clearInterval(this.wifiTimer);
+          this.wifiTimer = undefined;
+        }
         this.uiManager.loading(false);
       }
     }.bind(this), function(error) {
+      if (this.wifiTimer) {
+        window.clearInterval(this.wifiTimer);
+        this.wifiTimer = undefined;
+      }
       this.uiManager.updateWifiCode(this.ipAddress);
       this.uiManager.loading(false);
     }.bind(this));
   } catch (e) {
     this.wifiEnabled = false;
+    if (this.wifiTimer) {
+      window.clearInterval(this.wifiTimer);
+      this.wifiTimer = undefined;
+    }
     this.uiManager.updateWifiCode(this.ipAddress);
     this.uiManager.loading(false);
   }
+  this.wifiTimer =  window.setInterval(function () {
+    this.wifiEnabled = false;
+    this.uiManager.updateWifiCode(this.ipAddress);
+    this.uiManager.loading(false);
+  }.bind(this), 10000);
 };
 
 exports.App = App;
