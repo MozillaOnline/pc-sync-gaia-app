@@ -18,22 +18,34 @@ ServerManager.prototype.init = function() {
   this.createServer();
 };
 
-ServerManager.prototype.restart = function() {
+ServerManager.prototype.disconnect = function() {
   if (this.dataSocketWrapper) {
     this.dataSocketWrapper.socket.close();
     this.dataSocketWrapper = null;
+  } else {
+    if (this.mainSocketWrapper) {
+      this.mainSocketWrapper.socket.close();
+      this.mainSocketWrapper = null;
+    }
+    this.app.uiManager.showConnectedPage(false);
+    this.app.handlersManager.reset();
   }
+};
+
+ServerManager.prototype.reject = function() {
   if (this.mainSocketWrapper) {
     this.mainSocketWrapper.socket.close();
     this.mainSocketWrapper = null;
   }
+  this.app.uiManager.showConnectedPage(false);
+};
+
+ServerManager.prototype.restart = function() {
   if (this.server) {
     this.server.close();
     this.server = null;
   }
   this.createServer();
-  this.app.uiManager.showConnectedPage(false);
-  this.app.handlersManager.reset();
 };
 
 ServerManager.prototype.createServer = function() {
@@ -60,12 +72,14 @@ ServerManager.prototype.createServer = function() {
         onerror: function() {
           console.log('Error occured in main socket.');
           this.mainSocketWrapper = null;
-          this.restart();
+          this.dataSocketWrapper = null;
+          this.disconnect();
         }.bind(this),
         onclose: function() {
           console.log('Main socket closed.');
           this.mainSocketWrapper = null;
-          this.restart();
+          this.dataSocketWrapper = null;
+          this.disconnect();
         }.bind(this)
       });
 
@@ -87,12 +101,16 @@ ServerManager.prototype.createServer = function() {
         onerror: function() {
           console.log('Error occured in data socket.');
           this.dataSocketWrapper = null;
-          this.restart();
+          if (this.mainSocketWrapper) {
+            this.mainSocketWrapper.socket.close();
+          }
         }.bind(this),
         onclose: function() {
           console.log('Data socket closed.');
           this.dataSocketWrapper = null;
-          this.restart();
+          if (this.mainSocketWrapper) {
+            this.mainSocketWrapper.socket.close();
+          }
         }.bind(this),
         onmessage:
           this.app.handlersManager.handleMessage.bind(this.app.handlersManager)

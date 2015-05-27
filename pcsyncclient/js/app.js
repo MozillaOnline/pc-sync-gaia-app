@@ -115,7 +115,7 @@ App.prototype.getWifiCode = function() {
     this.wifiEnabled = false;
     this.uiManager.updateWifiCode(this.ipAddress);
     this.uiManager.loading(false);
-  }.bind(this), 10000);
+  }.bind(this), 30000);
 };
 
 exports.App = App;
