@@ -32,7 +32,8 @@ UIManager.prototype.init = function() {
 
   var disconnectButton = document.getElementById('button-disconnect');
   disconnectButton.onclick = function(event) {
-    this.app.reset();
+    document.getElementById('button-disconnect').disabled = true;
+    this.app.serverManager.disconnect();
   }.bind(this);
 
   var reconnectButton = document.getElementById('button-restart-service');
@@ -48,6 +49,7 @@ UIManager.prototype.init = function() {
   };
 
   document.getElementById('accept-button').onclick = function () {
+    document.getElementById('button-disconnect').disabled = false;
     document.getElementById('custom-confirm').classList.add('hidden');
     var dataJson = {
       id: CMD_ID.app_accepted,
@@ -65,7 +67,7 @@ UIManager.prototype.init = function() {
       datalength: 0
     };
     this.app.serverManager.mainSocketWrapper.send(dataJson, null);
-    this.app.serverManager.restart();
+    this.app.serverManager.reject();
   }.bind(this);
 
   this.showConnectedPage(false);
